@@ -1,4 +1,3 @@
-// Ensure this is at the very top of the file so it is defined before any DOMContentLoaded or other code
 window.toggleProfileDropdown = function(event) {
     event.stopPropagation();
     var menu = document.getElementById("profileDropdownMenu");
@@ -14,7 +13,7 @@ let currentUser = null
 let deliveryMethod = "pickup"
 let selectedSize = "Grande"
 let currentProduct = null
-let lastDrinkType = 'cold'; // Track last selected filter
+let lastDrinkType = 'cold'; 
 
 // Navigation
 function showSection(sectionName) {
@@ -26,7 +25,6 @@ function showSection(sectionName) {
   if (targetSection) {
     targetSection.style.display = "block"
     targetSection.classList.add("active")
-    // Always apply filter when showing products section
     if (sectionName === "products") {
       filterDrinks(lastDrinkType);
     }
@@ -91,7 +89,7 @@ function closeProductModal() {
   const modal = document.getElementById("productModal");
   if (modal) {
     modal.classList.remove("active");
-    modal.style.display = "none"; // <-- Ensure modal is hidden
+    modal.style.display = "none"; 
   }
   document.body.style.overflow = "auto";
   currentProduct = null;
@@ -108,7 +106,6 @@ function selectSize(size) {
 function addProductToCart() {
   if (currentProduct) {
     const productName = `${currentProduct.name} (${selectedSize})`;
-    // Store product_id as product_id for backend reference
     addToCart(currentProduct.id, productName, currentProduct.price, selectedSize);
     closeProductModal();
     showNotification("Product added to cart!", "success");
@@ -117,7 +114,6 @@ function addProductToCart() {
 
 // Cart functionality
 function addToCart(product_id, name, price, size) {
-  // Find by product_id, name, and size
   const existingItem = cart.find((item) =>
     item.product_id === product_id && item.name === name && item.size === size
   );
@@ -125,7 +121,7 @@ function addToCart(product_id, name, price, size) {
     existingItem.quantity += 1;
   } else {
     cart.push({
-      product_id: product_id, // for backend reference
+      product_id: product_id, 
       name: name,
       price: price,
       quantity: 1,
@@ -169,7 +165,6 @@ function getTotalItems() {
   return cart.reduce((sum, item) => sum + item.quantity, 0);
 }
 
-// Helper to get cart key for current user
 function getCartKey() {
   if (currentUser && currentUser.id) {
     return `cart_user_${currentUser.id}`;
@@ -177,7 +172,6 @@ function getCartKey() {
   return "cart_guest";
 }
 
-// Load cart from localStorage if available (per user)
 function loadCart() {
   try {
     const key = getCartKey();
@@ -192,13 +186,12 @@ function loadCart() {
   }
 }
 
-// Save cart to localStorage (per user)
+
 function saveCart() {
   const key = getCartKey();
   localStorage.setItem(key, JSON.stringify(cart));
 }
 
-// Update cart count and save cart after any change
 function updateCartCount() {
   const totalItems = getTotalItems();
   document.getElementById("cartCount").textContent = totalItems;
@@ -264,7 +257,7 @@ function closeCart() {
   deliveryMethod = "pickup";
 }
 
-// Delivery Functions
+
 function startCheckout() {
   if (cart.length === 0) return;
   let deliveryOptions = document.getElementById("deliveryOptions");
@@ -276,7 +269,6 @@ function startCheckout() {
   deliveryOptions.id = "deliveryOptions";
   deliveryOptions.className = "delivery-options";
   deliveryOptions.style.marginTop = "20px";
-  // Only show pickup form (no delivery)
   deliveryOptions.innerHTML = `
     <h4 style="font-size:1.35rem;font-weight:800;color:#40534b;margin-bottom:18px;">
       Pickup Details
@@ -310,51 +302,53 @@ function startCheckout() {
     cartContent.appendChild(deliveryOptions);
   }
 
-  // Ensure DOM is ready before attaching event
-  setTimeout(() => {
-    const pickupTimeInput = document.getElementById("pickupTime");
-    const note = document.getElementById("pickupTimeNote");
-    if (pickupTimeInput && note) {
-      pickupTimeInput.min = "15:00";
-      pickupTimeInput.max = "21:00";
-      pickupTimeInput.addEventListener("input", function () {
-        const val = this.value;
-        if (!val) {
-          note.textContent = "Note: We are open only 3:00 p.m to 9:00 p.m. Thank you!";
-          note.style.color = "#b45309";
-          this.setCustomValidity("");
-          return;
-        }
-        const [h, m] = val.split(":").map(Number);
-        const mins = h * 60 + m;
-        if (mins < 15 * 60 || mins > 21 * 60) {
-          note.textContent = "Please select a time between 3:00 p.m and 9:00 p.m.";
-          note.style.color = "#dc2626";
-          this.setCustomValidity("Pickup time must be between 3:00 p.m and 9:00 p.m.");
-        } else {
-          note.textContent = "Note: We are open only 3:00 p.m to 9:00 p.m. Thank you!";
-          note.style.color = "#b45309";
-          this.setCustomValidity("");
-        }
-      });
-    }
-  }, 0);
+setTimeout(() => {
+  const pickupTimeInput = document.getElementById("pickupTime");
+  const note = document.getElementById("pickupTimeNote");
+
+  if (pickupTimeInput && note) {
+    pickupTimeInput.min = "15:00";
+    pickupTimeInput.max = "20:30";
+
+    pickupTimeInput.addEventListener("input", function () {
+      const val = this.value;
+      if (!val) {
+        note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+        note.style.color = "#b45309";
+        this.setCustomValidity("");
+        return;
+      }
+
+      const [h, m] = val.split(":").map(Number);
+      const mins = h * 60 + m;
+
+      if (mins < 900 || mins > 1230) {
+        note.textContent = "Please select a time between 3:00 p.m and 8:30 p.m.";
+        note.style.color = "#dc2626";
+        this.setCustomValidity("Pickup time must be between 3:00 p.m and 8:30 p.m.");
+      } else {
+        note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+        note.style.color = "#b45309";
+        this.setCustomValidity("");
+      }
+    });
+  }
+}, 0);
 }
 
-// Call this function when the user submits the pickup form
+
 function completePickupCheckout() {
   const pickup_name = document.getElementById("pickupName").value;
   const pickup_location = document.getElementById("pickupLocation").value;
   const pickup_time = document.getElementById("pickupTime").value;
   const special_instructions = document.getElementById("specialInstructions").value;
 
-  fetch('validations/pickup_checkout.php', {
+  fetch('pickup_checkout.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `pickup_name=${encodeURIComponent(pickup_name)}&pickup_location=${encodeURIComponent(pickup_location)}&pickup_time=${encodeURIComponent(pickup_time)}&special_instructions=${encodeURIComponent(special_instructions)}`
   })
     .then(res => {
-      // Debug: log the status and response
       console.log('Pickup checkout response status:', res.status);
       return res.text().then(text => {
         console.log('Pickup checkout raw response:', text);
@@ -386,7 +380,6 @@ function completePickupCheckout() {
 // Auth functions
 function showAuthModal() {
   if (isLoggedIn) {
-    // Remove this user's cart from localStorage and clear cart
     if (currentUser && currentUser.id) {
       localStorage.removeItem(getCartKey());
     }
@@ -440,7 +433,7 @@ function handleLogin(event) {
     loginBtn.disabled = true;
     loginBtn.classList.add("loading");
 
-    fetch('logging/login.php', {
+    fetch('login.php', {
         method: 'POST',
         body: new URLSearchParams({
             user_email: user_email,
@@ -449,7 +442,7 @@ function handleLogin(event) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        credentials: 'same-origin' // Ensure cookies are sent for session
+        credentials: 'same-origin' 
     })
     .then(res => res.json())
     .then(data => {
@@ -458,7 +451,6 @@ function handleLogin(event) {
         if (data.success) {
             isLoggedIn = true;
             window.PHP_IS_LOGGED_IN = true;
-            // Set currentUser from response
             currentUser = {
                 id: data.user_id,
                 fullname: data.fullname,
@@ -466,18 +458,14 @@ function handleLogin(event) {
                 initials: data.initials,
                 is_admin: data.is_admin
             };
-            // Update UI elements
             if (document.getElementById("profileText"))
                 document.getElementById("profileText").textContent = data.firstName;
             if (document.getElementById("profileAvatar"))
                 document.getElementById("profileAvatar").innerHTML = data.initials;
             let navbarUser = document.querySelector(".navbar-username");
             if (navbarUser) navbarUser.textContent = data.fullname;
-            // Hide login modal, show success
             document.getElementById("loginSuccess").classList.add("show");
-            // Update profile dropdown if available
             if (window.updateProfileDropdownMenu) window.updateProfileDropdownMenu(true);
-            // Update cart for logged in user
             loadCart();
             updateCartCount();
             updateCartDisplay();
@@ -500,27 +488,14 @@ function handleLogin(event) {
 
 
 
-
-// --- Sync logout with session ---
 function logout(event) {
   if (event) event.stopPropagation();
-  fetch("logging/logout.php", { method: "POST" })
+  fetch("logout.php", { method: "POST" })
     .then(() => {
       window.location.reload();
     });
 }
 
-// Registration via AJAX (optional, fallback to PHP if needed)
-// document.getElementById('registerImage').addEventListener('change', function(e) {
-//   const file = e.target.files[0];
-//   if (file) {
-//     const reader = new FileReader();
-//     reader.onload = function(ev) {
-//       document.getElementById('registerImagePreview').src = ev.target.result;
-//     };
-//     reader.readAsDataURL(file);
-//   }
-// });
 
 function handleRegister(event) {
   event.preventDefault();
@@ -530,7 +505,6 @@ function handleRegister(event) {
   const password = document.getElementById("registerPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const registerBtn = document.getElementById("registerBtn");
-  // const imageInput = document.getElementById("registerImage"); // Removed, no image upload
   if (password !== confirmPassword) {
     alert("Passwords do not match!");
     return;
@@ -543,8 +517,7 @@ function handleRegister(event) {
   formData.append('registerEmail', email);
   formData.append('registerPassword', password);
   formData.append('confirmPassword', confirmPassword);
-  // No image field appended
-  fetch('logging/register.php', {
+  fetch('register.php', {
     method: 'POST',
     body: formData
   })
@@ -566,7 +539,6 @@ function handleRegister(event) {
     });
 }
 
-// Utility function for notifications
 function showNotification(message, type = "success") {
   const notification = document.createElement("div");
   notification.style.cssText = `
@@ -589,7 +561,6 @@ function showNotification(message, type = "success") {
   }, 3000);
 }
 
-// Filter drinks by type (hot/cold)
 function filterDrinks(type) {
   lastDrinkType = type;
   document.getElementById("hotDrinksBtn").classList.remove("active");
@@ -600,7 +571,6 @@ function filterDrinks(type) {
     document.getElementById("coldDrinksBtn").classList.add("active");
   }
 
-  // Fade out all items first
   document.querySelectorAll('.product-item').forEach(item => {
     item.style.opacity = '0';
   });
@@ -617,10 +587,9 @@ function filterDrinks(type) {
   }, 200);
 }
 
-// Filter product items by data-type when a filter button is clicked
+
 window.filterDrinks = function(type) {
-    loadTopProducts(type); // still update the top products section
-    // Hide/show product items by data-type
+    loadTopProducts(type); 
     document.querySelectorAll('.product-item').forEach(function(item) {
         if (item.getAttribute('data-type') === type) {
             item.style.display = '';
@@ -628,12 +597,11 @@ window.filterDrinks = function(type) {
             item.style.display = 'none';
         }
     });
-    // Optionally, update button active state
     document.getElementById('hotDrinksBtn').classList.toggle('active', type === 'hot');
     document.getElementById('coldDrinksBtn').classList.toggle('active', type === 'cold');
 }
 
-// Add this function to dynamically fetch and render top products
+
 function loadTopProducts(category) {
     fetch('AJAX/get_top_products.php?category=' + encodeURIComponent(category))
         .then(response => response.json())
@@ -666,12 +634,12 @@ function loadTopProducts(category) {
         });
 }
 
-// Product view handler for "View" buttons
+
 function handleViewProduct(id, name, price, description, image) {
   openProductModal(id, name, price, description, image);
 }
 
-// Event listeners
+
 document.addEventListener("click", (event) => {
   const cartModal = document.getElementById("cartModal");
   const loginModal = document.getElementById("loginModal");
@@ -682,29 +650,24 @@ document.addEventListener("click", (event) => {
   if (event.target === productModal) closeProductModal();
 });
 
-// --- Profile Dropdown: Close on outside click ---
+
 document.addEventListener('click', function(event) {
     var menu = document.getElementById("profileDropdownMenu");
     var btn = document.getElementById("profileDropdownBtn");
     if (menu && menu.classList.contains("show")) {
-        // If click is outside the dropdown and button, close it
         if (!menu.contains(event.target) && (!btn || !btn.contains(event.target))) {
             menu.classList.remove("show");
         }
     }
 });
 
-// Initialize
-// Only ONE DOMContentLoaded for showSection('home') to avoid conflicts
-// Place all initialization logic here
+
+
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Debug: Log login state on page load
   console.log("[DEBUG] On load: window.PHP_IS_LOGGED_IN =", window.PHP_IS_LOGGED_IN, ", isLoggedIn =", isLoggedIn);
-  // Check PHP session login status
   if (typeof window.PHP_IS_LOGGED_IN !== "undefined" && window.PHP_IS_LOGGED_IN) {
     isLoggedIn = true;
-    // Optionally set currentUser from PHP if available
     if (window.PHP_USER_FULLNAME) {
       currentUser = {
         name: window.PHP_USER_FULLNAME,
@@ -713,7 +676,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("profileText").textContent = window.PHP_USER_FULLNAME.split(" ")[0];
       document.getElementById("profileAvatar").innerHTML = currentUser.initials;
     }
-    // If PHP provides user_id, set it as well
     if (window.PHP_USER_ID) {
       currentUser.id = window.PHP_USER_ID;
     }
@@ -723,15 +685,13 @@ document.addEventListener("DOMContentLoaded", () => {
   loadCart();
   updateCartCount();
   updateCartDisplay();
-  showSection("home"); // <-- Only call this ONCE here
+  showSection("home");
 });
 
-// Always show Home section on page load
 document.addEventListener("DOMContentLoaded", function() {
     showSection('home');
 });
 
-// Add CSS animation for notifications
 const style = document.createElement("style");
 style.textContent = `
     @keyframes slideIn {
@@ -747,7 +707,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Fixed scroll event listener
+
 window.addEventListener("scroll", () => {
   const header = document.querySelector(".header");
   const headerContent = document.querySelector(".header-content");
@@ -782,10 +742,9 @@ function handleViewProduct(id, name, price, description, image) {
   }
   currentProduct = { id, name, price, description, image };
 
-  // Set price per product and size
+
   let grandePrice = price;
   let supremePrice = price;
-  // Premium Coffee
   if (
     id.startsWith("ameri") ||
     id.startsWith("caramel-macchiato") ||
@@ -881,7 +840,7 @@ function handleViewProduct(id, name, price, description, image) {
     };
   });
 
-  // Show modal: center it using flex and ensure it's visible
+ 
   const modal = document.getElementById("productModal");
   modal.style.display = "flex";
   modal.style.alignItems = "center";
@@ -898,25 +857,19 @@ function handleViewProduct(id, name, price, description, image) {
 
 
 
-  // Scroll to top to ensure modal is visible (fix for mobile/small screens)
-  window.scrollTo({ top: 0, behavior: "auto" });
 
-  // Remove pickup form if present
+  window.scrollTo({ top: 0, behavior: "auto" });
   let pickupForm = document.getElementById("pickupFormModal");
   if (pickupForm) pickupForm.remove();
-
-  // Move the "Add to Cart" button to the bottom of the modal (if not already)
   const detailsSection = document.querySelector(".product-modal-details");
   const addBtn = detailsSection.querySelector(".product-modal-add-cart");
   if (addBtn) {
-    // Remove any previous click handler to avoid stacking
+    
     const newBtn = addBtn.cloneNode(true);
     addBtn.parentNode.replaceChild(newBtn, addBtn);
-    // Move to the end of detailsSection
     detailsSection.appendChild(newBtn);
     newBtn.onclick = function () {
       addProductToCart();
-      // Close the modal after adding to cart
       modal.classList.remove("active");
       modal.style.display = "none";
       document.body.style.overflow = "auto";
@@ -943,66 +896,38 @@ function selectSize(size, grandePrice, supremePrice, name) {
   }
 }
 
-
-// Utility: Check for JS errors and modal visibility
-function debugSignInModal() {
-  // 1. Check if the modal exists
-  const modal = document.getElementById("loginModal");
-  if (!modal) {
-    alert("Login modal element not found. Check your HTML.");
-    return;
-  }
-  // 2. Check if the modal is visible
-  if (!modal.classList.contains("active")) {
-    alert("Login modal is not active. The showAuthModal() function may not be called.");
-    return;
-  }
-  // 3. Check for overlay issues
-  const rect = modal.getBoundingClientRect();
-  const elementsAtPoint = document.elementsFromPoint(rect.left + 10, rect.top + 10);
-  if (elementsAtPoint.length > 0 && elementsAtPoint[0] !== modal && !modal.contains(elementsAtPoint[0])) {
-    alert("Another element may be covering the modal. Check your z-index and overlay CSS.");
-    return;
-  }
-  // 4. Check for JS errors
-  if (window.console && window.console.log) {
-    alert("If you still can't sign in, open the browser console (F12) and check for errors.");
-  }
-  alert("Login modal is present and active. If you still can't sign in, check for JavaScript errors or event handler issues.");
-}
 // Handle checkout button click
 function handleCheckout() {
   const deliveryOptions = document.getElementById("deliveryOptions");
-
-  // If the pickup form is not visible, show it and return (first click)
   if (!deliveryOptions || deliveryOptions.style.display !== "block") {
     startCheckout();
     return;
   }
 
-  // If the pickup form is visible, validate and submit (second click)
   const pickup_name = document.getElementById("pickupName") ? document.getElementById("pickupName").value : "";
   const pickup_location = document.getElementById("pickupLocation") ? document.getElementById("pickupLocation").value : "";
   const pickup_time = document.getElementById("pickupTime") ? document.getElementById("pickupTime").value : "";
   const special_instructions = document.getElementById("specialInstructions") ? document.getElementById("specialInstructions").value : "";
 
-  // Validate pickup time is between 15:00 and 21:00
-  if (pickup_time) {
-    const [h, m] = pickup_time.split(":").map(Number);
-    const mins = h * 60 + m;
-    if (mins < 15 * 60 || mins > 21 * 60) {
-      showNotification("Pickup time must be between 3:00 p.m and 9:00 p.m.", "error");
-      return;
-    }
+ if (pickup_time) {
+  const [h, m] = pickup_time.split(":").map(Number);
+  const mins = h * 60 + m;
+  const open = 15 * 60;       
+  const close = 20 * 60 + 30; 
+
+  if (mins < open || mins > close) {
+    showNotification("Pickup time must be between 3:00 p.m and 8:30 p.m.", "error");
+    return;
   }
+}
+
 
   if (!pickup_name || !pickup_location || !pickup_time) {
     showNotification("Please fill out all required pickup details.", "error");
     return;
   }
 
-  // Send cart items as JSON string, using product_id
-  fetch('validations/pickup_checkout.php', {
+  fetch('pickup_checkout.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body:
@@ -1035,7 +960,6 @@ function handleCheckout() {
       updateCartCount();
       updateCartDisplay();
 
-      // Show receipt modal with reference number if available
       if (typeof showReceiptModal === "function" && data.reference_number) {
         showReceiptModal(data.reference_number);
       }
@@ -1055,7 +979,7 @@ function handlePickupCheckout() {
   const pickup_time = document.getElementById("pickupTime").value;
   const special_instructions = document.getElementById("specialInstructions").value;
 
-  fetch('validations/pickup_checkout.php', {
+  fetch('pickup_checkout.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `pickup_name=${encodeURIComponent(pickup_name)}&pickup_location=${encodeURIComponent(pickup_location)}&pickup_time=${encodeURIComponent(pickup_time)}&special_instructions=${encodeURIComponent(special_instructions)}`
@@ -1137,20 +1061,15 @@ function validateRegisterForm() {
         valid = false;
     }
 
-    // Check for duplicate first name
     if (firstnameError.textContent && firstnameError.textContent !== "First name is required.") valid = false;
-    // Check for duplicate last name
     if (lastnameError.textContent && lastnameError.textContent !== "Last name is required.") valid = false;
-    // Check for duplicate email
     if (emailError.textContent && emailError.textContent !== "Email is required.") valid = false;
-
     return valid;
 }
 
-// Attach validation to registration form
+
 if (document.getElementById('registerForm')) {
     document.getElementById('registerForm').addEventListener('submit', function(e) {
-        // Clear previous errors
         document.getElementById("firstnameError").textContent = "";
         document.getElementById("lastnameError").textContent = "";
         document.getElementById("emailError").textContent = "";
@@ -1174,7 +1093,7 @@ window.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// AJAX check for fullname/email existence on registration
+// AJAX check for fullname/email 
 window.addEventListener("DOMContentLoaded", function() {
     const registerName = document.getElementById("registerName");
     const registerEmail = document.getElementById("registerEmail");
@@ -1255,7 +1174,6 @@ window.addEventListener("DOMContentLoaded", function() {
 
 // === Edit Profile Modal Logic ===
 function showEditProfileModal() {
-  // Populate fields with current user info from global JS variables
   document.getElementById('editProfileFN').value = window.PHP_USER_FN || '';
   document.getElementById('editProfileLN').value = window.PHP_USER_LN || '';
   document.getElementById('editProfileEmail').value = window.PHP_USER_EMAIL || '';
@@ -1301,7 +1219,6 @@ function handleEditProfile(event) {
         document.getElementById('editProfileSuccess').textContent = result.message || 'Profile updated!';
         document.getElementById('editProfileSuccess').style.display = 'block';
         document.getElementById('editProfileError').style.display = 'none';
-        // Update global JS vars
         window.PHP_USER_FN = FN;
         window.PHP_USER_LN = LN;
         window.PHP_USER_EMAIL = email;

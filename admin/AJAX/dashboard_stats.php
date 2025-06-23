@@ -3,8 +3,7 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 date_default_timezone_set('Asia/Manila');
-// Returns dashboard stats as JSON
-require_once '../database_connections/db_connect.php'; // Fixed path
+require_once __DIR__ . '/../database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
 

@@ -1,7 +1,8 @@
 <?php
 session_start();
-require_once __DIR__ . '/../admin/database_connections/db_connect.php';
+require_once __DIR__ . '/../admin/database/db_connect.php';
 header('Content-Type: application/json');
+$db = new Database();
 
 if (!isset($_SESSION['user']['user_id'])) {
     echo json_encode(['success' => false, 'message' => 'Not authenticated.']);
@@ -9,22 +10,15 @@ if (!isset($_SESSION['user']['user_id'])) {
 }
 
 $user_id = $_SESSION['user']['user_id'];
-
-// Debug: Log session user_id
-error_log('AJAX update_user_info.php: session user_id=' . $user_id);
-
-// Debug: Log incoming JSON data
 $rawInput = file_get_contents('php://input');
 error_log('RAW JSON: ' . $rawInput);
 
-// Always use JSON body for AJAX
 $data = json_decode($rawInput, true);
 $new_FN = isset($data['user_FN']) ? trim($data['user_FN']) : '';
 $new_LN = isset($data['user_LN']) ? trim($data['user_LN']) : '';
 $new_email = isset($data['user_email']) ? trim($data['user_email']) : '';
 $new_password = isset($data['user_password']) ? $data['user_password'] : null;
 
-$db = new Database();
 $result = $db->updateUserInfo($user_id, $new_FN, $new_LN, $new_email, $new_password);
 if ($result['success']) {
     $_SESSION['user']['user_FN'] = $new_FN;

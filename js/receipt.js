@@ -1,5 +1,4 @@
 function showReceiptModal(referenceNumber) {
-  // Remove any existing modal
   let existing = document.getElementById("receiptModal");
   if (existing) existing.remove();
 

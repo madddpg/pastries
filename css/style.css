@@ -40,11 +40,11 @@ body {
 
 /* Section Management */
 .section-content {
-  display: none; /* Hide all sections by default */
+  display: none; 
 }
 
 .section-content.active {
-  display: block; /* Show the active section */
+  display: block; 
 }
 
 .hero {

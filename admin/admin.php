@@ -1,20 +1,18 @@
 <?php
-// Set timezone for correct time calculations
 if (!ini_get('date.timezone')) {
     date_default_timezone_set('Asia/Manila');
 }
-
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once __DIR__ . '/../admin/database_connections/db_connect.php';
-
-// Use the Database class for PDO
+require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
 
-// Fetch only 'picked up' orders for order history (PDO)
+// Get status filter from GET parameter for live orders
+$live_status = isset($_GET['status']) ? $_GET['status'] : '';
+$allowed_statuses = ['pending', 'preparing', 'ready'];
+
 function fetch_pickedup_orders_pdo($con) {
     $orders = [];
     $sql = "SELECT t.transac_id, t.reference_number, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name
@@ -36,7 +34,6 @@ function fetch_pickedup_orders_pdo($con) {
     return $orders;
 }
 
-// Fetch live orders for display (pending, preparing, ready) (PDO)
 function fetch_live_orders_pdo($con, $status = '') {
     $allowed_statuses = ['pending', 'preparing', 'ready'];
     if ($status !== '' && in_array($status, $allowed_statuses)) {
@@ -46,9 +43,10 @@ function fetch_live_orders_pdo($con, $status = '') {
         $where = "WHERE t.status IN ('pending','preparing','ready')";
         $params = [];
     }
-    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name
+    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name, p.pickup_time, p.special_instructions
             FROM transaction t
             LEFT JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
             $where
             ORDER BY t.created_at DESC";
     $stmt = $con->prepare($sql);
@@ -65,7 +63,6 @@ function fetch_live_orders_pdo($con, $status = '') {
     return $orders;
 }
 
-// Fetch all products with sales count (PDO)
 function fetch_products_with_sales_pdo($con) {
     $sql = "SELECT p.id, p.name, p.category, p.price, p.status, p.created_at,
                    COALESCE(SUM(ti.quantity), 0) AS sales
@@ -77,16 +74,11 @@ function fetch_products_with_sales_pdo($con) {
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-// Fetch all locations (PDO)
 function fetch_locations_pdo($con) {
     $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-
-// Get status filter from GET parameter for live orders
-$live_status = isset($_GET['status']) ? $_GET['status'] : '';
-$allowed_statuses = ['pending', 'preparing', 'ready'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -140,13 +132,13 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
               <?php endif; ?>
           </nav>
           
-          <!-- Replace Busy Mode with Logout button -->
-          <div class="sidebar-logout" style="padding: 15px 20px; border-top: 1px solid #eaedf0; margin-top: auto;">
-              <form action="logout/admin_logout.php" method="post" style="display:block;">
-                  <button type="submit" class="btn-secondary" style="width:100%;">Logout</button>
-              </form>
-          </div>
-      </aside>
+            <!-- Replace Busy Mode with Logout button -->
+            <div class="sidebar-logout" style="padding: 15px 20px; border-top: 1px solid #eaedf0; margin-top: auto;">
+                <form action="admin_logout.php" method="post" style="display:block;">
+                    <button type="submit" class="btn-secondary" style="width:100%;">Logout</button>
+                </form>
+            </div>
+        </aside>
       
       <!-- Main Content -->
       <main class="main-content">
@@ -192,7 +184,6 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
 
                       <!-- Bottom Grid -->
                       <div class="bottom-grid" style="display:flex;gap:32px;align-items:flex-start;background:transparent;">
-                          <!-- Recent Transactions -->
                           <div class="dashboard-card" style="background:#eafbe6;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:28px 32px 18px 32px;min-width:340px;flex:1;">
                               <h3 style="font-size:1.35rem;font-weight:600;margin-bottom:18px;color:#2d4a3a;letter-spacing:0.5px;font-family:'Inter',sans-serif;">Recent Customers</h3>
                               <ul class="transactions-list" style="padding:0;margin:0;list-style:none;">
@@ -231,6 +222,13 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                                   </div>
                                   <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
                                       <div id="bar-week" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
+                                  </div>
+                                  <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif;">
+                                      <span>This Month</span>
+                                      <span id="revenue-month" style="font-weight:700;color:#22a06b;">₱0.00</span>
+                                  </div>
+                                  <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
+                                      <div id="bar-month" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
                                   </div>
                               </div>
                           </div>
@@ -308,7 +306,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
 
                   <div class="live-orders-grid">
                       <?php
-                      $liveOrders = fetch_live_orders_pdo($con, $live_status);
+                      $liveOrders = $db->fetch_live_orders_pdo($live_status);
                       foreach ($liveOrders as $order): ?>
                       <div class="order-card <?= htmlspecialchars($order['status']) ?>">
                           <div class="order-header">
@@ -322,7 +320,15 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                                   <h4><?= htmlspecialchars($order['customer_name'] ?? 'Unknown') ?></h4>
                                   <p>₱<?= htmlspecialchars($order['total_amount']) ?></p>
                               </div>
-                          </div>
+                              <div class="pickup-info" style="margin: 10px 0;">
+                                <?php if (!empty($order['pickup_time'])): ?>
+                                <p><strong>Pickup Time:</strong> <?= date("g:i A", strtotime($order['pickup_time'])) ?></p>
+                                <?php endif; ?>
+                                <?php if (!empty($order['special_instructions'])): ?>
+                                <p><strong>Note:</strong> <?= htmlspecialchars($order['special_instructions']) ?></p>
+                            <?php endif; ?>
+                        </div>
+                        </div>
                           <div class="order-items">
                               <ul class="mb-0">
                               <?php foreach ($order['items'] as $item): ?>
@@ -336,24 +342,24 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                           </div>
                           <div class="order-actions">
                               <?php if ($order['status'] == 'pending'): ?>
-                                  <form method="post" action="updating/update_order_status.php" style="display:inline;">
+                                  <form method="post" action="update_order_status.php" style="display:inline;">
                                       <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
                                       <input type="hidden" name="status" value="preparing">
                                       <button type="submit" class="btn-accept">Accept</button>
                                   </form>
-                                  <form method="post" action="updating/update_order_status.php" style="display:inline;">
+                                  <form method="post" action="update_order_status.php" style="display:inline;">
                                       <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
                                       <input type="hidden" name="status" value="cancelled">
                                       <button type="submit" class="btn-reject">Reject</button>
                                   </form>
                               <?php elseif ($order['status'] == 'preparing'): ?>
-                                  <form method="post" action="updating/update_order_status.php" style="display:inline;">
+                                  <form method="post" action="update_order_status.php" style="display:inline;">
                                       <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
                                       <input type="hidden" name="status" value="ready">
                                       <button type="submit" class="btn-ready">Mark as Ready</button>
                                   </form>
                               <?php elseif ($order['status'] == 'ready'): ?>
-                                  <form method="post" action="updating/update_order_status.php" style="display:inline;">
+                                  <form method="post" action="update_order_status.php" style="display:inline;">
                                       <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
                                       <input type="hidden" name="status" value="picked up">
                                       <button type="submit" class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
@@ -395,7 +401,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                           </thead>
                           <tbody>
                               <?php
-                              $products = fetch_products_with_sales_pdo($con);
+                              $products = $db->fetch_products_with_sales_pdo();
                               foreach ($products as $product): ?>
                               <tr data-product-id="<?= htmlspecialchars($product['id']) ?>"
                                   data-product-name="<?= htmlspecialchars($product['name']) ?>"
@@ -447,7 +453,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                       <div class="modal-content" style="background:#ffffff;padding:32px 28px;border-radius:20px;max-width:440px;width:100%;position:relative;box-shadow:0 8px 24px rgba(0,0,0,0.1);">
                           <button id="closeAddProductModal" type="button" style="position:absolute;top:18px;right:18px;font-size:1.5rem;background:none;border:none;color:#555;cursor:pointer;">&times;</button>
                           <h2 style="margin-bottom:24px;font-size:1.5rem;font-weight:600;color:#222;">Add New Product</h2>
-                          <form id="addProductForm" enctype="multipart/form-data" method="post" action="adding/add_products.php">
+                          <form id="addProductForm" enctype="multipart/form-data" method="post" action="add_products.php">
                               <div class="form-group" style="margin-bottom:16px;">
                                   <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Product ID</label>
                                   <input type="text" name="id" required class="form-control" placeholder="Unique ID" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
@@ -465,11 +471,12 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                                   <input type="number" name="price" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                               </div>
                               <div class="form-group" style="margin-bottom:16px;">
-                                  <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Category</label>
-                                  <div style="display:flex;gap:8px;align-items:center;">
-                                      <select name="category" id="productCategorySelect" class="form-control" required style="flex:1;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;"></select>
-                                  <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Price</label>
-                                  <input type="number" name="price" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                  <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Type of drinks</label>
+                                  <select name="data_type" id="productDataTypeSelect" class="form-control" required style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                      <option value="" disabled selected>Select type</option>
+                                      <option value="hot">Hot</option>
+                                      <option value="cold">Cold</option>
+                                  </select>
                               </div>
                               <div class="form-group" style="margin-bottom:16px;">
                                   <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Category</label>
@@ -516,90 +523,94 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                                   <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
                                   <input type="text" name="new_category" id="editProductCategory" required class="form-control" placeholder="Category" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                               </div>
-                              <button type="submit" class="btn-primary" style="width:100%;background:#059669;color:#fff;padding:12px 0;border:none;border-radius:10px;font-size:1rem;cursor:pointer;font-weight:600;">Save Changes</button>
+                              <button type="submit" class="btn-primary" style="width:100%;background:#059669;color:#fff;padding:12px 0;border:none;border-radius:10px;font-size:0.95rem;cursor:pointer;font-weight:600;">Save Changes</button>
                           </form>
                           <div id="editProductResult" style="margin-top:14px;color:#059669;font-weight:600;font-size:0.95rem;"></div>
                       </div>
                   </div>
               </div>
 
-              <!-- Active Location Section -->
-              <div id="active-location-section" class="content-section">
-                  <h1>Active Locations</h1>
-                  <div class="page-header">
-                      <button id="showAddLocationModalBtn" class="btn-primary" style="margin: 20px;">+ Add Location</button>
-                  </div>
-                  <div class="tabs">
-                      <a href="#" class="tab active">All Locations</a>
-                  </div>
-                  <div class="table-container">
-                      <table class="products-table">
-                          <thead>
-                              <tr>
-                                  <th>Location Name</th>
-                                  <th>Status</th>
-                                  <th>Image</th>
-                                  <th>Action</th>
-                              </tr>
-                          </thead>
-                          <tbody id="locationsTableBody">
-                              <?php
-                              $locations = fetch_locations_pdo($con);
-                              foreach ($locations as $loc): ?>
-                              <tr data-location-id="<?= $loc['id'] ?>"
-                                  data-location-name="<?= htmlspecialchars($loc['name']) ?>"
-                                  data-location-status="<?= htmlspecialchars($loc['status']) ?>">
-                                  <td><?= htmlspecialchars($loc['name']) ?></td>
-                                  <td>
-                                      <span class="status-badge <?= $loc['status'] === 'open' ? 'active' : 'inactive' ?>">
-                                          <?= ucfirst($loc['status']) ?>
-                                      </span>
-                                  </td>
-                                  <td>
-                                      <?php if (!empty($loc['image'])): ?>
-                                          <img src="<?= htmlspecialchars($loc['image']) ?>" alt="Location Image" style="width:60px;height:40px;object-fit:cover;border-radius:6px;">
-                                      <?php else: ?>
-                                          <span style="color:#aaa;">No image</span>
-                                      <?php endif; ?>
-                                  </td>
-                                  <td>
-                                      <div class="action-menu" style="position: relative; display: inline-block;">
-                                          <button class="action-btn" type="button"
-                                              style="background-color: #f3f4f6; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; transition: background 0.3s;">
-                                              ⋮
-                                          </button>
-                                          <div class="dropdown-menu"
-                                              style="display: none; position: absolute; z-index: 10; top: 0; right: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; padding: 8px; display: flex; flex-direction: row; gap: 8px; width: 300px;">
-                                              
-                                              <button type="button" class="menu-item edit-location-btn"
-                                                  style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #374151; cursor: pointer;">
-                                                  Edit
-                                              </button>
-                                              
-                                              <button type="button" class="menu-item delete-location-btn"
-                                                  style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #ef4444; cursor: pointer;">
-                                                  Delete
-                                              </button>
-                                              
-                                              <button type="button" class="menu-item toggle-location-status-btn"
-                                                  style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer;">
-                                                  Set <?= $loc['status'] === 'open' ? 'Closed' : 'Open' ?>
-                                              </button>
-                                          </div>
-                                      </div>
-                                  </td>
-                              </tr>
-                              <?php endforeach; ?>
-                          </tbody>
-                      </table>
-                  </div>
+                <!-- Active Location Section -->
+                <div id="active-location-section" class="content-section">
+                    <h1>Active Locations</h1>
+                    <div class="page-header">
+                        <button id="showAddLocationModalBtn" class="btn-primary" style="margin: 20px;">+ Add Location</button>
+                    </div>
+                    <div class="tabs">
+                        <a href="#" class="tab active">All Locations</a>
+                    </div>
+                    <div class="table-container">
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>Location Name</th>
+                                    <th>Status</th>
+                                    <th>Image</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="locationsTableBody">
+                                <?php
+                                $locations = $db->fetch_locations_pdo();
+                                if (empty($locations)) {
+                                    echo '<tr><td colspan="4" style="text-align:center;">No locations found.</td></tr>';
+                                } else {
+                                    foreach ($locations as $loc): ?>
+                                    <tr data-location-id="<?= $loc['id'] ?>"
+                                        data-location-name="<?= htmlspecialchars($loc['name']) ?>"
+                                        data-location-status="<?= htmlspecialchars($loc['status']) ?>">
+                                        <td><?= htmlspecialchars($loc['name']) ?></td>
+                                        <td>
+                                            <span class="status-badge <?= $loc['status'] === 'open' ? 'active' : 'inactive' ?>">
+                                                <?= ucfirst($loc['status']) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($loc['image'])): ?>
+                                                <img src="<?= htmlspecialchars($loc['image']) ?>" alt="Location Image" style="width:60px;height:40px;object-fit:cover;border-radius:6px;">
+                                            <?php else: ?>
+                                                <span style="color:#aaa;">No image</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="action-menu" style="position: relative; display: inline-block;">
+                                                <button class="action-btn" type="button"
+                                                    style="background-color: #f3f4f6; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; transition: background 0.3s;">
+                                                    ⋮
+                                                </button>
+                                                <div class="dropdown-menu"
+                                                    style="display: none; position: absolute; z-index: 10; top: 0; right: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; padding: 8px; display: flex; flex-direction: row; gap: 8px; width: 300px;">
+                                                    
+                                                    <button type="button" class="menu-item edit-location-btn"
+                                                        style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #374151; cursor: pointer;">
+                                                        Edit
+                                                    </button>
+                                                    
+                                                    <button type="button" class="menu-item delete-location-btn"
+                                                        style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #ef4444; cursor: pointer;">
+                                                        Delete
+                                                    </button>
+                                                    
+                                                    <button type="button" class="menu-item toggle-location-status-btn"
+                                                        style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer;">
+                                                        Set <?= $loc['status'] === 'open' ? 'Closed' : 'Open' ?>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach;
+                                } ?>
+                            </tbody>
+                        </table>
+                    </div>
 
                   <!-- Add Location Modal -->
                   <div id="addLocationModal" class="modal" style="display:none;">
                       <div class="modal-content" style="background:#f9fafb;padding:36px 32px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
                           <button id="closeAddLocationModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#6b7280;">&times;</button>
                           <h2 style="margin-bottom:24px;font-size:1.4rem;color:#111827;">Add New Location</h2>
-                          <form id="addLocationForm" method="post" action="database_connections/locations.php" enctype="multipart/form-data">
+                          <form id="addLocationForm" method="post" action="locations.php" enctype="multipart/form-data">
                               <div class="form-group" style="margin-bottom:16px;">
                                   <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Location Name</label>
                                   <input type="text" name="name" required class="form-control" placeholder="Location Name" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
@@ -654,7 +665,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
               <div id="add-admin-section" class="content-section">
                   <h1 style="text-align:center;margin-bottom:24px;">Add Admin</h1>
                   <div class="table-container" style="max-width:420px;margin:auto;">
-                      <form id="addAdminForm" method="post" action="adding/add_admin.php" 
+                      <form id="addAdminForm" method="post" action="add_admin.php" 
                             style="background:#fff;padding:32px 28px;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
                           <div class="form-group" style="margin-bottom:16px;">
                               <label for="adminUsername" style="display:block;font-weight:600;margin-bottom:6px;">Username</label>
@@ -752,7 +763,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   var currentStatus = row.getAttribute('data-product-status');
                   var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
                   
-                  fetch('updating/update_product_status.php', {
+                  fetch('update_product_status.php', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                       body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
@@ -794,7 +805,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
               editForm.onsubmit = function(e) {
                   e.preventDefault();
                   const formData = new FormData(editForm);
-                  fetch('updating/update_product.php', {
+                  fetch('update_product.php', {
                       method: 'POST',
                       body: new URLSearchParams(formData)
                   }).then(() => {
@@ -818,7 +829,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
           var categoryError = document.getElementById('categoryError');
 
           function loadCategories() {
-              fetch('database_connections/categories.php')
+              fetch('categories.php')
                   .then(res => res.json())
                   .then(categories => {
                       categorySelect.innerHTML = '';
@@ -828,10 +839,11 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                           opt.textContent = cat;
                           categorySelect.appendChild(opt);
                       });
-                      var opt = document.createElement('option');
-                      opt.value = '__add_new__';
-                      opt.textContent = '+ Add new category';
-                      categorySelect.appendChild(opt);
+                      // Add the 'Add new category' option
+                      var addNewOpt = document.createElement('option');
+                      addNewOpt.value = '__add_new__';
+                      addNewOpt.textContent = '+ Add new category';
+                      categorySelect.appendChild(addNewOpt);
                   });
           }
           loadCategories();
@@ -858,7 +870,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   categoryError.textContent = 'Please enter a category name.';
                   return;
               }
-              fetch('database_connections/categories.php', {
+              fetch('categories.php', {
                   method: 'POST',
                   headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                   body: 'new_category=' + encodeURIComponent(newCat)
@@ -879,6 +891,14 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
               });
           });
 
+          // Ensure Add Product button shows the modal
+          if (showAddProductModalBtn && addProductModal) {
+              showAddProductModalBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  addProductModal.style.display = 'flex';
+              });
+          }
+          
           if (closeAddProductModal && addProductModal) {
               closeAddProductModal.addEventListener('click', function(e) {
                   e.preventDefault();
@@ -907,7 +927,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                       categorySelect.value = newCategoryInput.value.trim();
                   }
                   const formData = new FormData(addProductForm);
-                  fetch('adding/add_products.php', {
+                  fetch('add_products.php', {
                       method: 'POST',
                       body: formData
                   })
@@ -967,7 +987,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   e.preventDefault();
                   if (addLocationResult) addLocationResult.textContent = '';
                   const formData = new FormData(addLocationForm);
-                  fetch('database_connections/locations.php', {
+                  fetch('locations.php', {
                       method: 'POST',
                       body: formData
                   })
@@ -1031,7 +1051,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   if (editLocationResult) editLocationResult.textContent = '';
                   const formData = new FormData(editLocationForm);
                   formData.append('action', 'edit');
-                  fetch('database_connections/locations.php', {
+                  fetch('locations.php', {
                       method: 'POST',
                       body: formData
                   })
@@ -1060,7 +1080,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   if (!confirm('Are you sure you want to delete this location?')) return;
                   var row = btn.closest('tr');
                   var id = row.getAttribute('data-location-id');
-                  fetch('database_connections/locations.php', {
+                  fetch('locations.php', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                       body: 'action=delete&id=' + encodeURIComponent(id)
@@ -1079,7 +1099,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   var id = row.getAttribute('data-location-id');
                   var currentStatus = row.getAttribute('data-location-status');
                   var newStatus = currentStatus === 'open' ? 'closed' : 'open';
-                  fetch('database_connections/locations.php', {
+                  fetch('locations.php', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                       body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
@@ -1098,7 +1118,7 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                   e.preventDefault();
                   if (addAdminResult) addAdminResult.textContent = '';
                   const formData = new FormData(addAdminForm);
-                  fetch('adding/add_admin.php', {
+                  fetch('add_admin.php', {
                       method: 'POST',
                       body: formData
                   })
@@ -1208,11 +1228,15 @@ $allowed_statuses = ['pending', 'preparing', 'ready'];
                       if (data.success && data.data) {
                           const today = data.data.today || 0;
                           const week = data.data.week || 0;
-                          const max = Math.max(today, week, 1);
-                          document.getElementById('revenue-today').textContent = '₱' + today.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-                          document.getElementById('revenue-week').textContent = '₱' + week.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-                          document.getElementById('bar-today').style.width = Math.round((today/max)*100) + '%';
-                          document.getElementById('bar-week').style.width = Math.round((week/max)*100) + '%';
+                          const month = data.data.month || 0;
+                          document.getElementById('revenue-today').textContent = `₱${today.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                          document.getElementById('revenue-week').textContent = `₱${week.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                          document.getElementById('revenue-month').textContent = `₱${month.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                          // Bar widths (relative to month)
+                          let max = Math.max(today, week, month, 1);
+                          document.getElementById('bar-today').style.width = (today / max * 100) + '%';
+                          document.getElementById('bar-week').style.width = (week / max * 100) + '%';
+                          document.getElementById('bar-month').style.width = (month / max * 100) + '%';
                       }
                   });
           }

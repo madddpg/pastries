@@ -1,6 +1,8 @@
 <?php
-require_once __DIR__ . '/../admin/database_connections/db_connect.php';
+require_once __DIR__ . '/../admin/database/db_connect.php';
 header('Content-Type: application/json');
+
+$db = new Database();
 
 $category = isset($_GET['category']) ? strtolower(trim($_GET['category'])) : '';
 $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 3;
@@ -10,7 +12,6 @@ if (!$category || !in_array($category, ['hot', 'cold'])) {
     exit;
 }
 
-$db = new Database();
 $topProducts = $db->fetch_top_products_by_data_type($category, $limit);
 if (empty($topProducts)) {
     $topProducts = $db->fetch_recent_products_by_data_type($category, $limit);

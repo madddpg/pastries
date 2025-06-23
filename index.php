@@ -3,14 +3,11 @@ session_start();
 $isLoggedIn = isset($_SESSION['user']);
 $userFirstName = $isLoggedIn ? $_SESSION['user']['user_FN'] : '';
 
-// PDO connection
+// Connection
 $pdo = new PDO('mysql:host=localhost;dbname=ordering', 'root', '');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// Fetch product statuses for filtering
 $productStatuses = [];
 $allProducts = [];
-// Fetch only active products
 $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
 $stmt->execute();
 $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -46,10 +43,9 @@ foreach ($allProducts as $row) {
                 
                 <div class="profile-dropdown">
                     <button class="profile-btn" id="profileDropdownBtn" onclick="toggleProfileDropdown(event)">
-                        <!-- Removed profile image, show only initials or name -->
                         <span class="profile-initials">
                             <?php if ($isLoggedIn): ?>
-                                <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); // Show first initial ?>
+                                <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); ?>
                             <?php else: ?>
                                 <i class="fas fa-user"></i>
                             <?php endif; ?>
@@ -60,7 +56,7 @@ foreach ($allProducts as $row) {
                     <div class="profile-dropdown-menu" id="profileDropdownMenu">
                         <?php if ($isLoggedIn): ?>
                             <a href="#" class="dropdown-item" onclick="showEditProfileModal(); event.stopPropagation(); return false;">Edit Profile</a>
-                            <a href="validations/order_history.php" class="dropdown-item">Order History</a>
+                            <a href="order_history.php" class="dropdown-item">Order History</a>
                             <a href="#" class="dropdown-item" onclick="logout(event); return false;">Logout</a>
                         <?php else: ?>
                             <a href="#" class="dropdown-item" onclick="showLoginModal(); event.stopPropagation(); return false;">Sign In</a>
@@ -127,7 +123,6 @@ foreach ($allProducts as $row) {
         </div>
         <form class="auth-form" id="registerForm" enctype="multipart/form-data" onsubmit="handleRegister(event); return false;">
             <div class="form-group" style="text-align:center;display:none;">
-                <!-- Profile image upload removed -->
             </div>
             <div class="form-group">
                 <label>First Name</label>
@@ -206,9 +201,7 @@ foreach ($allProducts as $row) {
 
     <!-- Home Section -->
     <div id="home" class="section-content home-section">
-        <!-- Hero Section -->
         <section class="hero-section">
-            <!-- Floating Coffee Beans -->
             <div class="coffee-bean"></div>
             <div class="coffee-bean"></div>
             <div class="coffee-bean"></div>
@@ -223,15 +216,13 @@ foreach ($allProducts as $row) {
             <div class="hero-content2">
                 <h2>CUDDLES</h2>
             </div>
-
-            <!-- Coffee Image Overlay -->
             <div class="coffee-image">
                 <img src="img/cupss.png" alt="Iced Coffee">
             </div>
           
         </section>
 
-        <!-- Bottom Cards Section -->
+    
         <section class="cards-section">
             <div class="cards-grid">
                 <div class="card card-orange">
@@ -246,18 +237,10 @@ foreach ($allProducts as $row) {
         <section class="cards-section">
             <div class="cards-grid2">
                 <div class="card card-orange2 position-relative overflow-hidden">
-                    <!-- Background image -->
                     <img src="img/first.jpg" alt="Delicious Pastry" class="img-fluid w-100 h-auto">
-            
-                    <!-- Spinning circular text -->
                     <div class="circle-wrapper position-absolute top-50 start-50 translate-middle">
-                        <!-- White circle background -->
                         <div class="circle-bg"></div>
-            
-                        <!-- Center icon -->
                         <div class="center-icon">♥</div>
-            
-                        <!-- SVG spinning text -->
                         <svg viewBox="0 0 200 200" class="rotating-text">
                             <defs>
                                 <path
@@ -280,20 +263,15 @@ foreach ($allProducts as $row) {
             </div>
         </section>
 
-        <!-- Impact Stories Section -->
         <section class="impact-stories">
           <div class="section-header">
             <h2>Start Your Own Coffee Business: the Cups and Cuddles way! ☕︎</h2>
             <p>Turn your love for coffee into a thriving business today! Message our socials to know more and get started! 📨</p>
           </div>
-
-          
-            <!-- Gradient Overlays -->
             <div class="fade-left"></div>
             <div class="fade-right"></div>
 
             <div class="carousel-track">
-              <!-- Only display testimonial images, no text or names -->
               <div class="testimonial">
                 <div class="testimonial-header">
                   <img src="img/promo1.jpg" alt="Testimonial 1">
@@ -329,7 +307,6 @@ foreach ($allProducts as $row) {
                   <img src="img/book3.jpg" alt="Testimonial 7">
                 </div>
               </div>
-              <!-- Duplicated for infinite loop -->
               <div class="testimonial">
                 <div class="testimonial-header">
                   <img src="img/promo1.jpg" alt="Testimonial 1">
@@ -372,9 +349,8 @@ foreach ($allProducts as $row) {
 
   
     
-    <!-- About Section - COMPLETELY REDESIGNED -->
+    <!-- About Section -->
     <div id="about" class="section-content about-section">
-        <!-- Hero Header -->
         <section class="about-hero-header position-relative overflow-hidden">
             <div class="about-hero-overlay"></div>
             <div class="container-fluid h-100">
@@ -614,11 +590,10 @@ foreach ($allProducts as $row) {
         <h2>Roasted goodness to your doorstep!</h2>
     </div>
 
-    <!-- Top Products Section (Dynamic) -->
+    <!-- Top Products Container -->
     <div id="topProductsContainer"></div>
     <!-- End Top Products Section -->
 
-    <!-- Premium Coffee Section (Dynamic + Hardcoded) -->
     <div class="products-header">
     <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Premium Coffee</h3>
     <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
@@ -639,7 +614,6 @@ foreach ($allProducts as $row) {
             if (strpos($imgSrc, 'img/') !== 0) {
                 $imgSrc = 'img/' . ltrim($imgSrc, '/');
             }
-            // Use the data_type field from the database
             $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
             ?>
             <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
@@ -659,7 +633,6 @@ foreach ($allProducts as $row) {
             $premiumIndex++;
         }
     }
-    // 2. Show hardcoded products if they are not already shown from the database
     $premiumProducts = [
         [
             'id' => 'ameri',
@@ -677,11 +650,10 @@ foreach ($allProducts as $row) {
             'cold_desc' => 'A layered espresso drink with milk and rich caramel drizzle.',
             'hot_desc' => 'Steamed milk with espresso and a swirl of rich caramel sauce.',
         ],
-        // ...existing code for other hardcoded products...
+        
     ];
     foreach ($premiumProducts as $p) {
         if (!in_array($p['id'], $shownIds) && (!isset($productStatuses[$p['id']]) || $productStatuses[$p['id']] === 'active')) {
-            // Cold
             ?>
             <div class="product-item" data-type="cold">
                 <div class="product-image">
@@ -697,7 +669,6 @@ foreach ($allProducts as $row) {
                 </div>
             </div>
             <?php
-            // Hot
             ?>
             <div class="product-item" data-type="hot">
                 <div class="product-image">
@@ -738,7 +709,6 @@ foreach ($allProducts as $row) {
                 if (strpos($imgSrc, 'img/') !== 0) {
                     $imgSrc = 'img/' . ltrim($imgSrc, '/');
                 }
-                // Determine if this is a hot or cold product based on the id or name
                 $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
                 ?>
                 <div class="product-item" data-type="<?= $dataType ?>">
@@ -780,7 +750,6 @@ foreach ($allProducts as $row) {
                 if (strpos($imgSrc, 'img/') !== 0) {
                     $imgSrc = 'img/' . ltrim($imgSrc, '/');
                 }
-                // Determine if this is a hot or cold product based on the id or name
                 $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
                 ?>
                 <div class="product-item" data-type="<?= $dataType ?>">
@@ -822,7 +791,6 @@ foreach ($allProducts as $row) {
                 if (strpos($imgSrc, 'img/') !== 0) {
                     $imgSrc = 'img/' . ltrim($imgSrc, '/');
                 }
-                // Determine if this is a hot or cold product based on the id or name
                 $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
                 ?>
                 <div class="product-item" data-type="<?= $dataType ?>">
@@ -864,7 +832,6 @@ foreach ($allProducts as $row) {
                 if (strpos($imgSrc, 'img/') !== 0) {
                     $imgSrc = 'img/' . ltrim($imgSrc, '/');
                 }
-                // Determine if this is a hot or cold product based on the id or name
                 $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
                 ?>
                 <div class="product-item" data-type="<?= $dataType ?>">
@@ -906,7 +873,6 @@ foreach ($allProducts as $row) {
                 if (strpos($imgSrc, 'img/') !== 0) {
                     $imgSrc = 'img/' . ltrim($imgSrc, '/');
                 }
-                // Determine if this is a hot or cold product based on the id or name
                 $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
                 ?>
                 <div class="product-item" data-type="<?= $dataType ?>">
@@ -948,7 +914,6 @@ foreach ($allProducts as $row) {
 
     
     <?php
-    // Fetch all locations and their status from the database
     $pdo = new PDO('mysql:host=localhost;dbname=ordering', 'root', '');
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $locations = [];
@@ -960,12 +925,10 @@ foreach ($allProducts as $row) {
     <?php foreach ($locations as $loc): ?>
     <div class="container my-5">
         <div class="row bg-light rounded-4 shadow-sm overflow-hidden">
-            <!-- Left: Image -->
             <div class="col-md-6 p-0">
                 <img src="<?= !empty($loc['image']) ? htmlspecialchars($loc['image']) : 'img/placeholder.png' ?>"
                      alt="<?= htmlspecialchars($loc['name']) ?>" class="img-fluid h-100 w-100 object-fit-cover">
             </div>
-            <!-- Right: Info -->
             <div class="col-md-6 d-flex flex-column justify-content-center p-5">
                 <small class="text-muted">Lipa City</small>
                 <h1 class="fw-bold">Batangas</h1>
@@ -993,11 +956,10 @@ foreach ($allProducts as $row) {
     <!-- Main Content -->
     <div class="product-modal-content">
         <div class="product-modal-grid">
-            <!-- Product Image -->
+        
             <div class="product-modal-image">
                 <img id="modalProductImage" src="/placeholder.svg" alt="">
             </div>
-            <!-- Details of Producs -->
             <div class="product-modal-details">
                 <h1 id="modalProductName" class="product-modal-title"></h1>
                 <p id="modalProductPrice" class="product-modal-price"></p>
@@ -1006,7 +968,6 @@ foreach ($allProducts as $row) {
                     <h3>Product Description</h3>
                     <p id="modalProductDescription"></p>
                 </div>
-                <!-- Sizes -->
                 <div class="product-modal-sizes">
                     <h3>Size</h3>
                     <div class="size-buttons">
@@ -1014,7 +975,6 @@ foreach ($allProducts as $row) {
                         <button class="size-btn" onclick="selectSize('Supreme')">Supreme</button>
                     </div>
                 </div>
-                <!-- Add to Cart Button -->
                 <button class="product-modal-add-cart" onclick="addProductToCart()">
                     Add to Cart
                 </button>
@@ -1023,7 +983,7 @@ foreach ($allProducts as $row) {
     </div>
 </div>
 
-<!-- Floating Cart Icon -->
+<!-- Cart Icon -->
 <button class="cart-icon" onclick="openCart()">
     <i class="fas fa-shopping-cart"></i>
     <span class="cart-badge" id="cartCount">0</span>
@@ -1040,10 +1000,8 @@ foreach ($allProducts as $row) {
         </div>
         
         <div id="cartItems" class="cart-items">
-            <!-- Cart items will be populated here -->
         </div>
-        
-        <!-- Delivery Options Section -->
+
         <div id="deliveryOptions" class="delivery-options" style="display: none;">
             <h4>Pickup Details</h4>
             <div class="form-group">
@@ -1054,7 +1012,7 @@ foreach ($allProducts as $row) {
                 <label for="pickupLocation">Pickup Location</label>
                 <select id="pickupLocation" required>
                     <?php
-                    // Fetch only open locations from the database
+                    // Show Pickup Locations based from status
                     $pdo = new PDO('mysql:host=localhost;dbname=ordering', 'root', '');
                     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     $pickupLocations = [];
@@ -1067,12 +1025,12 @@ foreach ($allProducts as $row) {
                     ?>
                 </select>
             </div>
-            <div class="form-group">
+          <div class="form-group">
                 <label for="pickupTime">Pickup Time</label>
-                <input type="time" id="pickupTime" required>
-                <p style="margin-top:6px;font-size:0.95em;color:#b45309;">
-                    <strong>Note:</strong> Shop is open for pickup only from 3:00 p.m. to 9:00 p.m.
-                </p>
+                <input type="time" id="pickupTime" required min="15:00" max="20:30">
+                <p id="pickupTimeNote" style="margin-top:6px;font-size:0.95em;color:#b45309;">
+                <strong>Note:</strong> Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.
+             </p>
             </div>
             <div class="form-group">
                 <label for="specialInstructions">Special Instructions (Optional)</label>
@@ -1159,6 +1117,41 @@ window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? 
 </script>
 <script src="js/script.js"></script>
 <script src="js/receipt.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+  const pickupTimeInput = document.getElementById("pickupTime");
+  const note = document.getElementById("pickupTimeNote");
+
+  if (pickupTimeInput && note) {
+    pickupTimeInput.addEventListener("input", function () {
+      const val = this.value;
+      if (!val) {
+        note.textContent = "Note: Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.";
+        note.style.color = "#b45309";
+        this.setCustomValidity("");
+        return;
+      }
+
+      const [hour, minute] = val.split(":").map(Number);
+      const totalMins = hour * 60 + minute;
+
+      const openMins = 15 * 60;  // 3:00 PM
+      const closeMins = 20 * 60 + 30; // 8:30 PM
+
+      if (totalMins < openMins || totalMins > closeMins) {
+        note.textContent = "❌ Please select a time between 3:00 p.m. and 8:30 p.m.";
+        note.style.color = "#dc2626";
+        this.setCustomValidity("Invalid time selected.");
+      } else {
+        note.textContent = "✅ Valid time.";
+        note.style.color = "#22a06b";
+        this.setCustomValidity("");
+      }
+    });
+  }
+});
+
+</script>
 </body>
 </html>
 

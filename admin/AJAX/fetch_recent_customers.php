@@ -1,8 +1,5 @@
 <?php
-require_once __DIR__ . '/../database_connections/db_connect.php';
-// No header for JSON, this is a PHP include for server-side rendering only
-
-// Use the same connection logic as the rest of the admin dashboard
+require_once __DIR__ . '/../database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
 
@@ -18,7 +15,7 @@ function timeAgo($datetime) {
     return $dt->format('M d, Y H:i');
 }
 
-// Fetch the 5 most recent unique customers (by user_id), with their latest transaction
+//Fetch recent customers
 $recentStmt = $con->prepare("SELECT u.user_FN, u.user_LN, MAX(t.created_at) as last_transaction, t.total_amount
     FROM users u
     JOIN transaction t ON t.user_id = u.user_id
@@ -27,4 +24,4 @@ $recentStmt = $con->prepare("SELECT u.user_FN, u.user_LN, MAX(t.created_at) as l
     LIMIT 5");
 $recentStmt->execute();
 $recentCustomers = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
-// This file is now ready to be included directly in admin.php for server-side rendering.
+

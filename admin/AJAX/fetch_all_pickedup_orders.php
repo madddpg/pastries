@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../database_connections/db_connect.php';
+require_once __DIR__ . '/../database/db_connect.php';
 header('Content-Type: application/json');
 
 $db = new Database();
