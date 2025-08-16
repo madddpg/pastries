@@ -35,86 +35,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $password_hash = password_hash($password, PASSWORD_BCRYPT);
-    $stmt = $pdo->prepare("INSERT INTO users (user_FN, user_LN, user_email, user_password) VALUES (?, ?, ?, ?)");
-    $inserted = $stmt->execute([$name, $lastName, $email, $password_hash]);
+    // Store pending registration in session
+    $_SESSION['pending_registration'] = [
+        'user_FN' => $name,
+        'user_LN' => $lastName,
+        'user_email' => $email,
+        'user_password' => password_hash($password, PASSWORD_BCRYPT),
+        'created_at' => date('Y-m-d H:i:s')
+    ];
 
-    if ($inserted) {
-        // Generate OTP + session state
-        $otp = random_int(100000, 999999);
-        $_SESSION['otp'] = (string)$otp;
-        $_SESSION['mail'] = $email;
-        $_SESSION['otp_expires'] = time() + 5 * 60; // 5 minutes
-        $_SESSION['otp_attempts'] = 0;
-        unset($_SESSION['otp_locked_until']);
+    // Generate OTP + session state
+    $otp = random_int(100000, 999999);
+    $_SESSION['otp'] = (string)$otp;
+    $_SESSION['mail'] = $email;
+    $_SESSION['otp_expires'] = time() + 5 * 60; // 5 minutes
+    $_SESSION['otp_attempts'] = 0;
+    unset($_SESSION['otp_locked_until']);
 
-        // Send email via PHPMailer
-        $mail = new PHPMailer;
-        $mail->CharSet    = 'UTF-8';
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->Port       = 587;            // or 465 with 'ssl' below
-        $mail->SMTPAuth   = true;
-        $mail->SMTPSecure = 'tls';          // change to 'ssl' if using port 465
+    // Send email via PHPMailer
+    $mail = new PHPMailer;
+    $mail->CharSet    = 'UTF-8';
+    $mail->isSMTP();
+    $mail->Host       = 'smtp.gmail.com';
+    $mail->Port       = 587;
+    $mail->SMTPAuth   = true;
+    $mail->SMTPSecure = 'tls';
 
-        // Log SMTP debug to Apache error.log (keeps JSON output clean)
-        $mail->SMTPDebug   = 2; // 0=off, 2=client+server
-        $mail->Debugoutput = function ($str, $level) {
-            error_log("PHPMailer [$level]: $str");
-        };
-        $mail->Timeout = 20;
+    // Log SMTP debug to Apache error.log
+    $mail->SMTPDebug = 2;
+    $mail->Debugoutput = function ($str, $level) {
+        error_log("PHPMailer [$level]: $str");
+    };
+    $mail->Timeout = 20;
 
-        // Force TLS 1.2 (helps on older OpenSSL stacks)
-        $mail->SMTPOptions = [
-            'ssl' => [
-                'verify_peer'       => false,
-                'verify_peer_name'  => false,
-                'allow_self_signed' => true,
-                'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
-            ],
-        ];
+    // Force TLS 1.2
+    $mail->SMTPOptions = [
+        'ssl' => [
+            'verify_peer'       => false,
+            'verify_peer_name'  => false,
+            'allow_self_signed' => true,
+            'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+        ],
+    ];
 
-        // Gmail creds: use a Gmail App Password (normal password won’t work)
-        $mail->Username = 'ahmadpaguta2005@gmail.com';
-        $mail->Password = 'cupsandcuddlesph';
+    // Gmail credentials
+    $mail->Username = 'ahmadpaguta2005@gmail.com';
+    $mail->Password = 'unwr kdad ejcd rysq';
 
-        // Gmail prefers From to match authenticated user
-        $mail->setFrom($mail->Username, 'Cups & Cuddles');
-        $mail->addReplyTo('no-reply@cupscuddles.local', 'Cups & Cuddles');
+    $mail->setFrom($mail->Username, 'Cups & Cuddles');
+    $mail->addReplyTo('no-reply@cupscuddles.local', 'Cups & Cuddles');
+    $mail->addAddress($email);
 
-        // ADD recipient + content (was missing)
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            echo json_encode(['success' => false, 'message' => 'Invalid recipient email.']);
-            exit;
-        }
-        $mail->addAddress($email);
+    $mail->isHTML(true);
+    $mail->Subject = "Your verification code";
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $mail->Body    = "<p>Hi {$safeName},</p>
+                      <p>Your OTP code is <b>{$otp}</b>.</p>
+                      <p>This code expires in 5 minutes.</p>
+                      <p>If you did not request this email, please ignore it.</p>
+                      <p>See you soon!</p>
+                      <p>Regards,<br>Cups & Cuddles</p>";
+    $mail->AltBody = "Your OTP code is {$otp}. It expires in 5 minutes.";
 
-        $mail->isHTML(true);
-        $mail->Subject = "Your verification code";
-        $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-        $mail->Body    = "<p>Hi {$safeName},</p>
-                          <p>Your OTP code is <b>{$otp}</b>.</p>
-                          <p>This code expires in 5 minutes.</p>
-                          <p>Regards,<br>Cups & Cuddles</p>";
-        $mail->AltBody = "Your OTP code is {$otp}. It expires in 5 minutes.";
-
-        if (!$mail->send()) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Registration successful, but failed to send OTP.',
-                'error'   => $mail->ErrorInfo,
-            ]);
-        } else {
-            echo json_encode([
-                'success'               => true,
-                'message'               => 'Registration successful, OTP sent to your email.',
-                'pending_verification'  => true,
-                'email'                 => $email,
-                'expires_at'            => $_SESSION['otp_expires']
-            ]);
-        }
+    if (!$mail->send()) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to send verification email. Please try again later.',
+            'error'   => $mail->ErrorInfo,
+        ]);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Registration failed, please try again.']);
+        echo json_encode([
+            'success'               => true,
+            'message'               => 'Registration initiated, OTP sent to your email.',
+            'pending_verification'  => true,
+            'email'                 => $email,
+            'expires_at'            => $_SESSION['otp_expires']
+        ]);
     }
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid request method.']);

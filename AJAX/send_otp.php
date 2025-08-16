@@ -40,17 +40,26 @@ $mail->Host       = 'smtp.gmail.com';
 $mail->Port       = 587;
 $mail->SMTPAuth   = true;
 $mail->SMTPSecure = 'tls';
+
+// SMTP Debug for troubleshooting
+$mail->SMTPDebug = 2;
+$mail->Debugoutput = function ($str, $level) {
+    error_log("PHPMailer [$level]: $str");
+};
+$mail->Timeout = 20;
+
+// Consistent SMTPOptions with register.php
 $mail->SMTPOptions = [
     'ssl' => [
         'verify_peer'       => false,
         'verify_peer_name'  => false,
         'allow_self_signed' => true,
+        'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
     ],
 ];
 
-// Keep these in sync with register.php
-$mail->Username = 'ahmadpaguta2005@gmail.com'; // TODO: same as register.php
-$mail->Password = 'cupsandcuddlesph';      // TODO: same as register.php
+$mail->Username = 'ahmadpaguta2005@gmail.com';
+$mail->Password = 'unwr kdad ejcd rysq';
 
 $mail->setFrom($mail->Username, 'Cups & Cuddles');
 $mail->addReplyTo('no-reply@cupscuddles.local', 'Cups & Cuddles');
@@ -74,6 +83,6 @@ if ($mail->send()) {
     echo json_encode([
         'success' => false,
         'message' => 'Failed to send verification email. Please try again later.',
-        'error'   => $mail->ErrorInfo // helpful during testing
+        'error'   => $mail->ErrorInfo
     ]);
 }

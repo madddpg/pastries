@@ -521,6 +521,8 @@ function logout(event) {
 }
 
 
+// Modify the handleRegister function (around line 340-375)
+
 function handleRegister(event) {
   event.preventDefault();
   const name = document.getElementById("registerName").value;
@@ -529,18 +531,22 @@ function handleRegister(event) {
   const password = document.getElementById("registerPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const registerBtn = document.getElementById("registerBtn");
+  
   if (password !== confirmPassword) {
     alert("Passwords do not match!");
     return;
   }
+  
   registerBtn.classList.add("loading");
   registerBtn.disabled = true;
+  
   const formData = new FormData();
   formData.append('registerName', name);
   formData.append('registerLastName', lastName);
   formData.append('registerEmail', email);
   formData.append('registerPassword', password);
   formData.append('confirmPassword', confirmPassword);
+  
   fetch('register.php', {
     method: 'POST',
     body: formData
@@ -549,11 +555,19 @@ function handleRegister(event) {
     .then(data => {
       // If backend signals that verification is required, start OTP flow
       if (data.success && (data.requires_verification || data.pending_verification)) {
-        showNotification("Registration successful! Please verify your email.", "success");
-        // Open OTP modal and send code
+        showNotification("Verification sent! Please check your email.", "success");
+        
+        // Show OTP modal WITHOUT sending another email
         showOtpModal(data.email || email);
-        // Slight delay so modal renders before sending
-        setTimeout(() => sendOTP(data.email || email), 150);
+        
+        // REMOVE THIS LINE - it's causing the second email:
+        // setTimeout(() => sendOTP(data.email || email), 150);
+        
+        // Instead, just set up the OTP state with the data from the server
+        otpState.email = data.email || email;
+        otpState.expiresAt = data.expires_at || 0;
+        startOtpTimers();
+        
         return; // do not reload yet
       }
 
@@ -572,6 +586,8 @@ function handleRegister(event) {
       registerBtn.disabled = false;
     });
 }
+
+
 function showNotification(message, type = "success") {
   const notification = document.createElement("div");
   notification.style.cssText = `
@@ -770,7 +786,6 @@ async function sendOTP(emailParam) {
       otpState.cooldownUntil = data.cooldown ? Math.floor(Date.now()/1000) + Number(data.cooldown) : 0;
       showOtpModal(otpState.email);
       startOtpTimers();
-      showNotification(data.message || "Verification code sent.", "success");
     } else {
       showOtpModal(email);
       showNotification(data.message || "Failed to send code.", "error");
@@ -814,14 +829,25 @@ async function verifyOTP() {
     try { data = JSON.parse(dataText); } catch { data = {}; }
 
     if (data.success) {
-      showNotification(data.message || "Email verified!", "success");
-      closeOtpModal();
-      // If backend returns redirect, follow it. Else just reload.
-      if (data.redirect) {
-        window.location.href = data.redirect;
-      } else {
-        window.location.reload();
+      // Show a more prominent notification about successful verification
+      showNotification("Verification successful! Your account has been created.", "success");
+      
+      // Display verification status in the modal before closing it
+      const modalMsg = document.getElementById('otpModalMsg');
+      if (modalMsg) {
+        modalMsg.innerHTML = '<div style="color:#10B981;font-weight:bold;margin:10px 0;"><i class="fas fa-check-circle"></i> Verification successful!</div>';
       }
+      
+      // Set a short delay to allow the user to see the success message
+      setTimeout(() => {
+        closeOtpModal();
+        // If backend returns redirect, follow it. Else just reload.
+        if (data.redirect) {
+          window.location.href = data.redirect;
+        } else {
+          window.location.reload();
+        }
+      }, 1500);
     } else {
       errorEl.textContent = data.message || "Incorrect code.";
       if (typeof data.locked_for === 'number' && data.locked_for > 0) {
@@ -838,7 +864,271 @@ async function verifyOTP() {
     btn.textContent = 'Verify';
   }
 }
+// Add this function to handle order status notifications
 
+// Add these variables at the top of your file
+let previousOrderStatuses = {};
+let initialLoadComplete = false;
+
+function checkOrderStatusUpdates() {
+  if (!isLoggedIn) {
+    console.log("Not logged in, skipping check");
+    return;
+  }
+  
+  // Add random parameter to prevent caching
+  const timestamp = new Date().getTime();
+  
+  fetch(`AJAX/check_order_status.php?_=${timestamp}`, {
+    method: 'GET',
+    credentials: 'same-origin',
+    headers: {
+      'Cache-Control': 'no-cache, no-store',
+      'Pragma': 'no-cache'
+    }
+  })
+  .then(response => response.text())
+  .then(text => {
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("JSON parse error:", e);
+      throw e;
+    }
+  })
+  .then(data => {
+    // Process notifications for unnotified updates
+    if (data.status_updates && data.status_updates.length > 0) {
+      console.log(`Found ${data.status_updates.length} status updates`);
+      data.status_updates.forEach(update => {
+        showOrderStatusNotification(update);
+      });
+    } 
+    
+    // Process all recent orders
+    if (data.all_recent_orders && data.all_recent_orders.length > 0) {
+      console.log(`Found ${data.all_recent_orders.length} recent orders`);
+      
+      // Compare current statuses with previous ones
+      data.all_recent_orders.forEach(order => {
+        const refNum = order.reference_number;
+        
+        // If this isn't the first load and status has changed
+        if (initialLoadComplete && 
+            previousOrderStatuses[refNum] && 
+            previousOrderStatuses[refNum] !== order.status) {
+          
+          console.log(`Status changed for ${refNum}: ${previousOrderStatuses[refNum]} -> ${order.status}`);
+          
+          // Show notification for the changed status
+          showOrderStatusNotification(order);
+        }
+        
+        // Update stored status
+        previousOrderStatuses[refNum] = order.status;
+      });
+      
+      // Mark initial load as complete
+      if (!initialLoadComplete) {
+        initialLoadComplete = true;
+      }
+    }
+  })
+  .catch(error => {
+    console.error("Error checking order status:", error);
+  });
+}
+
+function showOrderStatusNotification(update) {
+  // Create status message based on the update
+  let icon = 'info-circle';
+  let color = '#10B981';
+  let message = '';
+  
+  switch(update.status.toLowerCase()) {
+    case 'approved':
+      icon = 'check-circle';
+      message = `Order #${update.reference_number} has been approved!`;
+      color = '#10B981'; // Green
+      break;
+    case 'ready':
+      icon = 'mug-hot';
+      message = `Order #${update.reference_number} is ready for pickup!`;
+      color = '#b45309'; // Coffee brown
+      break;
+    case 'pending':
+      icon = 'clock';
+      message = `Order #${update.reference_number} is pending approval.`;
+      color = '#3B82F6'; // Blue
+      break;
+    case 'declined':
+      icon = 'times-circle';
+      message = `Order #${update.reference_number} was declined.`;
+      color = '#DC2626'; // Red
+      break;
+    case 'completed':
+      icon = 'check-double';
+      message = `Order #${update.reference_number} has been completed. Thank you!`;
+      color = '#10B981'; // Green
+      break;
+    case 'picked up':
+      icon = 'hand-holding';
+      message = `Order #${update.reference_number} has been picked up. Thank you!`;
+      color = '#10B981'; // Green
+      break;
+    default:
+      message = `Order #${update.reference_number} status: ${update.status}`;
+  }
+
+  console.log("Showing notification:", message);
+
+  // Create notification element
+  const notification = document.createElement("div");
+  notification.className = 'order-status-notification';
+  notification.style.cssText = `
+    position: fixed;
+    top: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${color};
+    color: white;
+    padding: 18px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    animation: slideDown 0.5s ease;
+    display: flex;
+    align-items: center;
+    min-width: 300px;
+    max-width: 90%;
+    cursor: pointer;
+  `;
+  
+  notification.innerHTML = `
+    <i class="fas fa-${icon}" style="margin-right: 12px; font-size: 24px;"></i>
+    <div>
+      <div style="font-size: 16px;">${message}</div>
+      <div style="font-size: 14px; opacity: 0.9; margin-top: 4px;">
+        ${update.timestamp ? new Date(update.timestamp).toLocaleString() : ''}
+      </div>
+    </div>
+  `;
+  
+  // Add click handler to dismiss
+  notification.addEventListener('click', () => {
+    notification.style.animation = 'fadeOut 0.5s ease';
+    setTimeout(() => notification.remove(), 500);
+  });
+  
+  document.body.appendChild(notification);
+
+  // Remove after 10 seconds
+  setTimeout(() => {
+    if (document.body.contains(notification)) {
+      notification.style.animation = 'fadeOut 0.5s ease';
+      setTimeout(() => notification.remove(), 500);
+    }
+  }, 10000);
+}
+
+// Add animation styles on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Only add animation styles once
+  if (!document.getElementById('notification-animations')) {
+    const style = document.createElement('style');
+    style.id = 'notification-animations';
+    style.textContent = `
+      @keyframes slideDown {
+        from { transform: translate(-50%, -100px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+      }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Set up notification checking
+  if (isLoggedIn) {
+    console.log("Setting up order status notifications");
+    
+    // Clear any existing interval
+    if (window.statusCheckInterval) {
+      clearInterval(window.statusCheckInterval);
+    }
+    
+    // Check right away and then periodically
+    checkOrderStatusUpdates();
+    window.statusCheckInterval = setInterval(checkOrderStatusUpdates, 5000);
+  }
+});
+// Add animation styles to document
+document.addEventListener('DOMContentLoaded', function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from {
+        transform: translate(-50%, -100px);
+        opacity: 0;
+      }
+      to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Create directory for sound if needed
+  // (you'll need to add a notification.mp3 file to your project)
+  
+  // Check for updates immediately and then frequently for real-time feel
+  checkOrderStatusUpdates();
+  setInterval(checkOrderStatusUpdates, 5000); // Check every 5 seconds for more real-time feel
+});
+
+// Add animation styles to document
+document.addEventListener('DOMContentLoaded', function() {
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideDown {
+      from {
+        transform: translate(-50%, -100px);
+        opacity: 0;
+      }
+      to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Check for updates immediately and then periodically
+  checkOrderStatusUpdates();
+  setInterval(checkOrderStatusUpdates, 30000); // Check every 30 seconds
+});
 
 function loadTopProducts(category) {
     fetch('AJAX/get_top_products.php?category=' + encodeURIComponent(category))

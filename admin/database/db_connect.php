@@ -17,6 +17,9 @@ class Database {
         return $pdo;
     }
 
+    public function closecon() {
+    return true;
+}
     // Fetch all picked up orders 
     public function fetch_pickedup_orders_pdo() {
         $con = $this->opencon();
