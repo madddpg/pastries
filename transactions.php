@@ -1,8 +1,8 @@
 <?php
 header('Content-Type: application/json');
 require_once __DIR__ . '/admin/database/db_connect.php';
+$db = new Database();
 $data = json_decode(file_get_contents('php://input'), true);
-
 if (
     !$data ||
     !isset($data['user_id']) ||
@@ -10,10 +10,10 @@ if (
     !isset($data['total']) ||
     !isset($data['method'])
 ) {
-    echo json_encode(['success' => false, 'message' => 'Invalid data', 'debug' => $data]);
+    echo json_encode(['success' => false, 'message' => 'Invalid data']);
     exit;
 }
-$db = new Database();
+
 $result = $db->createTransaction(
     $data['user_id'],
     $data['items'],

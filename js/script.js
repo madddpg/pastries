@@ -186,7 +186,12 @@ function loadCart() {
   }
 }
 
+function sendOTP(){
+  const email = document.getElementById("registerEmail");
+  const otp = document.getElementById("otp");
 
+
+}
 function saveCart() {
   const key = getCartKey();
   localStorage.setItem(key, JSON.stringify(cart));
@@ -488,6 +493,25 @@ function handleLogin(event) {
 
 
 
+// === Testimonial Image Modal Logic ===
+window.openTestimonialModal = function(imgElem) {
+  var modal = document.getElementById('testimonialImageModal');
+  var modalImg = document.getElementById('testimonialModalImg');
+  if (modal && modalImg && imgElem) {
+    modalImg.src = imgElem.src;
+    modalImg.alt = imgElem.alt || 'Testimonial';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+window.closeTestimonialModal = function() {
+  var modal = document.getElementById('testimonialImageModal');
+  if (modal) {
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+  }
+}
 function logout(event) {
   if (event) event.stopPropagation();
   fetch("logout.php", { method: "POST" })
@@ -523,6 +547,16 @@ function handleRegister(event) {
   })
     .then(response => response.json())
     .then(data => {
+      // If backend signals that verification is required, start OTP flow
+      if (data.success && (data.requires_verification || data.pending_verification)) {
+        showNotification("Registration successful! Please verify your email.", "success");
+        // Open OTP modal and send code
+        showOtpModal(data.email || email);
+        // Slight delay so modal renders before sending
+        setTimeout(() => sendOTP(data.email || email), 150);
+        return; // do not reload yet
+      }
+
       if (data.success) {
         showNotification("Registration successful! You can now log in.", "success");
         setTimeout(() => window.location.reload(), 1500);
@@ -538,7 +572,6 @@ function handleRegister(event) {
       registerBtn.disabled = false;
     });
 }
-
 function showNotification(message, type = "success") {
   const notification = document.createElement("div");
   notification.style.cssText = `
@@ -565,10 +598,13 @@ function filterDrinks(type) {
   lastDrinkType = type;
   document.getElementById("hotDrinksBtn").classList.remove("active");
   document.getElementById("coldDrinksBtn").classList.remove("active");
+   document.getElementById("pastriesBtn").classList.remove("active");
   if (type === "hot") {
     document.getElementById("hotDrinksBtn").classList.add("active");
-  } else {
+  } else if (type === "cold") {
     document.getElementById("coldDrinksBtn").classList.add("active");
+  } else {
+    document.getElementById("pastriesBtn").classList.add("active");
   }
 
   document.querySelectorAll('.product-item').forEach(item => {
@@ -599,6 +635,208 @@ window.filterDrinks = function(type) {
     });
     document.getElementById('hotDrinksBtn').classList.toggle('active', type === 'hot');
     document.getElementById('coldDrinksBtn').classList.toggle('active', type === 'cold');
+    document.getElementById('pastriesBtn').classList.toggle('active', type === 'pastries');
+}
+let otpState = {
+  email: null,
+  expiresAt: 0,
+  cooldownUntil: 0,
+  countdownTimer: null,
+  cooldownTimer: null
+};
+
+function getCsrfToken() {
+  // Prefer meta tag if present, else a global set by PHP
+  const meta = document.querySelector('meta[name="csrf_token"]');
+  if (meta && meta.content) return meta.content;
+  if (typeof window.PHP_CSRF_TOKEN !== 'undefined') return window.PHP_CSRF_TOKEN;
+  return ''; // backend should ignore if not required
+}
+
+function showOtpModal(email) {
+  otpState.email = email || (document.getElementById("registerEmail")?.value?.trim() || null);
+
+  let modal = document.getElementById("otpModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "otpModal";
+    modal.style.cssText = `
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.2); z-index: 4000;`;
+    modal.innerHTML = `
+      <div style="background:#fffbe9; border-radius:16px; padding:24px; width: 360px; box-shadow:0 10px 30px rgba(0,0,0,.12);">
+        <h3 style="margin:0 0 6px; color:#2d4a3a;">Verify your email</h3>
+        <div id="otpModalMsg" class="muted" style="margin-bottom:12px;color:#374151;">
+          We sent a 6-digit code to <b id="otpModalEmail"></b>.
+        </div>
+        <label style="font-weight:600;">Enter code</label>
+        <input id="otpInput" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+               style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #e5e7eb;margin-top:6px;"
+               placeholder="e.g. 123456" />
+        <div id="otpError" style="color:#b00020;min-height:20px;margin-top:6px;"></div>
+        <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <div class="muted" id="otpCountdown" style="color:#6b7280;font-size:0.95em;"></div>
+          <button id="resendOtpBtn" class="btn btn-link" style="background:none;border:none;color:#b45309;cursor:pointer;">Resend</button>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+          <button id="closeOtpBtn" style="padding:10px 14px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;">Cancel</button>
+          <button id="verifyOtpBtn" style="padding:10px 14px;border-radius:10px;border:none;background:#10B981;color:#fff;font-weight:700;">Verify</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeOtpModal();
+    });
+    modal.querySelector('#closeOtpBtn').addEventListener('click', closeOtpModal);
+    modal.querySelector('#verifyOtpBtn').addEventListener('click', verifyOTP);
+    modal.querySelector('#resendOtpBtn').addEventListener('click', resendOTP);
+    modal.querySelector('#otpInput').addEventListener('keyup', (e) => {
+      if (e.key === 'Enter') verifyOTP();
+    });
+  }
+
+  modal.querySelector('#otpModalEmail').textContent = otpState.email || 'your email';
+  modal.querySelector('#otpError').textContent = '';
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOtpModal() {
+  const modal = document.getElementById("otpModal");
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+  if (otpState.countdownTimer) clearInterval(otpState.countdownTimer);
+  if (otpState.cooldownTimer) clearInterval(otpState.cooldownTimer);
+}
+
+function updateOtpCountdown() {
+  const el = document.getElementById('otpCountdown');
+  if (!el) return;
+  const now = Math.floor(Date.now() / 1000);
+
+  // Expiry text
+  if (otpState.expiresAt && now < otpState.expiresAt) {
+    const remain = otpState.expiresAt - now;
+    const m = Math.floor(remain / 60);
+    const s = remain % 60;
+    el.textContent = `Code expires in ${m}:${String(s).padStart(2, '0')}`;
+  } else if (otpState.expiresAt) {
+    el.textContent = 'Code expired. Please resend.';
+  } else {
+    el.textContent = '';
+  }
+
+  // Cooldown for resend button
+  const resendBtn = document.getElementById('resendOtpBtn');
+  if (resendBtn) {
+    if (otpState.cooldownUntil && now < otpState.cooldownUntil) {
+      const cr = otpState.cooldownUntil - now;
+      resendBtn.disabled = true;
+      resendBtn.textContent = `Resend (${cr}s)`;
+    } else {
+      resendBtn.disabled = false;
+      resendBtn.textContent = 'Resend';
+    }
+  }
+}
+
+function startOtpTimers() {
+  if (otpState.countdownTimer) clearInterval(otpState.countdownTimer);
+  if (otpState.cooldownTimer) clearInterval(otpState.cooldownTimer);
+  updateOtpCountdown();
+  otpState.countdownTimer = setInterval(updateOtpCountdown, 1000);
+  otpState.cooldownTimer = otpState.countdownTimer; // same cadence
+}
+
+async function sendOTP(emailParam) {
+  const email = (emailParam || document.getElementById("registerEmail")?.value || '').trim();
+  if (!email) {
+    showNotification("Please enter your email first.", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch('AJAX/send_otp.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+      credentials: 'same-origin',
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.success) {
+      otpState.email = data.email || email;
+      otpState.expiresAt = data.expires_at || 0;       // unix seconds
+      otpState.cooldownUntil = data.cooldown ? Math.floor(Date.now()/1000) + Number(data.cooldown) : 0;
+      showOtpModal(otpState.email);
+      startOtpTimers();
+      showNotification(data.message || "Verification code sent.", "success");
+    } else {
+      showOtpModal(email);
+      showNotification(data.message || "Failed to send code.", "error");
+    }
+  } catch {
+    showOtpModal(email);
+    showNotification("Network error while sending code.", "error");
+  }
+}
+
+async function resendOTP(e) {
+  if (e) e.preventDefault();
+  const now = Math.floor(Date.now() / 1000);
+  if (otpState.cooldownUntil && now < otpState.cooldownUntil) return;
+
+  await sendOTP(otpState.email);
+}
+
+async function verifyOTP() {
+  const input = document.getElementById('otpInput');
+  const errorEl = document.getElementById('otpError');
+  const code = (input?.value || '').replace(/\D+/g, '');
+  if (!code || code.length < 4) {
+    errorEl.textContent = "Enter a valid code.";
+    return;
+  }
+
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+
+  try {
+    const res = await fetch('AJAX/verify_otp.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+      credentials: 'same-origin',
+      body: JSON.stringify({ otp: code })
+    });
+    const dataText = await res.text();
+    let data;
+    try { data = JSON.parse(dataText); } catch { data = {}; }
+
+    if (data.success) {
+      showNotification(data.message || "Email verified!", "success");
+      closeOtpModal();
+      // If backend returns redirect, follow it. Else just reload.
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      } else {
+        window.location.reload();
+      }
+    } else {
+      errorEl.textContent = data.message || "Incorrect code.";
+      if (typeof data.locked_for === 'number' && data.locked_for > 0) {
+        showNotification(`Too many attempts. Try again in ${Math.ceil(data.locked_for/60)} min.`, "error");
+      }
+      if (typeof data.expires_at === 'number') {
+        otpState.expiresAt = data.expires_at;
+      }
+    }
+  } catch {
+    errorEl.textContent = "Network error. Please try again.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify';
+  }
 }
 
 

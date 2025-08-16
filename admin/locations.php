@@ -1,7 +1,8 @@
 <?php
 header('Content-Type: application/json');
-require_once __DIR__ . '/database/db_connect.php';
 
+session_start();
+require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $pdo = $db->opencon();
 
@@ -11,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $name = $_POST['name'];
         $status = isset($_POST['status']) ? $_POST['status'] : 'open';
         $imagePath = '';
+        $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
 
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = realpath(__DIR__ . '/../img') . '/'; // Absolute path to /img/
@@ -22,8 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $stmt = $pdo->prepare("INSERT INTO locations (name, status, image) VALUES (?, ?, ?)");
-        if ($stmt->execute([$name, $status, $imagePath])) {
+        if ($admin_id === null) {
+            echo json_encode(['success' => false, 'message' => 'Admin not logged in.']);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO locations (name, status, image, admin_id) VALUES (?, ?, ?, ?)");
+        if ($stmt->execute([$name, $status, $imagePath, $admin_id])) {
             echo json_encode(['success' => true, 'message' => 'Location added successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error: Could not add location.']);

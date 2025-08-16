@@ -88,7 +88,7 @@ body {
   z-index: 2000;
   display: flex;
   justify-content: center;
-  pointer-events: none;
+  /* pointer-events: none; */
   padding: 20px 0;
 }
 .header.shrink {
@@ -861,7 +861,7 @@ body {
   left: -1rem;
   width: 100%;
   height: 100%;
-  background: var(--emerald-200);
+background: #406760;
   border-radius: 1.5rem;
   z-index: -1;
 }
@@ -869,6 +869,16 @@ body {
 .about-main-image {
   position: relative;
   z-index: 1;
+}
+
+.filter-btn.active {
+    background-color: #40534b;
+    color: #fff;
+    border-color: #40534b;
+}
+.product-item[data-type="pastries"] {
+    /* Optional: add a unique border or background for pastries */
+    border: 2px solid #f97316;
 }
 
 .about-floating-badge {
@@ -1063,6 +1073,7 @@ body {
 }
 
 .about-member-image-container {
+  pointer-events: auto;
   position: relative;
   margin-bottom: 1.5rem;
   display: flex;
@@ -1090,6 +1101,7 @@ body {
 }
 
 .about-member-image {
+  pointer-events: auto;
   position: relative;
   width: 11.5rem;
   height: 11.5rem;
@@ -2854,5 +2866,13 @@ social-icons,
 }
 #pickupLocation:focus, select[name="pickupLocation"]:focus {
     border-color: #40534b;
+}
+
+/* Testimonial Modal Font Style */
+.testimonial-image-modal, .testimonial-image-modal * {
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 1.1rem;
+  color: var(--dark-text);
+  font-weight: 500;
 }
 

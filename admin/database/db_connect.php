@@ -73,7 +73,7 @@ class Database {
     // Fetch all products with sales count 
     public function fetch_products_with_sales_pdo() {
         $con = $this->opencon();
-        $sql = "SELECT p.id, p.name, p.category, p.price, p.status, p.created_at,
+        $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON p.id = ti.product_id
@@ -155,7 +155,7 @@ class Database {
 
     public function fetch_products_with_sales() {
         $con = $this->opencon();
-        $sql = "SELECT p.id, p.name, p.category, p.price, p.status, p.created_at,
+        $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON p.id = ti.product_id
@@ -434,7 +434,7 @@ class Database {
                 JOIN transaction t ON ti.transaction_id = t.transac_id
                 WHERE p.status = 'active' AND t.status != 'cancelled'
                   AND p.name != '__placeholder__'
-                  AND (LOWER(p.category) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.id) LIKE ?)
+                  AND (LOWER(p.category_id) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.id) LIKE ?)
                 GROUP BY ti.product_id
                 ORDER BY sales_count DESC
                 LIMIT $limit";
@@ -451,7 +451,7 @@ class Database {
         $sql = "SELECT id as product_id, name, image, description, 0 as sales_count
                 FROM products
                 WHERE status = 'active' AND name != '__placeholder__'
-                  AND (LOWER(category) LIKE ? OR LOWER(name) LIKE ? OR LOWER(id) LIKE ?)
+                  AND (LOWER(category_id) LIKE ? OR LOWER(name) LIKE ? OR LOWER(id) LIKE ?)
                 ORDER BY id DESC
                 LIMIT $limit";
         $like = '%' . strtolower($category) . '%';
@@ -494,7 +494,7 @@ class Database {
 
     public function getCategories() {
         $con = $this->opencon();
-        $stmt = $con->prepare("SELECT DISTINCT category FROM products WHERE name != '__placeholder__' ORDER BY category ASC");
+        $stmt = $con->prepare("SELECT DISTINCT category_id FROM products WHERE name != '__placeholder__' ORDER BY category_id ASC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
