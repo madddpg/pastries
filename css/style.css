@@ -870,17 +870,101 @@ background: #406760;
   position: relative;
   z-index: 1;
 }
-
-.filter-btn.active {
-    background-color: #40534b;
-    color: #fff;
-    border-color: #40534b;
-}
-.product-item[data-type="pastries"] {
-    /* Optional: add a unique border or background for pastries */
-    border: 2px solid #f97316;
+/* ...existing code... */
+.pastries-section {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
+.pastries-section .product-list,
+.product-list.pastries-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+  justify-content: center;    /* center the grid */
+  gap: 24px;
+  padding: 0 12px;
+}
+
+/* Let grid control the card size */
+.pastries-section .product-item,
+.product-list.pastries-section .product-item {
+  width: auto;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+/* ...existing code... */
+
+/* Pastries section container centered */
+.pastries-section {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Center the pastries grid */
+.pastries-section .product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+  justify-content: center;
+  gap: 24px;
+  padding: 0 12px;
+}
+
+/* Card shell to match drink cards */
+.pastries-section .product-item {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.pastries-section .product-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+}
+
+/* Image well – same look as drink cards */
+.pastries-section .product-image {
+  margin: 24px;                 /* same inner spacing as drink cards */
+  border-radius: 12px;
+  background: #2d4a3a;          /* dark green well */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;          /* same proportions as drink cards */
+  overflow: hidden;
+}
+
+/* Center image visually like the cup cards */
+.pastries-section .product-image img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;          /* keep full pastry visible */
+  display: block;
+}
+
+/* Text/content spacing */
+.pastries-section .product-info { padding: 0 18px 18px; }
+.pastries-section .badge.bg-success { background-color: #2d4a3a !important; }
+.pastries-section .view-btn {
+  background:#0f2a22;
+  color:#f3ebd3;
+  border:0;
+  border-radius:999px;
+  padding:10px 18px;
+  font-weight:700;
+}
+/* ...existing code... */
 .about-floating-badge {
   position: absolute;
   bottom: -1rem; /* Adjust position as needed */
@@ -1123,6 +1207,116 @@ background: #406760;
 
 #showTermsBtn { white-space: nowrap; }
 label[for="acceptTerms"] { white-space: nowrap; }
+
+
+
+@media (max-width: 1200px) {
+  .hero-content h1 { font-size: 6rem; }
+  .hero-content h3 { font-size: 4.5rem; }
+  .coffee-image { width: 60vw; height: auto; transform: translate(-50%, -70%); }
+  .products-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .product-image { height: 220px; }
+  .footer-brand-text h1 { font-size: 6rem; }
+}
+
+/* Portrait tablets */
+@media (max-width: 992px) {
+  .header-content { width: 94%; padding: 10px 16px; }
+  .hero-section { min-height: 80vh; }
+  .hero-content { gap: 12px; }
+  .hero-content h1 { font-size: 4.5rem; }
+  .hero-content h3 { font-size: 3rem; }
+  .coffee-image { width: 70vw; transform: translate(-50%, -70%); }
+  .product-modal-grid { grid-template-columns: 1fr; gap: 32px; }
+  .product-modal-image img { max-width: 260px; }
+  .product-item { width: 280px; margin: 12px; }
+  .product-image { height: 200px; }
+  .impact-stories { padding: 40px 0; }
+  .footer-slogan h1 { font-size: 110px; }
+  .footer-slogan h2 { font-size: 95px; }
+  .footer-slogan h3 { font-size: 70px; }
+}
+
+/* Phones & the requested 780 width breakpoint */
+@media (max-width: 780px) {
+  /* Header */
+  .header { padding: 12px 0; }
+  .header-content { width: 94%; height: 56px; padding: 8px 14px; }
+  .logo { font-size: 1.1rem; }
+  .nav-menu { display: none; }
+  .hamburger-menu { display: block; }
+
+  /* Hero */
+  .hero-section { min-height: 70vh; margin: 12px; border-radius: 24px; }
+  .hero-content { flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+  .hero-content h1 { font-size: 3rem; }
+  .hero-content h3 { font-size: 2rem; }
+  .hero-content2 h2 { font-size: 3.2rem; }
+  .coffee-image { width: 82vw; height: auto; top: 78%; transform: translate(-50%, -78%); }
+
+  /* Cards/Products */
+  .cards-grid,
+  .cards-grid2 { grid-template-columns: 1fr; gap: 16px; }
+  .card-orange, .card-orange2, .card-green, .card-green2 { height: 260px; }
+  .product-list { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 10px; }
+  .product-item { width: 100%; margin: 0; border-radius: 16px; }
+  .product-image { height: 180px; }
+  .product-info { padding: 16px; }
+  .price { font-size: 1.2rem; }
+  .view-btn, .add-btn { padding: 8px 14px; }
+
+  /* Pastries grid already uses grid; tighten spacing */
+  .pastries-section .product-list { grid-template-columns: 1fr; gap: 16px; padding: 10px; }
+  .pastries-section .product-image { margin: 14px; }
+
+  /* Product modal on small screens */
+  .product-modal { top: 0; left: 0; position: fixed; width: 100vw; height: 100vh; overflow-y: auto; border-radius: 0; }
+  .product-modal-content { padding: 18px; }
+  .product-modal-image { padding: 16px; }
+  .product-modal-title { font-size: 1.8rem; }
+  .product-modal-price { font-size: 1.4rem; margin-bottom: 18px; }
+
+  /* Cart */
+  .cart-content { max-width: 95vw; padding: 18px; }
+  .cart-icon { width: 54px; height: 54px; right: 18px; bottom: 18px; }
+
+  /* Testimonials */
+  .testimonial { width: 110px; height: 110px; margin: 0 8px; }
+  .carousel-container { max-width: 96vw; }
+
+  /* Locations card */
+  #locations .container .row > .col-md-6.p-0 img {
+    max-height: 240px;
+    border-radius: 14px;
+  }
+
+  /* Footer */
+  .main-footer { height: auto; padding: 40px 0 28px; }
+  .footer-content-grid { flex-direction: column; gap: 18px; }
+  .footer-slogan { position: static; transform: none; gap: 10px; margin-top: 14px; }
+  .footer-slogan h1 { font-size: 64px; }
+  .footer-slogan h2 { font-size: 56px; }
+  .footer-slogan h3 { font-size: 38px; }
+  .footer-brand-text h1 { font-size: 3rem; }
+  .footer-social, .footer-deliver { margin-left: 0; }
+}
+
+
+
+/* Optional: show nav when toggled via JS */
+.nav-menu.mobile-open {
+  display: flex !important;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 3001;
+}
 
 /* Responsive adjustments for team circles and bubbles */
 @media (max-width: 900px) {

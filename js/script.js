@@ -430,6 +430,17 @@ function switchToLogin() {
   document.getElementById("loginModal").classList.add("active");
 }
 
+if (typeof window.PHP_IS_LOGGED_IN !== 'undefined') {
+  isLoggedIn = !!window.PHP_IS_LOGGED_IN;
+}
+
+function initOrderStatusPolling() {
+  if (!isLoggedIn) return;
+  if (window.statusCheckInterval) return;
+  checkOrderStatusUpdates(); // run once immediately
+  window.statusCheckInterval = setInterval(checkOrderStatusUpdates, 5000);
+}
+
 function handleLogin(event) {
     event.preventDefault();
     var user_email = document.getElementById('loginEmail').value;
@@ -450,7 +461,7 @@ function handleLogin(event) {
         credentials: 'same-origin' 
     })
     .then(res => res.json())
-    .then(data => {
+   .then(data => {
         loginBtn.disabled = false;
         loginBtn.classList.remove("loading");
         if (data.success) {
@@ -504,6 +515,7 @@ window.openTestimonialModal = function(imgElem) {
     document.body.style.overflow = 'hidden';
   }
 }
+
 
 window.closeTestimonialModal = function() {
   var modal = document.getElementById('testimonialImageModal');
@@ -1162,12 +1174,6 @@ function loadTopProducts(category) {
         });
 }
 
-
-function handleViewProduct(id, name, price, description, image) {
-  openProductModal(id, name, price, description, image);
-}
-
-
 document.addEventListener("click", (event) => {
   const cartModal = document.getElementById("cartModal");
   const loginModal = document.getElementById("loginModal");
@@ -1263,167 +1269,147 @@ window.addEventListener("scroll", () => {
 });
 
 
-function handleViewProduct(id, name, price, description, image) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  currentProduct = { id, name, price, description, image };
+// ...existing code...
 
+// Replace BOTH existing handleViewProduct definitions with this single version
+function handleViewProduct(id, name, price, description, image, dataType = 'cold', variants = null) {
+  if (!isLoggedIn) { showLoginModal(); return; }
 
-  let grandePrice = price;
-  let supremePrice = price;
-  if (
-    id.startsWith("ameri") ||
-    id.startsWith("caramel-macchiato") ||
-    id.startsWith("spanish-latte") ||
-    id.startsWith("vanilla-latte") ||
-    id.startsWith("mocha") ||
-    id.startsWith("white") ||
-    id.startsWith("salted-caramel")
-  ) {
-    grandePrice = 120;
-    supremePrice = 150;
-  }
-  // Specialty Coffee
-  else if (
-    id.startsWith("ube") ||
-    id.startsWith("honey") ||
-    id.startsWith("dolce") ||
-    id.startsWith("cacao") ||
-    id.startsWith("cafe-con-leche") ||
-    id.startsWith("sea-salt-mocha") ||
-    id.startsWith("creamy-pistachio-latte") ||
-    id.startsWith("peppermint-mocha")
-  ) {
-    grandePrice = 150;
-    supremePrice = 180;
-  }
-  // Chocolate Overload
-  else if (
-    id.startsWith("toblerone-kick") ||
-    id.startsWith("kisses") ||
-    id.startsWith("oreo") ||
-    id.startsWith("kitkat-break") ||
-    id.startsWith("mms-burst")
-  ) {
-    grandePrice = 150;
-    supremePrice = 180;
-  }
-  // Matcha Series
-  else if (
-    id.startsWith("matcha-latte") ||
-    id.startsWith("white-choco-matcha") ||
-    id.startsWith("berry-matcha") ||
-    id.startsWith("dirty-matcha")
-  ) {
-    grandePrice = 160;
-    supremePrice = 190;
-  }
-  // Milk Based
-  else if (
-    id.startsWith("strawberry-cloud") ||
-    id.startsWith("minty-choco") ||
-    id.startsWith("white-chocolate")
-  ) {
-    grandePrice = 99;
-    supremePrice = 120;
-  }
-  // All Time Fave
-  else if (
-    id.startsWith("milo-dinosaur") ||
-    id.startsWith("ube-cloud")
-  ) {
-    grandePrice = 99;
-    supremePrice = 120;
-  }
-  // Default fallback
-  else {
-    grandePrice = price;
-    supremePrice = price;
-  }
+  const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
+  const sizeButtons = document.querySelector(".size-buttons");
 
-  // Set currentProduct.price based on selectedSize
-  currentProduct.price = selectedSize === "Grande" ? grandePrice : supremePrice;
+  // Default for drinks
+  let grandePrice = 140, supremePrice = 170;
+  if (dataType === 'hot') { grandePrice = 120; supremePrice = 150; }
 
-  // Show only the price for the selected size
-  let priceText = "";
-  if (selectedSize === "Grande") {
-    priceText = `Php ${grandePrice} (Grande)`;
+  // Build product object
+  currentProduct = { id, name, description, image, dataType, price };
+
+  // Build size/options buttons
+  if (dataType === 'pastries') {
+    // Ensure variants are present
+    const v = Array.isArray(variants) && variants.length ? variants : [{label:'Standard', price: price || 0}];
+    currentProduct.variants = v.slice();
+    selectedSize = v[0].label;
+    currentProduct.price = v[0].price;
+
+    // Title + buttons for pastry options
+    if (sizeTitleEl) sizeTitleEl.textContent = 'Options';
+    if (sizeButtons) {
+      sizeButtons.innerHTML = v.map((opt, i) =>
+        `<button class="size-btn ${i===0?'active':''}" data-label="${opt.label}">${opt.label}</button>`
+      ).join('');
+      sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+        btn.onclick = () => selectSize(btn.dataset.label);
+      });
+    }
   } else {
-    priceText = `Php ${supremePrice} (Supreme)`;
+    // Drinks: restore default two buttons
+    currentProduct.grandePrice = grandePrice;
+    currentProduct.supremePrice = supremePrice;
+    selectedSize = "Grande";
+    currentProduct.price = grandePrice;
+
+    if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
+    if (sizeButtons) {
+      sizeButtons.innerHTML = `
+        <button class="size-btn active">Grande</button>
+        <button class="size-btn">Supreme</button>
+      `;
+      sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+        const text = btn.textContent.trim();
+        btn.onclick = () => selectSize(text);
+      });
+    }
   }
-  document.getElementById("modalProductName").textContent = name
-  document.getElementById("modalProductPrice").textContent = priceText
-  document.getElementById("modalProductDescription").textContent = description
-  document.getElementById("modalProductImage").src = image
-  document.getElementById("modalProductImage").alt = name
 
-  // Reset size selection and set click events for both buttons
-  document.querySelectorAll(".size-btn").forEach((btn) => {
-    btn.classList.remove("active");
-    if (btn.textContent.trim() === selectedSize) btn.classList.add("active");
-    btn.onclick = function () {
-      selectSize(btn.textContent.trim(), grandePrice, supremePrice, name);
-    };
-  });
+  // Populate modal UI
+  document.getElementById("modalProductName").textContent = name;
+  document.getElementById("modalProductDescription").textContent = description;
+  const imgEl = document.getElementById("modalProductImage");
+  if (imgEl) { imgEl.src = image; imgEl.alt = name; }
 
- 
-  const modal = document.getElementById("productModal");
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-  modal.style.position = "fixed";
-  modal.style.top = "0";
-  modal.style.left = "0";
-  modal.style.width = "100vw";
-  modal.style.height = "100vh";
-  modal.style.background = "rgba(0,0,0,0.15)";
-  modal.style.zIndex = "3000";
-  modal.classList.add("active");
-  document.body.style.overflow = "hidden";
+  const priceText = (dataType === 'pastries')
+    ? `Php ${currentProduct.price} (${selectedSize})`
+    : `Php ${currentProduct.price} (Grande)`;
+  document.getElementById("modalProductPrice").textContent = priceText;
 
-
-
-
-  window.scrollTo({ top: 0, behavior: "auto" });
-  let pickupForm = document.getElementById("pickupFormModal");
-  if (pickupForm) pickupForm.remove();
+  // Bind Add to Cart cleanly
   const detailsSection = document.querySelector(".product-modal-details");
-  const addBtn = detailsSection.querySelector(".product-modal-add-cart");
+  const addBtn = detailsSection ? detailsSection.querySelector(".product-modal-add-cart") : null;
   if (addBtn) {
-    
     const newBtn = addBtn.cloneNode(true);
     addBtn.parentNode.replaceChild(newBtn, addBtn);
-    detailsSection.appendChild(newBtn);
-    newBtn.onclick = function () {
-      addProductToCart();
-      modal.classList.remove("active");
-      modal.style.display = "none";
-      document.body.style.overflow = "auto";
-    };
+    newBtn.onclick = function () { addProductToCart(); closeProductModal(); };
+  }
+
+  // Open modal
+  const modal = document.getElementById("productModal");
+  if (modal) {
+    modal.classList.add("active");
+    modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+    modal.style.position = "fixed";
+    modal.style.top = "0";
+    modal.style.left = "0";
+    modal.style.width = "100vw";
+    modal.style.height = "100vh";
+    modal.style.background = "rgba(0,0,0,0.15)";
+    modal.style.zIndex = "3000";
+    document.body.style.overflow = "hidden";
+    const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
+    if (yellowCloseBtn) yellowCloseBtn.onclick = (e) => { e.stopPropagation(); closeProductModal(); };
   }
 }
 
-// Update price when size is changed
-function selectSize(size, grandePrice, supremePrice, name) {
+// Replace selectSize with pastry-aware version
+function selectSize(size) {
   selectedSize = size;
+
+  // Update UI highlight
+  document.querySelectorAll(".size-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.textContent.trim() === size);
+  });
+
+  if (!currentProduct) return;
+
+  if (currentProduct.dataType === 'pastries' && Array.isArray(currentProduct.variants)) {
+    const chosen = currentProduct.variants.find(v => v.label === size) || currentProduct.variants[0];
+    currentProduct.price = chosen.price;
+    document.getElementById("modalProductPrice").textContent = `Php ${chosen.price} (${chosen.label})`;
+  } else {
+    if (size === "Grande") {
+      currentProduct.price = currentProduct.grandePrice || currentProduct.price;
+      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.grandePrice || currentProduct.price} (Grande)`;
+    } else {
+      currentProduct.price = currentProduct.supremePrice || (currentProduct.price + 30);
+      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.supremePrice || (currentProduct.price + 30)} (Supreme)`;
+    }
+  }
+}
+
+// Replace BOTH selectSize implementations with this single version
+function selectSize(size) {
+  selectedSize = size;
+
+  // Update UI highlight
   document.querySelectorAll(".size-btn").forEach((btn) => {
     btn.classList.remove("active");
     if (btn.textContent.trim() === size) btn.classList.add("active");
   });
-  // Update price and modal content for the selected size, keep name
+
+  // Update price text based on size without reopening the modal
   if (currentProduct) {
-    let price = size === "Grande" ? (grandePrice || currentProduct.price) : (supremePrice || currentProduct.price);
-    currentProduct.price = price;
-    let priceText = size === "Grande"
-      ? `Php ${grandePrice || currentProduct.price} (Grande)`
-      : `Php ${supremePrice || currentProduct.price} (Supreme)`;
-    document.getElementById("modalProductPrice").textContent = priceText;
-    document.getElementById("modalProductName").textContent = name || currentProduct.name;
+    if (size === "Grande") {
+      currentProduct.price = currentProduct.grandePrice || currentProduct.price;
+      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.grandePrice || currentProduct.price} (Grande)`;
+    } else if (size === "Supreme") {
+      currentProduct.price = currentProduct.supremePrice || (currentProduct.price + 30);
+      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.supremePrice || (currentProduct.price + 30)} (Supreme)`;
+    }
   }
 }
-
 // Handle checkout button click
 function handleCheckout() {
   const deliveryOptions = document.getElementById("deliveryOptions");

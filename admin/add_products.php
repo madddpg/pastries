@@ -47,10 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $category_id = $categoryResult['id'];
 
-    // Handle image upload
-    $imagePath = '';
+     $imagePath = '';
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = '../../img/';
+        // Save to /cupscuddles/img (not two levels up)
+        $uploadDir = dirname(__DIR__) . '/img/'; // was '../../img/'
+
         $filename = uniqid() . '_' . basename($_FILES['image']['name']);
         $targetFile = $uploadDir . $filename;
 
@@ -59,20 +60,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
+            // Store relative path used by the site
             $imagePath = 'img/' . $filename;
         } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Failed to upload image'
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
             exit();
         }
     } else {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Image is required'
-        ]);
+        echo json_encode(['success' => false, 'message' => 'Image is required']);
         exit();
+    }
+
+    // Ensure pastries get a proper data_type by default
+    if (empty($data_type)) {
+        if (strtolower($category) === 'pastries' || (isset($category_id) && (int)$category_id === 7)) {
+            $data_type = 'pastries';
+        } else {
+            $data_type = 'cold';
+        }
     }
 
     try {

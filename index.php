@@ -610,42 +610,13 @@ foreach ($allProducts as $row) {
         <div class="products-header">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Premium Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 120</span> &nbsp;|&nbsp; <span>Supreme - Php 150</span>
+                <span>Grande - Php 140</span> &nbsp;|&nbsp; <span>Supreme - Php 150</span>
             </div>
         </div>
         <div class="product-list">
             <?php
             $shownIds = [];
             $premiumIndex = 0;
-               foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 7 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'pastries';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
             foreach ($allProducts as $product) {
     if (
         isset($product['category_id']) && $product['category_id'] == 5 // Premium Coffee category_id
@@ -715,21 +686,6 @@ foreach ($allProducts as $row) {
                     <?php
                     ?>
 
-                    <div class="product-item" data-type="pastries">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($p['pastries_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
-                        </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Premium Coffee</span>
-                            <p><?= htmlspecialchars($p['pastries_desc']) ?></p>
-                            <div class="product-footer">
-                                <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>')">View</button>
-                            </div>
-                        </div>  
-                    </div>
-                    <?php
-                    ?>
                     <div class="product-item" data-type="hot">
                         <div class="product-image">
                             <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
@@ -748,6 +704,78 @@ foreach ($allProducts as $row) {
             }
             ?>
         </div>
+
+
+        <!-- Pastries Section -->
+<div class="products-header" style="margin-top:2em;">
+  <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Pastries</h3>
+  <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">Freshly baked, perfect with coffee</div>
+</div>
+
+<div class="pastries-section">
+  <div class="product-list">
+  <?php
+foreach ($allProducts as $product) {
+  if (isset($product['category_id']) && (int)$product['category_id'] === 7 && $product['status'] === 'active') {
+      $imgSrc = trim($product['image'] ?? '');
+      if (!preg_match('#^https?://#i', $imgSrc)) {
+          $imgSrc = ltrim($imgSrc, '/');
+          if (strpos($imgSrc, 'img/') !== 0) $imgSrc = 'img/' . $imgSrc;
+      }
+      $fsPath = __DIR__ . '/' . ltrim(parse_url($imgSrc, PHP_URL_PATH), '/');
+      if (!file_exists($fsPath)) $imgSrc = 'img/placeholder_pastry.png';
+
+      // Define pastry price variants
+      $nameLc = mb_strtolower($product['name']);
+      $variants = [];
+      if (strpos($nameLc, 'crème flan') !== false || strpos($nameLc, 'creme flan') !== false || strpos($nameLc, 'flan') !== false) {
+          $variants = [
+              ['label' => 'Per piece', 'price' => 60],
+              ['label' => 'Box of 4', 'price' => 230],
+              ['label' => 'Box of 6', 'price' => 350],
+          ];
+      } elseif (strpos($nameLc, 'egg pie') !== false) {
+          $variants = [
+              ['label' => 'Per slice', 'price' => 60],
+              ['label' => 'Whole', 'price' => 380],
+          ];
+      } else {
+          // Fallback to single price from DB (if any)
+          $fallback = isset($product['price']) ? (float)$product['price'] : 0;
+          $variants = [['label' => 'Standard', 'price' => $fallback]];
+      }
+      $basePrice = $variants[0]['price'];
+      ?>
+      <div class="product-item" data-type="pastries">
+        <div class="product-image">
+          <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+        </div>
+        <div class="product-info">
+          <h3><?= htmlspecialchars($product['name']) ?></h3>
+          <span class="badge bg-success mb-2">Pastries</span>
+          <p><?= htmlspecialchars($product['description']) ?></p>
+          <div class="product-footer">
+            <button class="view-btn"
+              onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>',
+                                         '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>',
+                                         <?= json_encode($basePrice) ?>,
+                                         '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>',
+                                         '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>',
+                                         'pastries',
+                                         <?= json_encode($variants) ?>)">
+              View
+            </button>
+          </div>
+        </div>
+      </div>
+      <?php
+  }
+}
+  ?>
+  
+  </div>
+</div>
+
 
         <!-- Specialty Coffee Section -->
         <div class="products-header" style="margin-top:2em;">
@@ -777,7 +805,7 @@ foreach ($allProducts as $row) {
             </div>
             <div class="product-info">
                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
+                <span class="badge bg-success mb-2">Specialty Coffee</span>
                 <p><?= htmlspecialchars($product['description']) ?></p>
                 <div class="product-footer">
                     <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
@@ -819,7 +847,7 @@ foreach ($allProducts as $row) {
             </div>
             <div class="product-info">
                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
+                <span class="badge bg-success mb-2">Chocolate Overload</span>
                 <p><?= htmlspecialchars($product['description']) ?></p>
                 <div class="product-footer">
                     <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
@@ -861,7 +889,7 @@ foreach ($allProducts as $row) {
             </div>
             <div class="product-info">
                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
+                <span class="badge bg-success mb-2">Matcha Series</span>
                 <p><?= htmlspecialchars($product['description']) ?></p>
                 <div class="product-footer">
                     <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
@@ -903,7 +931,7 @@ foreach ($allProducts as $row) {
             </div>
             <div class="product-info">
                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
+                <span class="badge bg-success mb-2">Milk Based</span>
                 <p><?= htmlspecialchars($product['description']) ?></p>
                 <div class="product-footer">
                     <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
@@ -921,7 +949,7 @@ foreach ($allProducts as $row) {
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">All Time Fave</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 99</span> &nbsp;|&nbsp; <span>Supreme - Php 120</span>
+                <span>Grande - Php 120</span> &nbsp;|&nbsp; <span>Supreme - Php 170</span>
             </div>
         </div>
         <div class="product-list">
@@ -945,7 +973,7 @@ foreach ($allProducts as $row) {
             </div>
             <div class="product-info">
                 <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
+                <span class="badge bg-success mb-2">All Time Fav</span>
                 <p><?= htmlspecialchars($product['description']) ?></p>
                 <div class="product-footer">
                     <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
