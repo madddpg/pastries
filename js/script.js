@@ -1,9 +1,9 @@
-window.toggleProfileDropdown = function(event) {
-    event.stopPropagation();
-    var menu = document.getElementById("profileDropdownMenu");
-    if (menu) {
-        menu.classList.toggle("show");
-    }
+window.toggleProfileDropdown = function (event) {
+  event.stopPropagation();
+  var menu = document.getElementById("profileDropdownMenu");
+  if (menu) {
+    menu.classList.toggle("show");
+  }
 };
 
 let cart = []
@@ -13,7 +13,7 @@ let currentUser = null
 let deliveryMethod = "pickup"
 let selectedSize = "Grande"
 let currentProduct = null
-let lastDrinkType = 'cold'; 
+let lastDrinkType = 'cold';
 
 // Navigation
 function showSection(sectionName) {
@@ -89,7 +89,7 @@ function closeProductModal() {
   const modal = document.getElementById("productModal");
   if (modal) {
     modal.classList.remove("active");
-    modal.style.display = "none"; 
+    modal.style.display = "none";
   }
   document.body.style.overflow = "auto";
   currentProduct = null;
@@ -121,7 +121,7 @@ function addToCart(product_id, name, price, size) {
     existingItem.quantity += 1;
   } else {
     cart.push({
-      product_id: product_id, 
+      product_id: product_id,
       name: name,
       price: price,
       quantity: 1,
@@ -186,7 +186,7 @@ function loadCart() {
   }
 }
 
-function sendOTP(){
+function sendOTP() {
   const email = document.getElementById("registerEmail");
   const otp = document.getElementById("otp");
 
@@ -307,38 +307,38 @@ function startCheckout() {
     cartContent.appendChild(deliveryOptions);
   }
 
-setTimeout(() => {
-  const pickupTimeInput = document.getElementById("pickupTime");
-  const note = document.getElementById("pickupTimeNote");
+  setTimeout(() => {
+    const pickupTimeInput = document.getElementById("pickupTime");
+    const note = document.getElementById("pickupTimeNote");
 
-  if (pickupTimeInput && note) {
-    pickupTimeInput.min = "15:00";
-    pickupTimeInput.max = "20:30";
+    if (pickupTimeInput && note) {
+      pickupTimeInput.min = "15:00";
+      pickupTimeInput.max = "20:30";
 
-    pickupTimeInput.addEventListener("input", function () {
-      const val = this.value;
-      if (!val) {
-        note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
-        note.style.color = "#b45309";
-        this.setCustomValidity("");
-        return;
-      }
+      pickupTimeInput.addEventListener("input", function () {
+        const val = this.value;
+        if (!val) {
+          note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+          note.style.color = "#b45309";
+          this.setCustomValidity("");
+          return;
+        }
 
-      const [h, m] = val.split(":").map(Number);
-      const mins = h * 60 + m;
+        const [h, m] = val.split(":").map(Number);
+        const mins = h * 60 + m;
 
-      if (mins < 900 || mins > 1230) {
-        note.textContent = "Please select a time between 3:00 p.m and 8:30 p.m.";
-        note.style.color = "#dc2626";
-        this.setCustomValidity("Pickup time must be between 3:00 p.m and 8:30 p.m.");
-      } else {
-        note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
-        note.style.color = "#b45309";
-        this.setCustomValidity("");
-      }
-    });
-  }
-}, 0);
+        if (mins < 900 || mins > 1230) {
+          note.textContent = "Please select a time between 3:00 p.m and 8:30 p.m.";
+          note.style.color = "#dc2626";
+          this.setCustomValidity("Pickup time must be between 3:00 p.m and 8:30 p.m.");
+        } else {
+          note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+          note.style.color = "#b45309";
+          this.setCustomValidity("");
+        }
+      });
+    }
+  }, 0);
 }
 
 
@@ -435,77 +435,91 @@ if (typeof window.PHP_IS_LOGGED_IN !== 'undefined') {
 }
 
 function initOrderStatusPolling() {
-  if (!isLoggedIn) return;
-  if (window.statusCheckInterval) return;
-  checkOrderStatusUpdates(); // run once immediately
-  window.statusCheckInterval = setInterval(checkOrderStatusUpdates, 5000);
+  return;
 }
 
-function handleLogin(event) {
-    event.preventDefault();
-    var user_email = document.getElementById('loginEmail').value;
-    var password = document.getElementById('loginPassword').value;
-    var loginBtn = document.getElementById('loginBtn');
-    loginBtn.disabled = true;
-    loginBtn.classList.add("loading");
+// Add keyframe animation for notifications
+document.addEventListener('DOMContentLoaded', function () {
+  const styleId = 'order-status-anim';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to   { transform: translateX(0);   opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  // initOrderStatusPolling(); // disabled to prevent duplicate notifications
+});
 
-    fetch('login.php', {
-        method: 'POST',
-        body: new URLSearchParams({
-            user_email: user_email,
-            password: password
-        }),
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        credentials: 'same-origin' 
-    })
+function handleLogin(event) {
+  event.preventDefault();
+  var user_email = document.getElementById('loginEmail').value;
+  var password = document.getElementById('loginPassword').value;
+  var loginBtn = document.getElementById('loginBtn');
+  loginBtn.disabled = true;
+  loginBtn.classList.add("loading");
+
+  fetch('login.php', {
+    method: 'POST',
+    body: new URLSearchParams({
+      user_email: user_email,
+      password: password
+    }),
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    credentials: 'same-origin'
+  })
     .then(res => res.json())
-   .then(data => {
-        loginBtn.disabled = false;
-        loginBtn.classList.remove("loading");
-        if (data.success) {
-            isLoggedIn = true;
-            window.PHP_IS_LOGGED_IN = true;
-            currentUser = {
-                id: data.user_id,
-                fullname: data.fullname,
-                firstName: data.firstName,
-                initials: data.initials,
-                is_admin: data.is_admin
-            };
-            if (document.getElementById("profileText"))
-                document.getElementById("profileText").textContent = data.firstName;
-            if (document.getElementById("profileAvatar"))
-                document.getElementById("profileAvatar").innerHTML = data.initials;
-            let navbarUser = document.querySelector(".navbar-username");
-            if (navbarUser) navbarUser.textContent = data.fullname;
-            document.getElementById("loginSuccess").classList.add("show");
-            if (window.updateProfileDropdownMenu) window.updateProfileDropdownMenu(true);
-            loadCart();
-            updateCartCount();
-            updateCartDisplay();
-            setTimeout(() => {
-                closeAuthModal();
-                if (data.redirect) {
-                    window.location.href = data.redirect;
-                }
-            }, 1000);
-        } else {
-            document.getElementById('loginEmailError').textContent = data.message || 'Login failed.';
-        }
+    .then(data => {
+      loginBtn.disabled = false;
+      loginBtn.classList.remove("loading");
+      if (data.success) {
+        isLoggedIn = true;
+        window.PHP_IS_LOGGED_IN = true;
+        currentUser = {
+          id: data.user_id,
+          fullname: data.fullname,
+          firstName: data.firstName,
+          initials: data.initials,
+          is_admin: data.is_admin
+        };
+        if (document.getElementById("profileText"))
+          document.getElementById("profileText").textContent = data.firstName;
+        if (document.getElementById("profileAvatar"))
+          document.getElementById("profileAvatar").innerHTML = data.initials;
+        let navbarUser = document.querySelector(".navbar-username");
+        if (navbarUser) navbarUser.textContent = data.fullname;
+        document.getElementById("loginSuccess").classList.add("show");
+        if (window.updateProfileDropdownMenu) window.updateProfileDropdownMenu(true);
+        loadCart();
+        updateCartCount();
+        updateCartDisplay();
+        setTimeout(() => {
+          closeAuthModal();
+          if (data.redirect) {
+            window.location.href = data.redirect;
+          }
+        }, 1000);
+      } else {
+        document.getElementById('loginEmailError').textContent = data.message || 'Login failed.';
+      }
     })
     .catch(() => {
-        loginBtn.disabled = false;
-        loginBtn.classList.remove("loading");
-        document.getElementById('loginEmailError').textContent = 'Login failed. Please try again.';
+      loginBtn.disabled = false;
+      loginBtn.classList.remove("loading");
+      document.getElementById('loginEmailError').textContent = 'Login failed. Please try again.';
     });
 }
 
 
 
 // === Testimonial Image Modal Logic ===
-window.openTestimonialModal = function(imgElem) {
+window.openTestimonialModal = function (imgElem) {
   var modal = document.getElementById('testimonialImageModal');
   var modalImg = document.getElementById('testimonialModalImg');
   if (modal && modalImg && imgElem) {
@@ -517,7 +531,7 @@ window.openTestimonialModal = function(imgElem) {
 }
 
 
-window.closeTestimonialModal = function() {
+window.closeTestimonialModal = function () {
   var modal = document.getElementById('testimonialImageModal');
   if (modal) {
     modal.style.display = 'none';
@@ -543,22 +557,22 @@ function handleRegister(event) {
   const password = document.getElementById("registerPassword").value;
   const confirmPassword = document.getElementById("confirmPassword").value;
   const registerBtn = document.getElementById("registerBtn");
-  
+
   if (password !== confirmPassword) {
     alert("Passwords do not match!");
     return;
   }
-  
+
   registerBtn.classList.add("loading");
   registerBtn.disabled = true;
-  
+
   const formData = new FormData();
   formData.append('registerName', name);
   formData.append('registerLastName', lastName);
   formData.append('registerEmail', email);
   formData.append('registerPassword', password);
   formData.append('confirmPassword', confirmPassword);
-  
+
   fetch('register.php', {
     method: 'POST',
     body: formData
@@ -568,18 +582,18 @@ function handleRegister(event) {
       // If backend signals that verification is required, start OTP flow
       if (data.success && (data.requires_verification || data.pending_verification)) {
         showNotification("Verification sent! Please check your email.", "success");
-        
+
         // Show OTP modal WITHOUT sending another email
         showOtpModal(data.email || email);
-        
+
         // REMOVE THIS LINE - it's causing the second email:
         // setTimeout(() => sendOTP(data.email || email), 150);
-        
+
         // Instead, just set up the OTP state with the data from the server
         otpState.email = data.email || email;
         otpState.expiresAt = data.expires_at || 0;
         startOtpTimers();
-        
+
         return; // do not reload yet
       }
 
@@ -600,71 +614,143 @@ function handleRegister(event) {
 }
 
 
+// Add this right after your other document.addEventListener blocks (around line 600)
+// (before the window.addEventListener("scroll") blocks)
+
+// Delegated handler for "View" buttons that use data-* attributes
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest && e.target.closest('.view-btn');
+  if (!btn) return;
+  try {
+    const id = btn.dataset.id;
+    const name = btn.dataset.name;
+    const price = Number(btn.dataset.price) || 0;
+    const description = btn.dataset.desc || '';
+    const image = btn.dataset.image || '';
+    const dataType = btn.dataset.type || 'cold';
+    let variants = null;
+    if (btn.dataset.variants && btn.dataset.variants !== 'null') {
+      try {
+        variants = JSON.parse(btn.dataset.variants);
+      } catch (err) {
+        console.error('Failed to parse variants JSON:', err);
+        variants = null;
+      }
+    }
+    // Call product view handler
+    handleViewProduct(id, name, price, description, image, dataType, variants);
+  } catch (err) {
+    console.error('Error handling view button click:', err);
+  }
+});
+
 function showNotification(message, type = "success") {
   const notification = document.createElement("div");
   notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${type === "success" ? "linear-gradient(135deg, #10B981, #059669)" : "linear-gradient(135deg, #EF4444, #DC2626)"};
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-weight: 600;
-        z-index: 9999;
-        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
-        animation: slideIn 0.3s ease;
-    `;
-  notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === "success" ? "linear-gradient(135deg, #10B981, #059669)" : "linear-gradient(135deg, #EF4444, #DC2626)"};
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    animation: slideIn .3s ease;
+  `;
+  notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right:8px;"></i>${message}`;
   document.body.appendChild(notification);
-  setTimeout(() => {
-    notification.remove();
-  }, 3000);
+  setTimeout(() => notification.remove(), 3000);
 }
+
+const CATEGORY = {
+  premium: '5',
+  specialty: '6',
+  milk: '4',
+  chocolate: '2',
+  matcha: '3',
+  alltime: '1',
+  pastries: '7'
+};
 
 function filterDrinks(type) {
   lastDrinkType = type;
-  document.getElementById("hotDrinksBtn").classList.remove("active");
-  document.getElementById("coldDrinksBtn").classList.remove("active");
-   document.getElementById("pastriesBtn").classList.remove("active");
-  if (type === "hot") {
-    document.getElementById("hotDrinksBtn").classList.add("active");
-  } else if (type === "cold") {
-    document.getElementById("coldDrinksBtn").classList.add("active");
+  const hotBtn = document.getElementById('hotDrinksBtn');
+  const coldBtn = document.getElementById('coldDrinksBtn');
+  const pasBtn = document.getElementById('pastriesBtn');
+  hotBtn?.classList.toggle('active', type === 'hot');
+  coldBtn?.classList.toggle('active', type === 'cold');
+  pasBtn?.classList.toggle('active', type === 'pastries');
+
+  // Allowed categories and type filter
+  let allowedCats = [];
+  let typeFilter = null; // 'hot' | 'cold' | null (ignore)
+  if (type === 'hot') {
+    allowedCats = [CATEGORY.premium];
+    typeFilter = 'hot';
+  } else if (type === 'pastries') {
+    allowedCats = [CATEGORY.pastries];
+    typeFilter = null; // ignore data-type for pastries
   } else {
-    document.getElementById("pastriesBtn").classList.add("active");
+    allowedCats = [CATEGORY.premium, CATEGORY.specialty, CATEGORY.milk, CATEGORY.chocolate, CATEGORY.matcha, CATEGORY.alltime];
+    typeFilter = 'cold';
   }
 
-  document.querySelectorAll('.product-item').forEach(item => {
-    item.style.opacity = '0';
+  // Show/hide items
+  const items = document.querySelectorAll('#products .product-item');
+  items.forEach(item => {
+    const cat = item.getAttribute('data-category');
+    const dt = (item.getAttribute('data-type') || 'cold').toLowerCase();
+    const catOk = allowedCats.includes(cat);
+    const typeOk = typeFilter ? (dt === typeFilter) : true;
+    const show = catOk && typeOk;
+    item.style.display = show ? '' : 'none';
+    item.style.opacity = show ? '1' : '0';
   });
 
-  setTimeout(() => {
-    document.querySelectorAll('.product-item').forEach(item => {
-      if (item.getAttribute('data-type') === type) {
-        item.style.display = '';
-        setTimeout(() => { item.style.opacity = '1'; }, 10);
-      } else {
-        item.style.display = 'none';
-      }
-    });
-  }, 200);
+  // REPLACE old header/list hiding with:
+  updateMenuSectionVisibility();
+
+  if (typeof loadTopProducts === 'function') loadTopProducts(type);
+}
+window.filterDrinks = filterDrinks;
+
+// Add this helper once (below filterDrinks)
+function updateMenuSectionVisibility() {
+  document.querySelectorAll('#products .products-header').forEach(header => {
+    const wrapper = header.nextElementSibling; // e.g., .pastries-section or .product-list
+    const list = wrapper?.matches('.product-list')
+      ? wrapper
+      : wrapper?.querySelector('.product-list');
+    if (!list) return;
+
+    const anyVisible = Array.from(list.querySelectorAll('.product-item'))
+      .some(it => it.style.display !== 'none');
+
+    header.style.display = anyVisible ? '' : 'none';
+    list.style.display = anyVisible ? '' : 'none';
+    if (wrapper && wrapper !== list) wrapper.style.display = anyVisible ? '' : 'none';
+  });
 }
 
 
-window.filterDrinks = function(type) {
-    loadTopProducts(type); 
-    document.querySelectorAll('.product-item').forEach(function(item) {
-        if (item.getAttribute('data-type') === type) {
-            item.style.display = '';
-        } else {
-            item.style.display = 'none';
-        }
-    });
-    document.getElementById('hotDrinksBtn').classList.toggle('active', type === 'hot');
-    document.getElementById('coldDrinksBtn').classList.toggle('active', type === 'cold');
-    document.getElementById('pastriesBtn').classList.toggle('active', type === 'pastries');
-}
+document.querySelectorAll('#products .products-header').forEach(header => {
+  const wrapper = header.nextElementSibling;
+  const list = wrapper?.matches('.product-list') ? wrapper : wrapper?.querySelector('.product-list');
+  wrapper?.querySelector('.product-list');
+
+  if (!list) return;
+
+  const anyVisible = Array.from(list.querySelectorAll('.product-item'))
+    .some(it => it.style.display !== 'none');
+
+  header.style.display = anyVisible ? '' : 'none';
+  list.style.display = anyVisible ? '' : 'none';
+  if (wrapper && wrapper !== list) wrapper.style.display = anyVisible ? '' : 'none';
+});
+
 let otpState = {
   email: null,
   expiresAt: 0,
@@ -795,7 +881,7 @@ async function sendOTP(emailParam) {
     if (data.success) {
       otpState.email = data.email || email;
       otpState.expiresAt = data.expires_at || 0;       // unix seconds
-      otpState.cooldownUntil = data.cooldown ? Math.floor(Date.now()/1000) + Number(data.cooldown) : 0;
+      otpState.cooldownUntil = data.cooldown ? Math.floor(Date.now() / 1000) + Number(data.cooldown) : 0;
       showOtpModal(otpState.email);
       startOtpTimers();
     } else {
@@ -843,13 +929,13 @@ async function verifyOTP() {
     if (data.success) {
       // Show a more prominent notification about successful verification
       showNotification("Verification successful! Your account has been created.", "success");
-      
+
       // Display verification status in the modal before closing it
       const modalMsg = document.getElementById('otpModalMsg');
       if (modalMsg) {
         modalMsg.innerHTML = '<div style="color:#10B981;font-weight:bold;margin:10px 0;"><i class="fas fa-check-circle"></i> Verification successful!</div>';
       }
-      
+
       // Set a short delay to allow the user to see the success message
       setTimeout(() => {
         closeOtpModal();
@@ -863,7 +949,7 @@ async function verifyOTP() {
     } else {
       errorEl.textContent = data.message || "Incorrect code.";
       if (typeof data.locked_for === 'number' && data.locked_for > 0) {
-        showNotification(`Too many attempts. Try again in ${Math.ceil(data.locked_for/60)} min.`, "error");
+        showNotification(`Too many attempts. Try again in ${Math.ceil(data.locked_for / 60)} min.`, "error");
       }
       if (typeof data.expires_at === 'number') {
         otpState.expiresAt = data.expires_at;
@@ -877,208 +963,159 @@ async function verifyOTP() {
   }
 }
 // Add this function to handle order status notifications
-
-// Add these variables at the top of your file
+// ...existing code...
 let previousOrderStatuses = {};
 let initialLoadComplete = false;
+const shownOrderNotifs = new Set(); // prevents duplicate ref+status notifications
+// ...existing code...
 
 function checkOrderStatusUpdates() {
-  if (!isLoggedIn) {
-    console.log("Not logged in, skipping check");
-    return;
-  }
-  
-  // Add random parameter to prevent caching
-  const timestamp = new Date().getTime();
-  
+  if (!isLoggedIn) return;
+
+  const timestamp = Date.now();
   fetch(`AJAX/check_order_status.php?_=${timestamp}`, {
     method: 'GET',
     credentials: 'same-origin',
-    headers: {
-      'Cache-Control': 'no-cache, no-store',
-      'Pragma': 'no-cache'
-    }
+    headers: { 'Cache-Control': 'no-cache, no-store', 'Pragma': 'no-cache' }
   })
-  .then(response => response.text())
-  .then(text => {
-    try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error("JSON parse error:", e);
-      throw e;
-    }
-  })
-  .then(data => {
-    // Process notifications for unnotified updates
-    if (data.status_updates && data.status_updates.length > 0) {
-      console.log(`Found ${data.status_updates.length} status updates`);
-      data.status_updates.forEach(update => {
-        showOrderStatusNotification(update);
-      });
-    } 
-    
-    // Process all recent orders
-    if (data.all_recent_orders && data.all_recent_orders.length > 0) {
-      console.log(`Found ${data.all_recent_orders.length} recent orders`);
-      
-      // Compare current statuses with previous ones
-      data.all_recent_orders.forEach(order => {
-        const refNum = order.reference_number;
-        
-        // If this isn't the first load and status has changed
-        if (initialLoadComplete && 
-            previousOrderStatuses[refNum] && 
-            previousOrderStatuses[refNum] !== order.status) {
-          
-          console.log(`Status changed for ${refNum}: ${previousOrderStatuses[refNum]} -> ${order.status}`);
-          
-          // Show notification for the changed status
-          showOrderStatusNotification(order);
-        }
-        
-        // Update stored status
-        previousOrderStatuses[refNum] = order.status;
-      });
-      
-      // Mark initial load as complete
-      if (!initialLoadComplete) {
-        initialLoadComplete = true;
+    .then(r => r.json())
+    .then(data => {
+      // 1) Show server-pushed unread updates (marked notified=0 on backend)
+      if (Array.isArray(data.status_updates)) {
+        data.status_updates.forEach(u => {
+          const key = `${u.reference_number}:${(u.status || '').toLowerCase()}`;
+          if (shownOrderNotifs.has(key)) return;
+          shownOrderNotifs.add(key);
+          showOrderStatusNotification(u);
+        });
       }
-    }
-  })
-  .catch(error => {
-    console.error("Error checking order status:", error);
-  });
+
+      // 2) Also detect status changes locally to catch any missed updates
+      if (Array.isArray(data.all_recent_orders)) {
+        data.all_recent_orders.forEach(order => {
+          const ref = order.reference_number;
+          const cur = (order.status || '').toLowerCase();
+
+          if (initialLoadComplete &&
+              previousOrderStatuses[ref] &&
+              previousOrderStatuses[ref].toLowerCase() !== cur) {
+            const key = `${ref}:${cur}`;
+            if (!shownOrderNotifs.has(key)) {
+              shownOrderNotifs.add(key);
+              showOrderStatusNotification({ reference_number: ref, status: cur });
+            }
+          }
+          previousOrderStatuses[ref] = cur;
+        });
+        if (!initialLoadComplete) initialLoadComplete = true;
+      }
+    })
+    .catch(err => console.error('Order status poll error:', err));
 }
 
 function showOrderStatusNotification(update) {
-  // Create status message based on the update
-  let icon = 'info-circle';
-  let color = '#10B981';
-  let message = '';
-  
-  switch(update.status.toLowerCase()) {
-    case 'approved':
-      icon = 'check-circle';
-      message = `Order #${update.reference_number} has been approved!`;
-      color = '#10B981'; // Green
-      break;
-    case 'ready':
-      icon = 'mug-hot';
-      message = `Order #${update.reference_number} is ready for pickup!`;
-      color = '#b45309'; // Coffee brown
-      break;
-    case 'pending':
-      icon = 'clock';
-      message = `Order #${update.reference_number} is pending approval.`;
-      color = '#3B82F6'; // Blue
-      break;
-    case 'declined':
-      icon = 'times-circle';
-      message = `Order #${update.reference_number} was declined.`;
-      color = '#DC2626'; // Red
-      break;
-    case 'completed':
-      icon = 'check-double';
-      message = `Order #${update.reference_number} has been completed. Thank you!`;
-      color = '#10B981'; // Green
-      break;
-    case 'picked up':
-      icon = 'hand-holding';
-      message = `Order #${update.reference_number} has been picked up. Thank you!`;
-      color = '#10B981'; // Green
-      break;
-    default:
-      message = `Order #${update.reference_number} status: ${update.status}`;
+  const statusConfig = {
+    pending:   { color: '#f59e0b', icon: 'fa-clock',         text: 'Pending' },
+    confirmed: { color: '#3b82f6', icon: 'fa-check-circle',  text: 'Confirmed' },
+    preparing: { color: '#8b5cf6', icon: 'fa-mug-hot',       text: 'Preparing' },
+    ready:     { color: '#10b981', icon: 'fa-check-double',  text: 'Ready for Pickup' },
+    completed: { color: '#059669', icon: 'fa-check-square',  text: 'Completed' },
+    cancelled: { color: '#ef4444', icon: 'fa-times-circle',  text: 'Cancelled' }
+  };
+
+  const status = (update.status || '').toLowerCase();
+  const config = statusConfig[status] || { color: '#6b7280', icon: 'fa-info-circle', text: status.charAt(0).toUpperCase() + status.slice(1) };
+
+  // Center-top container
+  let container = document.getElementById('orderStatusNotifications');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'orderStatusNotifications';
+    container.style.position = 'fixed';
+    container.style.top = '16px';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.zIndex = '9999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.gap = '10px';
+    container.style.pointerEvents = 'none'; // let clicks pass through except on notifications
+    document.body.appendChild(container);
   }
 
-  console.log("Showing notification:", message);
-
-  // Create notification element
-  const notification = document.createElement("div");
+  // Notification card
+  const notification = document.createElement('div');
   notification.className = 'order-status-notification';
-  notification.style.cssText = `
-    position: fixed;
-    top: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: ${color};
-    color: white;
-    padding: 18px 24px;
-    border-radius: 12px;
-    font-weight: 600;
-    z-index: 9999;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    animation: slideDown 0.5s ease;
-    display: flex;
-    align-items: center;
-    min-width: 300px;
-    max-width: 90%;
-    cursor: pointer;
-  `;
-  
+  notification.style.pointerEvents = 'auto';
+  notification.style.backgroundColor = 'white';
+  notification.style.borderLeft = `4px solid ${config.color}`;
+  notification.style.borderRadius = '12px';
+  notification.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
+  notification.style.margin = '0';
+  notification.style.padding = '14px 16px';
+  notification.style.width = '420px';
+  notification.style.maxWidth = '90vw';
+  notification.style.animation = 'slideIn 0.3s ease';
+
   notification.innerHTML = `
-    <i class="fas fa-${icon}" style="margin-right: 12px; font-size: 24px;"></i>
-    <div>
-      <div style="font-size: 16px;">${message}</div>
-      <div style="font-size: 14px; opacity: 0.9; margin-top: 4px;">
-        ${update.timestamp ? new Date(update.timestamp).toLocaleString() : ''}
+    <div style="display:flex;align-items:center;">
+      <div style="background:${config.color};color:#fff;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin-right:12px;">
+        <i class="fas ${config.icon}"></i>
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:600;margin-bottom:4px;">Order ${update.reference_number || ''}</div>
+        <div style="font-size:0.9em;color:#374151;">Status: <span style="color:${config.color};font-weight:500;">${config.text}</span></div>
       </div>
     </div>
   `;
-  
-  // Add click handler to dismiss
-  notification.addEventListener('click', () => {
-    notification.style.animation = 'fadeOut 0.5s ease';
-    setTimeout(() => notification.remove(), 500);
-  });
-  
-  document.body.appendChild(notification);
 
-  // Remove after 10 seconds
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '&times;';
+  closeBtn.style.position = 'absolute';
+  closeBtn.style.top = '8px';
+  closeBtn.style.right = '8px';
+  closeBtn.style.background = 'transparent';
+  closeBtn.style.border = 'none';
+  closeBtn.style.fontSize = '16px';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.color = '#6b7280';
+  closeBtn.onclick = () => notification.remove();
+  notification.appendChild(closeBtn);
+  notification.style.position = 'relative';
+
+  container.appendChild(notification);
+
   setTimeout(() => {
-    if (document.body.contains(notification)) {
-      notification.style.animation = 'fadeOut 0.5s ease';
-      setTimeout(() => notification.remove(), 500);
-    }
-  }, 10000);
+    notification.style.opacity = '0';
+    notification.style.transform = 'translateY(-8px)';
+    notification.style.transition = 'opacity .3s, transform .3s';
+    setTimeout(() => notification.remove(), 300);
+  }, 8000);
 }
 
-// Add animation styles on page load
-document.addEventListener('DOMContentLoaded', function() {
-  // Only add animation styles once
-  if (!document.getElementById('notification-animations')) {
-    const style = document.createElement('style');
-    style.id = 'notification-animations';
-    style.textContent = `
-      @keyframes slideDown {
-        from { transform: translate(-50%, -100px); opacity: 0; }
-        to { transform: translate(-50%, 0); opacity: 1; }
-      }
-      @keyframes fadeOut {
-        from { opacity: 1; }
-        to { opacity: 0; }
-      }
-    `;
-    document.head.appendChild(style);
+function getStatusMessage(status, location, time) {
+  switch (status.toLowerCase()) {
+    case 'confirmed':
+      return 'Your order has been confirmed and will be prepared soon.';
+    case 'preparing':
+      return 'We are currently preparing your order.';
+    case 'ready':
+      return 'Your order is ready for pickup at ' +
+        (location || 'our store') +
+        (time ? ' at ' + time : '') + '.';
+    case 'completed':
+      return 'Thank you for your order! We hope you enjoyed your drinks.';
+    case 'cancelled':
+      return 'Your order has been cancelled. Please contact us for assistance.';
+    default:
+      return 'Your order status has been updated to: ' + status;
   }
-  
-  // Set up notification checking
-  if (isLoggedIn) {
-    console.log("Setting up order status notifications");
-    
-    // Clear any existing interval
-    if (window.statusCheckInterval) {
-      clearInterval(window.statusCheckInterval);
-    }
-    
-    // Check right away and then periodically
-    checkOrderStatusUpdates();
-    window.statusCheckInterval = setInterval(checkOrderStatusUpdates, 5000);
-  }
-});
+}
+
 // Add animation styles to document
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const style = document.createElement('style');
   style.textContent = `
     @keyframes slideDown {
@@ -1102,76 +1139,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   `;
   document.head.appendChild(style);
-  
+
   // Create directory for sound if needed
   // (you'll need to add a notification.mp3 file to your project)
-  
+
   // Check for updates immediately and then frequently for real-time feel
   checkOrderStatusUpdates();
   setInterval(checkOrderStatusUpdates, 5000); // Check every 5 seconds for more real-time feel
 });
 
-// Add animation styles to document
-document.addEventListener('DOMContentLoaded', function() {
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideDown {
-      from {
-        transform: translate(-50%, -100px);
-        opacity: 0;
-      }
-      to {
-        transform: translate(-50%, 0);
-        opacity: 1;
-      }
-    }
-    
-    @keyframes fadeOut {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-  
-  // Check for updates immediately and then periodically
-  checkOrderStatusUpdates();
-  setInterval(checkOrderStatusUpdates, 30000); // Check every 30 seconds
-});
+
+
 
 function loadTopProducts(category) {
-    fetch('AJAX/get_top_products.php?category=' + encodeURIComponent(category))
-        .then(response => response.json())
-        .then(data => {
-            const container = document.getElementById('topProductsContainer');
-            if (!container) return;
-            let html = '';
-            if (data.success && data.products.length > 0) {
-                html += `<div class=\"products-header\" style=\"margin-bottom:1.5em;\">
+  fetch('AJAX/get_top_products.php?category=' + encodeURIComponent(category))
+    .then(response => response.json())
+    .then(data => {
+      const container = document.getElementById('topProductsContainer');
+      if (!container) return;
+      let html = '';
+      if (data.success && data.products.length > 0) {
+        html += `<div class=\"products-header\" style=\"margin-bottom:1.5em;\">
                     <h3 style=\"font-size:2.2rem;font-weight:800;color:#b45309;margin-bottom:0.5em;\">Top Products (${category.charAt(0).toUpperCase() + category.slice(1)} Drinks)</h3>
                     <div class=\"top-products-list d-flex flex-wrap justify-content-center gap-4\">`;
-                data.products.forEach((tp, idx) => {
-                    let imgSrc = tp.image;
-                    if (!imgSrc.startsWith('img/')) imgSrc = 'img/' + imgSrc.replace(/^\/+/, '');
-                    html += `<div class=\"top-product-card shadow-sm rounded-4 p-3 text-center\" style=\"background:#fffbe9;min-width:220px;max-width:260px;\">
+        data.products.forEach((tp, idx) => {
+          let imgSrc = tp.image;
+          if (!imgSrc.startsWith('img/')) imgSrc = 'img/' + imgSrc.replace(/^\/+/, '');
+          html += `<div class=\"top-product-card shadow-sm rounded-4 p-3 text-center\" style=\"background:#fffbe9;min-width:220px;max-width:260px;\">
                         <div class=\"top-product-image mb-2\" style=\"height:120px;display:flex;align-items:center;justify-content:center;\">
                             <img src=\"${imgSrc}\" alt=\"${tp.name}\" style=\"max-height:100px;max-width:100%;border-radius:12px;object-fit:cover;\">
                         </div>
                         <h4 style=\"font-weight:700; color:#2d4a3a; margin-bottom:0.3em;\">${tp.name}</h4>
                         <div style=\"font-size:0.98em; color:#374151; min-height:48px; margin-bottom:0.5em;\">${tp.description}</div>
-                        <div class=\"badge bg-warning text-dark mb-2\" style=\"font-size:0.95em;\">#${idx+1} Best Seller</div>
+                        <div class=\"badge bg-warning text-dark mb-2\" style=\"font-size:0.95em;\">#${idx + 1} Best Seller</div>
                         <div style=\"font-size:0.95em; color:#b45309; font-weight:600;\">Sold: ${tp.sales_count}</div>
                     </div>`;
-                });
-                html += '</div></div>';
-            } else {
-                html = `<div class=\"products-header\"><h3 style=\"font-size:2.2rem;font-weight:800;color:#b45309;margin-bottom:0.5em;\">Top Products (${category.charAt(0).toUpperCase() + category.slice(1)} Drinks)</h3><div class=\"text-muted\" style=\"font-size:1.1em;\">No products to show yet.</div></div>`;
-            }
-            container.innerHTML = html;
         });
+        html += '</div></div>';
+      } else {
+        html = `<div class=\"products-header\"><h3 style=\"font-size:2.2rem;font-weight:800;color:#b45309;margin-bottom:0.5em;\">Top Products (${category.charAt(0).toUpperCase() + category.slice(1)} Drinks)</h3><div class=\"text-muted\" style=\"font-size:1.1em;\">No products to show yet.</div></div>`;
+      }
+      container.innerHTML = html;
+    });
 }
 
 document.addEventListener("click", (event) => {
@@ -1185,14 +1194,14 @@ document.addEventListener("click", (event) => {
 });
 
 
-document.addEventListener('click', function(event) {
-    var menu = document.getElementById("profileDropdownMenu");
-    var btn = document.getElementById("profileDropdownBtn");
-    if (menu && menu.classList.contains("show")) {
-        if (!menu.contains(event.target) && (!btn || !btn.contains(event.target))) {
-            menu.classList.remove("show");
-        }
+document.addEventListener('click', function (event) {
+  var menu = document.getElementById("profileDropdownMenu");
+  var btn = document.getElementById("profileDropdownBtn");
+  if (menu && menu.classList.contains("show")) {
+    if (!menu.contains(event.target) && (!btn || !btn.contains(event.target))) {
+      menu.classList.remove("show");
     }
+  }
 });
 
 
@@ -1222,8 +1231,8 @@ document.addEventListener("DOMContentLoaded", () => {
   showSection("home");
 });
 
-document.addEventListener("DOMContentLoaded", function() {
-    showSection('home');
+document.addEventListener("DOMContentLoaded", function () {
+  showSection('home');
 });
 
 const style = document.createElement("style");
@@ -1269,100 +1278,138 @@ window.addEventListener("scroll", () => {
 });
 
 
-// ...existing code...
+function handleViewProduct(id, name, price, description, image, dataType, variants) {
+  try {
+    console.log("handleViewProduct called", { id, name, price, dataType, variants });
+    // Require login
+    if (!isLoggedIn) { showLoginModal(); return; }
 
-// Replace BOTH existing handleViewProduct definitions with this single version
-function handleViewProduct(id, name, price, description, image, dataType = 'cold', variants = null) {
-  if (!isLoggedIn) { showLoginModal(); return; }
+    dataType = (dataType || 'cold').toString().toLowerCase();
 
-  const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
-  const sizeButtons = document.querySelector(".size-buttons");
+    // Get UI elements
+    const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
+    const sizeButtons = document.querySelector(".size-buttons");
+    const nameEl = document.getElementById("modalProductName");
+    const descEl = document.getElementById("modalProductDescription");
+    const imgEl = document.getElementById("modalProductImage");
+    const priceEl = document.getElementById("modalProductPrice");
 
-  // Default for drinks
-  let grandePrice = 140, supremePrice = 170;
-  if (dataType === 'hot') { grandePrice = 120; supremePrice = 150; }
+    // Set default prices based on type
+    let grandePrice = 140, supremePrice = 170;
+    if (dataType === 'hot') { grandePrice = 120; supremePrice = 150; }
 
-  // Build product object
-  currentProduct = { id, name, description, image, dataType, price };
+    // Build product object
+    currentProduct = {
+      id,
+      name,
+      description,
+      image,
+      dataType,
+      price: (typeof price === 'number' && price > 0) ? price : (dataType === 'pastries' ? 60 : grandePrice)
+    };
 
-  // Build size/options buttons
-  if (dataType === 'pastries') {
-    // Ensure variants are present
-    const v = Array.isArray(variants) && variants.length ? variants : [{label:'Standard', price: price || 0}];
-    currentProduct.variants = v.slice();
-    selectedSize = v[0].label;
-    currentProduct.price = v[0].price;
+    // Pastries: show variants/options
+    if (dataType === 'pastries') {
+      // Default variants if none provided
+      let v = [];
 
-    // Title + buttons for pastry options
-    if (sizeTitleEl) sizeTitleEl.textContent = 'Options';
-    if (sizeButtons) {
-      sizeButtons.innerHTML = v.map((opt, i) =>
-        `<button class="size-btn ${i===0?'active':''}" data-label="${opt.label}">${opt.label}</button>`
-      ).join('');
-      sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
-        btn.onclick = () => selectSize(btn.dataset.label);
-      });
+      // Custom pricing for specific pastries
+      const nameLc = name.toLowerCase();
+
+      if (nameLc.includes('crème flan') || nameLc.includes('creme flan') || nameLc.includes('flan')) {
+        v = [
+          { label: 'Per piece', price: 60 },
+          { label: 'Box of 4', price: 230 },
+          { label: 'Box of 6', price: 350 }
+        ];
+      } else if (nameLc.includes('egg pie')) {
+        v = [
+          { label: 'Per slice', price: 60 },
+          { label: 'Whole', price: 380 }
+        ];
+      } else if (Array.isArray(variants) && variants.length) {
+        v = variants;
+      } else {
+        v = [{ label: 'Standard', price: currentProduct.price }];
+      }
+
+      currentProduct.variants = v.slice();
+      selectedSize = v[0].label;
+      currentProduct.price = v[0].price;
+
+      // Update UI
+      if (sizeTitleEl) sizeTitleEl.textContent = 'Options';
+      if (sizeButtons) {
+        sizeButtons.innerHTML = v.map((opt, i) =>
+          `<button class="size-btn ${i === 0 ? 'active' : ''}" data-label="${opt.label}" 
+           data-price="${opt.price}">${opt.label}</button>`
+        ).join('');
+        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            selectSize(btn.dataset.label);
+          };
+        });
+      }
+    } else {
+      // Drinks: restore default two buttons
+      currentProduct.grandePrice = grandePrice;
+      currentProduct.supremePrice = supremePrice;
+      selectedSize = "Grande";
+      currentProduct.price = grandePrice;
+
+      if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
+      if (sizeButtons) {
+        sizeButtons.innerHTML = `
+          <button class="size-btn active">Grande</button>
+          <button class="size-btn">Supreme</button>
+        `;
+        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+          const text = btn.textContent.trim();
+          btn.onclick = (e) => { e.stopPropagation(); selectSize(text); };
+        });
+      }
     }
-  } else {
-    // Drinks: restore default two buttons
-    currentProduct.grandePrice = grandePrice;
-    currentProduct.supremePrice = supremePrice;
-    selectedSize = "Grande";
-    currentProduct.price = grandePrice;
 
-    if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
-    if (sizeButtons) {
-      sizeButtons.innerHTML = `
-        <button class="size-btn active">Grande</button>
-        <button class="size-btn">Supreme</button>
-      `;
-      sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
-        const text = btn.textContent.trim();
-        btn.onclick = () => selectSize(text);
-      });
+    // Populate modal UI
+    if (nameEl) nameEl.textContent = name || '';
+    if (descEl) descEl.textContent = description || '';
+    if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
+    if (priceEl) {
+      priceEl.textContent = `Php ${currentProduct.price}${dataType === 'pastries' ? ' (' + selectedSize + ')' : ''}`;
     }
-  }
 
-  // Populate modal UI
-  document.getElementById("modalProductName").textContent = name;
-  document.getElementById("modalProductDescription").textContent = description;
-  const imgEl = document.getElementById("modalProductImage");
-  if (imgEl) { imgEl.src = image; imgEl.alt = name; }
+    // Cleanly bind Add to Cart
+    const detailsSection = document.querySelector(".product-modal-details");
+    const addBtn = detailsSection ? detailsSection.querySelector(".product-modal-add-cart") : null;
+    if (addBtn) {
+      const newBtn = addBtn.cloneNode(true);
+      addBtn.parentNode.replaceChild(newBtn, addBtn);
+      newBtn.onclick = (e) => { e.stopPropagation(); addProductToCart(); closeProductModal(); };
+    }
 
-  const priceText = (dataType === 'pastries')
-    ? `Php ${currentProduct.price} (${selectedSize})`
-    : `Php ${currentProduct.price} (Grande)`;
-  document.getElementById("modalProductPrice").textContent = priceText;
-
-  // Bind Add to Cart cleanly
-  const detailsSection = document.querySelector(".product-modal-details");
-  const addBtn = detailsSection ? detailsSection.querySelector(".product-modal-add-cart") : null;
-  if (addBtn) {
-    const newBtn = addBtn.cloneNode(true);
-    addBtn.parentNode.replaceChild(newBtn, addBtn);
-    newBtn.onclick = function () { addProductToCart(); closeProductModal(); };
-  }
-
-  // Open modal
-  const modal = document.getElementById("productModal");
-  if (modal) {
-    modal.classList.add("active");
-    modal.style.display = "flex";
-    modal.style.alignItems = "center";
-    modal.style.justifyContent = "center";
-    modal.style.position = "fixed";
-    modal.style.top = "0";
-    modal.style.left = "0";
-    modal.style.width = "100vw";
-    modal.style.height = "100vh";
-    modal.style.background = "rgba(0,0,0,0.15)";
-    modal.style.zIndex = "3000";
-    document.body.style.overflow = "hidden";
-    const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
-    if (yellowCloseBtn) yellowCloseBtn.onclick = (e) => { e.stopPropagation(); closeProductModal(); };
+    // Open modal
+    const modal = document.getElementById("productModal");
+    if (modal) {
+      modal.classList.add("active");
+      modal.style.display = "flex";
+      modal.style.alignItems = "center";
+      modal.style.justifyContent = "center";
+      modal.style.position = "fixed";
+      modal.style.top = "0";
+      modal.style.left = "0";
+      modal.style.width = "100vw";
+      modal.style.height = "100vh";
+      modal.style.background = "rgba(0,0,0,0.15)";
+      modal.style.zIndex = "3000";
+      document.body.style.overflow = "hidden";
+      const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
+      if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
+    }
+  } catch (err) {
+    console.error('handleViewProduct error', err);
   }
 }
-
 // Replace selectSize with pastry-aware version
 function selectSize(size) {
   selectedSize = size;
@@ -1401,7 +1448,11 @@ function selectSize(size) {
 
   // Update price text based on size without reopening the modal
   if (currentProduct) {
-    if (size === "Grande") {
+    if (currentProduct.dataType === 'pastries' && Array.isArray(currentProduct.variants)) {
+      const chosen = currentProduct.variants.find(v => v.label === size) || currentProduct.variants[0];
+      currentProduct.price = chosen.price;
+      document.getElementById("modalProductPrice").textContent = `Php ${chosen.price} (${chosen.label})`;
+    } else if (size === "Grande") {
       currentProduct.price = currentProduct.grandePrice || currentProduct.price;
       document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.grandePrice || currentProduct.price} (Grande)`;
     } else if (size === "Supreme") {
@@ -1423,17 +1474,17 @@ function handleCheckout() {
   const pickup_time = document.getElementById("pickupTime") ? document.getElementById("pickupTime").value : "";
   const special_instructions = document.getElementById("specialInstructions") ? document.getElementById("specialInstructions").value : "";
 
- if (pickup_time) {
-  const [h, m] = pickup_time.split(":").map(Number);
-  const mins = h * 60 + m;
-  const open = 15 * 60;       
-  const close = 20 * 60 + 30; 
+  if (pickup_time) {
+    const [h, m] = pickup_time.split(":").map(Number);
+    const mins = h * 60 + m;
+    const open = 15 * 60;
+    const close = 20 * 60 + 30;
 
-  if (mins < open || mins > close) {
-    showNotification("Pickup time must be between 3:00 p.m and 8:30 p.m.", "error");
-    return;
+    if (mins < open || mins > close) {
+      showNotification("Pickup time must be between 3:00 p.m and 8:30 p.m.", "error");
+      return;
+    }
   }
-}
 
 
   if (!pickup_name || !pickup_location || !pickup_time) {
@@ -1451,40 +1502,40 @@ function handleCheckout() {
       `&special_instructions=${encodeURIComponent(special_instructions)}` +
       `&cart_items=${encodeURIComponent(JSON.stringify(cart))}`
   })
-  .then(res => res.text())
-  .then(text => {
-    console.log('Pickup checkout raw response:', text);
-    if (!text.trim()) {
-      showNotification("Empty server response.", "error");
-      return;
-    }
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      showNotification("Invalid server response: " + text, "error");
-      return;
-    }
-
-    if (data.success) {
-      showNotification("Pickup order placed successfully!", "success");
-      closeCart();
-      cart = [];
-      updateCartCount();
-      updateCartDisplay();
-
-      if (typeof showReceiptModal === "function" && data.reference_number) {
-        showReceiptModal(data.reference_number);
+    .then(res => res.text())
+    .then(text => {
+      console.log('Pickup checkout raw response:', text);
+      if (!text.trim()) {
+        showNotification("Empty server response.", "error");
+        return;
       }
-    } else {
-      showNotification(data.message || "Pickup order failed.", "error");
-    }
-  })
-  .catch((err) => {
-    console.error('Pickup checkout error:', err);
-    showNotification("Network error. Please try again.", "error");
-  });
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        showNotification("Invalid server response: " + text, "error");
+        return;
+      }
+
+      if (data.success) {
+        showNotification("Pickup order placed successfully!", "success");
+        closeCart();
+        cart = [];
+        updateCartCount();
+        updateCartDisplay();
+
+        if (typeof showReceiptModal === "function" && data.reference_number) {
+          showReceiptModal(data.reference_number);
+        }
+      } else {
+        showNotification(data.message || "Pickup order failed.", "error");
+      }
+    })
+    .catch((err) => {
+      console.error('Pickup checkout error:', err);
+      showNotification("Network error. Please try again.", "error");
+    });
 }
 
 function handlePickupCheckout() {
@@ -1498,192 +1549,192 @@ function handlePickupCheckout() {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `pickup_name=${encodeURIComponent(pickup_name)}&pickup_location=${encodeURIComponent(pickup_location)}&pickup_time=${encodeURIComponent(pickup_time)}&special_instructions=${encodeURIComponent(special_instructions)}`
   })
-  .then(res => {
-    console.log('Pickup checkout response status:', res.status);
-    return res.text().then(text => {
-      console.log('Pickup checkout raw response:', text);
-      try {
-        return JSON.parse(text);
-      } catch (e) {
-        showNotification("Invalid server response.", "error");
-        throw e;
+    .then(res => {
+      console.log('Pickup checkout response status:', res.status);
+      return res.text().then(text => {
+        console.log('Pickup checkout raw response:', text);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          showNotification("Invalid server response.", "error");
+          throw e;
+        }
+      });
+    })
+    .then(data => {
+      if (data.success) {
+        showNotification("Pickup order placed successfully!", "success");
+        closeCart();
+        cart = [];
+        updateCartCount();
+        updateCartDisplay();
+      } else {
+        showNotification(data.message || "Pickup order failed.", "error");
       }
+    })
+    .catch((err) => {
+      console.error('Pickup checkout error:', err);
+      showNotification("Network error. Please try again.", "error");
     });
-  })
-  .then(data => {
-    if (data.success) {
-      showNotification("Pickup order placed successfully!", "success");
-      closeCart();
-      cart = [];
-      updateCartCount();
-      updateCartDisplay();
-    } else {
-      showNotification(data.message || "Pickup order failed.", "error");
-    }
-  })
-  .catch((err) => {
-    console.error('Pickup checkout error:', err);
-    showNotification("Network error. Please try again.", "error");
-  });
 }
 
 // Registration form validation
 function validateRegisterForm() {
-    const registerName = document.getElementById("registerName");
-    const registerLastName = document.getElementById("registerLastName");
-    const registerEmail = document.getElementById("registerEmail");
-    const registerPassword = document.getElementById("registerPassword");
-    const confirmPassword = document.getElementById("confirmPassword");
-    const firstnameError = document.getElementById("firstnameError");
-    const lastnameError = document.getElementById("lastnameError");
-    const emailError = document.getElementById("emailError");
-    const passwordError = document.getElementById("passwordError");
+  const registerName = document.getElementById("registerName");
+  const registerLastName = document.getElementById("registerLastName");
+  const registerEmail = document.getElementById("registerEmail");
+  const registerPassword = document.getElementById("registerPassword");
+  const confirmPassword = document.getElementById("confirmPassword");
+  const firstnameError = document.getElementById("firstnameError");
+  const lastnameError = document.getElementById("lastnameError");
+  const emailError = document.getElementById("emailError");
+  const passwordError = document.getElementById("passwordError");
 
-    let valid = true;
+  let valid = true;
 
-    // Check for empty fields
-    if (!registerName.value.trim()) {
-        firstnameError.textContent = "First name is required.";
-        valid = false;
-    }
-    if (!registerLastName.value.trim()) {
-        lastnameError.textContent = "Last name is required.";
-        valid = false;
-    }
-    if (!registerEmail.value.trim()) {
-        emailError.textContent = "Email is required.";
-        valid = false;
-    }
-    if (!registerPassword.value.trim()) {
-        passwordError.textContent = "Password is required.";
-        valid = false;
-    }
-    if (!confirmPassword.value.trim()) {
-        passwordError.textContent = "Please confirm your password.";
-        valid = false;
-    }
+  // Check for empty fields
+  if (!registerName.value.trim()) {
+    firstnameError.textContent = "First name is required.";
+    valid = false;
+  }
+  if (!registerLastName.value.trim()) {
+    lastnameError.textContent = "Last name is required.";
+    valid = false;
+  }
+  if (!registerEmail.value.trim()) {
+    emailError.textContent = "Email is required.";
+    valid = false;
+  }
+  if (!registerPassword.value.trim()) {
+    passwordError.textContent = "Password is required.";
+    valid = false;
+  }
+  if (!confirmPassword.value.trim()) {
+    passwordError.textContent = "Please confirm your password.";
+    valid = false;
+  }
 
-    // Password length
-    if (registerPassword.value.length > 0 && registerPassword.value.length < 8) {
-        passwordError.textContent = "Password must be at least 8 characters.";
-        valid = false;
-    }
+  // Password length
+  if (registerPassword.value.length > 0 && registerPassword.value.length < 8) {
+    passwordError.textContent = "Password must be at least 8 characters.";
+    valid = false;
+  }
 
-    // Password match
-    if (registerPassword.value && confirmPassword.value && registerPassword.value !== confirmPassword.value) {
-        passwordError.textContent = "Passwords do not match.";
-        valid = false;
-    }
+  // Password match
+  if (registerPassword.value && confirmPassword.value && registerPassword.value !== confirmPassword.value) {
+    passwordError.textContent = "Passwords do not match.";
+    valid = false;
+  }
 
-    if (firstnameError.textContent && firstnameError.textContent !== "First name is required.") valid = false;
-    if (lastnameError.textContent && lastnameError.textContent !== "Last name is required.") valid = false;
-    if (emailError.textContent && emailError.textContent !== "Email is required.") valid = false;
-    return valid;
+  if (firstnameError.textContent && firstnameError.textContent !== "First name is required.") valid = false;
+  if (lastnameError.textContent && lastnameError.textContent !== "Last name is required.") valid = false;
+  if (emailError.textContent && emailError.textContent !== "Email is required.") valid = false;
+  return valid;
 }
 
 
 if (document.getElementById('registerForm')) {
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
-        document.getElementById("firstnameError").textContent = "";
-        document.getElementById("lastnameError").textContent = "";
-        document.getElementById("emailError").textContent = "";
-        document.getElementById("passwordError").textContent = "";
-        if (!validateRegisterForm()) {
-            e.preventDefault();
-            return false;
-        }
-    });
+  document.getElementById('registerForm').addEventListener('submit', function (e) {
+    document.getElementById("firstnameError").textContent = "";
+    document.getElementById("lastnameError").textContent = "";
+    document.getElementById("emailError").textContent = "";
+    document.getElementById("passwordError").textContent = "";
+    if (!validateRegisterForm()) {
+      e.preventDefault();
+      return false;
+    }
+  });
 }
 
 // Terms and Conditions modal logic
-window.addEventListener("DOMContentLoaded", function() {
-    var showTermsBtn = document.getElementById('showTermsBtn');
-    var termsModal = document.getElementById('termsModal');
-    if (showTermsBtn && termsModal) {
-        showTermsBtn.onclick = function(e) {
-            e.preventDefault();
-            termsModal.classList.add('active');
-        };
-    }
+window.addEventListener("DOMContentLoaded", function () {
+  var showTermsBtn = document.getElementById('showTermsBtn');
+  var termsModal = document.getElementById('termsModal');
+  if (showTermsBtn && termsModal) {
+    showTermsBtn.onclick = function (e) {
+      e.preventDefault();
+      termsModal.classList.add('active');
+    };
+  }
 });
 
 // AJAX check for fullname/email 
-window.addEventListener("DOMContentLoaded", function() {
-    const registerName = document.getElementById("registerName");
-    const registerEmail = document.getElementById("registerEmail");
-    const registerLastName = document.getElementById("registerLastName");
-    const firstnameError = document.getElementById("firstnameError");
-    const emailError = document.getElementById("emailError");
-    const lastnameError = document.getElementById("lastnameError");
+window.addEventListener("DOMContentLoaded", function () {
+  const registerName = document.getElementById("registerName");
+  const registerEmail = document.getElementById("registerEmail");
+  const registerLastName = document.getElementById("registerLastName");
+  const firstnameError = document.getElementById("firstnameError");
+  const emailError = document.getElementById("emailError");
+  const lastnameError = document.getElementById("lastnameError");
 
-    if (registerName) {
-        registerName.addEventListener("blur", function () {
-            const name = registerName.value.trim();
-            if (!name) return;
-            fetch('AJAX/check_duplicates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `field=user_FN&value=${encodeURIComponent(name)}`
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.exists) {
-                        firstnameError.textContent = "First name is already registered.";
-                    } else {
-                        firstnameError.textContent = "";
-                    }
-                })
-                .catch(err => {
-                    firstnameError.textContent = "An error occurred. Please try again.";
-                });
+  if (registerName) {
+    registerName.addEventListener("blur", function () {
+      const name = registerName.value.trim();
+      if (!name) return;
+      fetch('AJAX/check_duplicates.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `field=user_FN&value=${encodeURIComponent(name)}`
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.exists) {
+            firstnameError.textContent = "First name is already registered.";
+          } else {
+            firstnameError.textContent = "";
+          }
+        })
+        .catch(err => {
+          firstnameError.textContent = "An error occurred. Please try again.";
         });
-    }
+    });
+  }
 
-    if (registerEmail) {
-        registerEmail.addEventListener("blur", function() {
-            const email = registerEmail.value.trim();
-            if (!email) return;
-            fetch('AJAX/check_duplicates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `field=user_email&value=${encodeURIComponent(email)}`
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.exists) {
-                        emailError.textContent = "Email is already registered.";
-                    } else {
-                        emailError.textContent = "";
-                    }
-                })
-                .catch(err => {
-                    emailError.textContent = "An error occurred. Please try again.";
-                });
-        }); 
-    }
-
-    if (registerLastName) {
-        registerLastName.addEventListener("blur", function () {
-            const lastName = registerLastName.value.trim();
-            if (!lastName) return;
-            fetch('AJAX/check_duplicates.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `field=user_LN&value=${encodeURIComponent(lastName)}`
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.exists) {
-                        lastnameError.textContent = "Last name is already registered.";
-                    } else {
-                        lastnameError.textContent = "";
-                    }
-                })
-                .catch(err => {
-                    lastnameError.textContent = "An error occurred. Please try again.";
-                });
+  if (registerEmail) {
+    registerEmail.addEventListener("blur", function () {
+      const email = registerEmail.value.trim();
+      if (!email) return;
+      fetch('AJAX/check_duplicates.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `field=user_email&value=${encodeURIComponent(email)}`
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.exists) {
+            emailError.textContent = "Email is already registered.";
+          } else {
+            emailError.textContent = "";
+          }
+        })
+        .catch(err => {
+          emailError.textContent = "An error occurred. Please try again.";
         });
-    }
+    });
+  }
+
+  if (registerLastName) {
+    registerLastName.addEventListener("blur", function () {
+      const lastName = registerLastName.value.trim();
+      if (!lastName) return;
+      fetch('AJAX/check_duplicates.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `field=user_LN&value=${encodeURIComponent(lastName)}`
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.exists) {
+            lastnameError.textContent = "Last name is already registered.";
+          } else {
+            lastnameError.textContent = "";
+          }
+        })
+        .catch(err => {
+          lastnameError.textContent = "An error occurred. Please try again.";
+        });
+    });
+  }
 });
 
 // === Edit Profile Modal Logic ===

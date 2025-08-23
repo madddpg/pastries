@@ -618,34 +618,40 @@ foreach ($allProducts as $row) {
             $shownIds = [];
             $premiumIndex = 0;
             foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 5 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Premium Coffee</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 5 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="5">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Premium Coffee</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                            <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                        </div>
+                    </div>
+                <?php
+                    $premiumIndex++;
+                }
+            }
             $premiumProducts = [
                 [
                     'id' => 'ameri',
@@ -670,7 +676,7 @@ foreach ($allProducts as $row) {
             foreach ($premiumProducts as $p) {
                 if (!in_array($p['id'], $shownIds) && (!isset($productStatuses[$p['id']]) || $productStatuses[$p['id']] === 'active')) {
                 ?>
-                    <div class="product-item" data-type="cold">
+                    <div class="product-item" data-type="cold" data-category="5">
                         <div class="product-image">
                             <img src="<?= htmlspecialchars($p['cold_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
                         </div>
@@ -681,12 +687,12 @@ foreach ($allProducts as $row) {
                             <div class="product-footer">
                                 <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>')">View</button>
                             </div>
-                        </div>  
+                        </div>
                     </div>
                     <?php
                     ?>
 
-                    <div class="product-item" data-type="hot">
+                    <div class="product-item" data-type="hot" data-category="5">
                         <div class="product-image">
                             <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
                         </div>
@@ -694,9 +700,15 @@ foreach ($allProducts as $row) {
                             <h3><?= htmlspecialchars($p['name']) ?></h3>
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($p['hot_desc']) ?></p>
-                            <div class="product-footer">
-                                <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>')">View</button>
-                            </div>
+                  <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
                         </div>
                     </div>
             <?php
@@ -707,74 +719,80 @@ foreach ($allProducts as $row) {
 
 
         <!-- Pastries Section -->
-<div class="products-header" style="margin-top:2em;">
-  <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Pastries</h3>
-  <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">Freshly baked, perfect with coffee</div>
-</div>
-
-<div class="pastries-section">
-  <div class="product-list">
-  <?php
-foreach ($allProducts as $product) {
-  if (isset($product['category_id']) && (int)$product['category_id'] === 7 && $product['status'] === 'active') {
-      $imgSrc = trim($product['image'] ?? '');
-      if (!preg_match('#^https?://#i', $imgSrc)) {
-          $imgSrc = ltrim($imgSrc, '/');
-          if (strpos($imgSrc, 'img/') !== 0) $imgSrc = 'img/' . $imgSrc;
-      }
-      $fsPath = __DIR__ . '/' . ltrim(parse_url($imgSrc, PHP_URL_PATH), '/');
-      if (!file_exists($fsPath)) $imgSrc = 'img/placeholder_pastry.png';
-
-      // Define pastry price variants
-      $nameLc = mb_strtolower($product['name']);
-      $variants = [];
-      if (strpos($nameLc, 'crème flan') !== false || strpos($nameLc, 'creme flan') !== false || strpos($nameLc, 'flan') !== false) {
-          $variants = [
-              ['label' => 'Per piece', 'price' => 60],
-              ['label' => 'Box of 4', 'price' => 230],
-              ['label' => 'Box of 6', 'price' => 350],
-          ];
-      } elseif (strpos($nameLc, 'egg pie') !== false) {
-          $variants = [
-              ['label' => 'Per slice', 'price' => 60],
-              ['label' => 'Whole', 'price' => 380],
-          ];
-      } else {
-          // Fallback to single price from DB (if any)
-          $fallback = isset($product['price']) ? (float)$product['price'] : 0;
-          $variants = [['label' => 'Standard', 'price' => $fallback]];
-      }
-      $basePrice = $variants[0]['price'];
-      ?>
-      <div class="product-item" data-type="pastries">
-        <div class="product-image">
-          <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+        <div class="products-header" style="margin-top:2em;">
+            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Pastries</h3>
+            <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">Freshly baked, perfect with coffee</div>
         </div>
-        <div class="product-info">
-          <h3><?= htmlspecialchars($product['name']) ?></h3>
-          <span class="badge bg-success mb-2">Pastries</span>
-          <p><?= htmlspecialchars($product['description']) ?></p>
-          <div class="product-footer">
-            <button class="view-btn"
-              onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>',
-                                         '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>',
-                                         <?= json_encode($basePrice) ?>,
-                                         '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>',
-                                         '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>',
-                                         'pastries',
-                                         <?= json_encode($variants) ?>)">
-              View
-            </button>
-          </div>
+
+        <div class="pastries-section">
+            <div class="product-list">
+                <?php
+                foreach ($allProducts as $product) {
+                    if (isset($product['category_id']) && (int)$product['category_id'] === 7 && $product['status'] === 'active') {
+                        $imgSrc = trim($product['image'] ?? '');
+                        if (!preg_match('#^https?://#i', $imgSrc)) {
+                            $imgSrc = ltrim($imgSrc, '/');
+                            if (strpos($imgSrc, 'img/') !== 0) $imgSrc = 'img/' . $imgSrc;
+                        }
+                        $fsPath = __DIR__ . '/' . ltrim(parse_url($imgSrc, PHP_URL_PATH), '/');
+                        if (!file_exists($fsPath)) $imgSrc = 'img/placeholder_pastry.png';
+
+                        // Define pastry price variants
+                        $nameLc = mb_strtolower($product['name']);
+                        $variants = [];
+                        if (strpos($nameLc, 'crème flan') !== false || strpos($nameLc, 'creme flan') !== false || strpos($nameLc, 'flan') !== false) {
+                            $variants = [
+                                ['label' => 'Per piece', 'price' => 60],
+                                ['label' => 'Box of 4', 'price' => 230],
+                                ['label' => 'Box of 6', 'price' => 350],
+                            ];
+                        } elseif (strpos($nameLc, 'egg pie') !== false) {
+                            $variants = [
+                                ['label' => 'Per slice', 'price' => 60],
+                                ['label' => 'Whole', 'price' => 380],
+                            ];
+                        } else {
+                            // Fallback to single price from DB (if any)
+                            $fallback = isset($product['price']) ? (float)$product['price'] : 0;
+                            $variants = [['label' => 'Standard', 'price' => $fallback]];
+                        }
+                        $basePrice = $variants[0]['price'];
+                ?>
+                        <div class="product-item" data-type="pastries" data-category="7">
+                            <div class="product-image">
+                                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                            </div>
+                            <div class="product-info">
+                                <h3><?= htmlspecialchars($product['name']) ?></h3>
+                                <span class="badge bg-success mb-2">Pastries</span>
+                                <p><?= htmlspecialchars($product['description']) ?></p>
+                                <div class="product-footer">
+                                    <?php
+                                    // $variants should be an array; prepare a JSON-safe string for a data-attribute
+                                    $variants_json = isset($variants) ? json_encode($variants, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) : 'null';
+                                    $basePrice = isset($basePrice) ? $basePrice : 0;
+                                    $imgSrc = isset($imgSrc) ? $imgSrc : '';
+                                    ?>
+                                 <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars($basePrice, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="pastries"
+  data-variants='<?= htmlspecialchars($variants_json, ENT_QUOTES) ?>'>
+  View
+</button>
+                                </div>
+                            </div>
+                        </div>
+                <?php
+                    }
+                }
+                ?>
+
+            </div>
         </div>
-      </div>
-      <?php
-  }
-}
-  ?>
-  
-  </div>
-</div>
 
 
         <!-- Specialty Coffee Section -->
@@ -788,34 +806,41 @@ foreach ($allProducts as $product) {
             <?php
             $shownIds = [];
             foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Specialty Coffee</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="6">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Specialty Coffee</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                          <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                        </div>
+                    </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
             ?>
         </div>
 
@@ -830,34 +855,40 @@ foreach ($allProducts as $product) {
             <?php
             $shownIds = [];
             foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 2 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Chocolate Overload</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 2 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="2">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Chocolate Overload</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                         <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                        </div>
+                    </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
             ?>
         </div>
 
@@ -872,34 +903,40 @@ foreach ($allProducts as $product) {
             <?php
             $shownIds = [];
             foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 3 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Matcha Series</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 3 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="3">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Matcha Series</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                          <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                                </div>
+                            </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
             ?>
         </div>
 
@@ -913,35 +950,41 @@ foreach ($allProducts as $product) {
         <div class="product-list">
             <?php
             $shownIds = [];
-           foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 4 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">Milk Based</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+            foreach ($allProducts as $product) {
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 4 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="4">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Milk Based</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+   <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                        </div>
+                    </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
             ?>
         </div>
 
@@ -956,34 +999,40 @@ foreach ($allProducts as $product) {
             <?php
             $shownIds = [];
             foreach ($allProducts as $product) {
-    if (
-        isset($product['category_id']) && $product['category_id'] == 1 // Premium Coffee category_id
-        && $product['status'] === 'active'
-    ) {
-        $shownIds[] = $product['id'];
-        $imgSrc = $product['image'];
-        if (strpos($imgSrc, 'img/') !== 0) {
-            $imgSrc = 'img/' . ltrim($imgSrc, '/');
-        }
-        $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-        ?>
-        <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>">
-            <div class="product-image">
-                <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-            </div>
-            <div class="product-info">
-                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                <span class="badge bg-success mb-2">All Time Fav</span>
-                <p><?= htmlspecialchars($product['description']) ?></p>
-                <div class="product-footer">
-                    <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>', '<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>')">View</button>
-                </div>
-            </div>
-        </div>
-        <?php
-        $premiumIndex++;
-    }
-}
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 1 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['id'];
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="1">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">All Time Fav</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                          <button type="button" class="view-btn"
+  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+  View
+</button>
+                        </div>
+                    </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
             ?>
         </div>
     </div>
@@ -1258,6 +1307,7 @@ foreach ($allProducts as $product) {
         });
     </script>
 </body>
+
 </html>
 
 <!-- Edit Profile Modal -->

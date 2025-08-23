@@ -1,86 +1,105 @@
+
 <?php
 session_start();
 header('Content-Type: application/json');
-// Prevent any output before the JSON response
-ob_clean(); // Clear any previous output buffers
 
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Not logged in']);
+// Check if user is logged in
+if (!isset($_SESSION['user']) || !isset($_SESSION['user']['user_id'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Not logged in'
+    ]);
     exit;
 }
 
 require_once __DIR__ . '/../admin/database/db_connect.php';
-
-$user_id = $_SESSION['user_id'];
 $db = new Database();
 $pdo = $db->opencon();
 
 try {
-    // 1. Fetch new unnotified status updates - CORRECTED TABLE NAME
+    $user_id = $_SESSION['user']['user_id'];
+    
+    // Get unread status updates (where notified=0)
     $stmt = $pdo->prepare("
-        SELECT reference_number, status, created_at as timestamp
-        FROM transaction
-        WHERE user_id = ?
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-        AND (notified = 0 OR notified IS NULL)
-        ORDER BY created_at DESC
+        SELECT 
+            t.transac_id AS transaction_id,
+            t.reference_number,
+            t.status
+        FROM transaction t
+        WHERE t.user_id = :user_id
+          AND t.notified = 0
+          AND t.created_at >= NOW() - INTERVAL 48 HOUR
+        ORDER BY t.created_at DESC
     ");
     
-    $stmt->execute([$user_id]);
-    $updates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([':user_id' => $user_id]);
+    $status_updates = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // 2. Also fetch ALL recent orders to track status changes client-side
+    // Also get all recent orders for tracking
     $stmt = $pdo->prepare("
-        SELECT reference_number, status, created_at as timestamp
-        FROM transaction
-        WHERE user_id = ?
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)  
-        ORDER BY created_at DESC
-        LIMIT 10
+        SELECT 
+            t.transac_id AS transaction_id,
+            t.reference_number,
+            t.status
+        FROM transaction t
+        WHERE t.user_id = :user_id
+          AND t.created_at >= NOW() - INTERVAL 48 HOUR
+        ORDER BY t.created_at DESC
     ");
     
-    $stmt->execute([$user_id]);
-    $allRecentOrders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt->execute([':user_id' => $user_id]);
+    $all_recent_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Mark unnotified updates as notified
-    if (count($updates) > 0) {
-        $referenceNumbers = array_map(function($update) {
-            return $update['reference_number'];
-        }, $updates);
+    // Add custom messages to status updates
+    foreach ($status_updates as &$update) {
+        switch(strtolower($update['status'])) {
+            case 'confirmed':
+                $update['message'] = 'Your order has been confirmed and will be prepared soon.';
+                break;
+            case 'preparing':
+                $update['message'] = 'We are currently preparing your order.';
+                break;
+            case 'ready':
+                $update['message'] = 'Your order is ready for pickup at ' . $update['pickup_location'] . 
+                                     ' at ' . $update['pickup_time'] . '.';
+                break;
+            case 'completed':
+                $update['message'] = 'Thank you for your order! We hope you enjoyed your drinks.';
+                break;
+            case 'cancelled':
+                $update['message'] = 'Your order has been cancelled. Please contact us for assistance.';
+                break;
+            default:
+                $update['message'] = 'Your order status has been updated to: ' . $update['status'];
+        }
+    }
+
+    // Mark these notifications as seen
+    if (!empty($status_updates)) {
+        $notified_ids = array_column($status_updates, 'transaction_id');
+        $placeholders = implode(',', array_fill(0, count($notified_ids), '?'));
         
-        $placeholders = str_repeat('?,', count($referenceNumbers) - 1) . '?';
-        
-        $stmt = $pdo->prepare("
-            UPDATE transaction
-            SET notified = 1
-            WHERE reference_number IN ($placeholders)
-            AND user_id = ?
-        ");
-        
-        $params = array_merge($referenceNumbers, [$user_id]);
-        $stmt->execute($params);
+        $update_stmt = $pdo->prepare("UPDATE transaction SET notified = 1 WHERE transac_id IN ($placeholders)");
+        $update_stmt->execute($notified_ids);
     }
     
-    // Create a clean response array and encode it properly
-    $response = [
+    echo json_encode([
         'success' => true,
-        'status_updates' => $updates,
-        'all_recent_orders' => $allRecentOrders
-    ];
+        'status_updates' => $status_updates,
+        'all_recent_orders' => $all_recent_orders
+    ]);
     
-    // Make sure we're sending valid JSON
-    echo json_encode($response);
-    
-} catch (Exception $e) {
-    // Log error and send clean error response
-    error_log("Order status check error: " . $e->getMessage());
+} catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => 'Error checking order status',
-        'error' => $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error: ' . $e->getMessage()
     ]);
 }
 
-$db->closecon(); // Just set PDO to null instead of calling a non-existent method
-exit; // Make sure nothing else is output after the JSON
+$db->closecon();
 ?>
