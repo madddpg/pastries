@@ -125,10 +125,18 @@ function fetch_locations_pdo($con)
                     <span class="nav-icon"><i class="bi bi-box-seam"></i></span>
                     <span>Products</span>
                 </a>
+                <a href="#" class="nav-item" data-section="toppings">
+                    <span class="nav-icon"><i class="bi bi-plus-square"></i></span>
+                    <span>Toppings</span>
+                </a>
                 <a href="#" class="nav-item" data-section="active-location">
                     <span class="nav-icon"><i class="bi bi-geo-alt-fill"></i></span>
                     <span>Active Location</span>
                 </a>
+                 <a href="#" class="nav-item" data-section="promos">
+                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
+                     <span>Promotions</span>
+                 </a>
                 <?php if (Database::isSuperAdmin()): ?>
                     <a href="#" class="nav-item" data-section="add-admin">
                         <span class="nav-icon"><i class="bi bi-person-plus-fill"></i></span>
@@ -543,6 +551,115 @@ function fetch_locations_pdo($con)
                     </div>
                 </div>
 
+
+                <!-- Toppings Section (admin) -->
+                <div id="toppings-section" class="content-section">
+                    <h1 style="margin-bottom:12px;">Toppings Management</h1>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                        <div class="tabs">
+                            <a href="#" class="tab active">All Toppings</a>
+                        </div>
+                        <button id="showAddToppingModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Topping</button>
+                    </div>
+
+                    <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
+                        <div class="table-container" style="margin-top:4px;">
+                            <table class="products-table" id="toppingsTable" style="width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:60px;">ID</th>
+                                        <th>Name</th>
+                                        <th style="width:140px;text-align:right;">Price</th>
+                                        <th style="width:120px;text-align:center;">Status</th>
+                                        <th style="width:160px;text-align:center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- rows rendered by admin/js/main.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Add/Edit Topping Modal (unchanged) -->
+                    <div id="addToppingModal" class="modal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.15);z-index:9999;">
+                        <div class="modal-content" style="background:#fff;padding:24px;border-radius:12px;max-width:420px;width:100%;">
+                            <button id="closeAddToppingModal" type="button" style="position:absolute;right:18px;top:12px;background:none;border:none;font-size:20px;">&times;</button>
+                            <h3 id="addToppingTitle">Add Topping</h3>
+                            <form id="toppingForm">
+                                <input type="hidden" id="toppingId" name="id" value="">
+                                <div class="form-group" style="margin-bottom:8px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:600;">Name</label>
+                                    <input type="text" id="toppingName" name="name" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:12px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:600;">Price</label>
+                                    <input type="number" step="0.01" id="toppingPrice" name="price" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;text-align:right;">
+                                </div>
+                                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                    <button type="button" id="cancelToppingBtn" class="btn-secondary">Cancel</button>
+                                    <button type="submit" id="saveToppingBtn" class="btn-primary">Save</button>
+                                </div>
+                            </form>
+                            <div id="toppingFormResult" style="margin-top:8px;color:#dc2626;"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Toppings Section -->
+
+
+                <div id="promos-section" class="content-section">
+                    <h1>Promos / Banner Images</h1>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                        <div class="tabs"><a href="#" class="tab active">All Promos</a></div>
+                        <form action="upload_promo.php" method="post" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;">
+                            <input type="text" name="title" placeholder="Title (optional)" style="padding:8px;border-radius:6px;border:1px solid #e6f2ea;">
+                            <input type="file" name="promoImage" accept="image/*" required>
+                            <button type="submit" class="btn-primary">Upload</button>
+                        </form>
+                    </div>
+
+                    <div class="card" style="padding:18px;">
+                        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+                            <?php
+                            $promos = $db->fetch_locations_pdo($con); // placeholder - avoid; fetch from promos table instead
+                            // Better: query directly:
+                            $stmt = $con->prepare("SELECT * FROM promos ORDER BY created_at DESC");
+                            $stmt->execute();
+                            $promos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            if (empty($promos)) {
+                                echo '<div>No promos yet.</div>';
+                            } else {
+                                foreach ($promos as $pr) {
+                                    $img = htmlspecialchars($pr['image']);
+                                    $title = htmlspecialchars($pr['title']);
+                                    $active = $pr['active'] ? 'Active' : 'Inactive';
+                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
+                    <img src=\"{$img}\" style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
+                    <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
+                    <div style='display:flex;gap:6px;'>
+                      <form method='post' action='delete_promo.php' style='margin:0;'>
+                        <input type='hidden' name='id' value='{$pr['id']}'>
+                        <input type='hidden' name='action' value='delete'>
+                        <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
+                      </form>
+                      <form method='post' action='delete_promo.php' style='margin:0;'>
+                        <input type='hidden' name='id' value='{$pr['id']}'>
+                        <input type='hidden' name='action' value='toggle'>
+                        <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
+                        <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
+                      </form>
+                    </div>
+                  </div>";
+                                }
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Active Location Section -->
                 <div id="active-location-section" class="content-section">
                     <h1>Active Locations</h1>
@@ -930,7 +1047,7 @@ function fetch_locations_pdo($con)
                         addProductModal.style.display = 'none';
                         if (addProductResult) addProductResult.textContent = '';
                         if (addProductForm) addProductForm.reset();
-                        
+
                     }
                 });
             }

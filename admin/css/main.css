@@ -34,6 +34,99 @@ body {
   display: none; /* Hide the main title to match the design */
 }
 
+.card {
+  border-radius: 12px;
+  padding: 18px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(16,185,129,0.03);
+}
+
+.products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Inter', sans-serif;
+  background: transparent;
+}
+
+.products-table thead tr {
+  border-bottom: 1px solid #e6f2ea;
+}
+
+.products-table thead th {
+  text-align: left;
+  font-weight: 600;
+  padding: 12px 14px;
+  color: #374151;
+  font-size: 14px;
+}
+
+.products-table tbody td {
+  padding: 14px;
+  border-bottom: 1px solid #f3f7f2;
+  color: #334155;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: rgba(34,160,107,0.12);
+  color: #16a34a;
+}
+
+.status-badge.inactive {
+  background: rgba(239,68,68,0.08);
+  color: #ef4444;
+}
+
+/* action buttons in table */
+.btn-primary {
+  background: #059669;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* small action buttons used inside table rows */
+.btn-edit-topping, .btn-toggle-topping {
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-left:6px;
+}
+
+.btn-edit-topping { background:#f3f4f6;color:#374151;border:none; }
+.btn-toggle-topping { background:#ffffff;border:1px solid #e6f2ea;color:#2563eb; }
+
+/* responsive */
+@media (max-width: 900px) {
+  .products-table thead { display:none; }
+  .products-table tbody td { display:block; width:100%; }
+  .products-table tbody tr { display:block; margin-bottom:12px; border:1px solid #eefaf0; border-radius:8px; padding:8px; }
+}
+
+
+
+
 /* Stats Grid - Top 4 Cards */
 .stats-grid {
   display: grid;

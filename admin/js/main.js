@@ -132,6 +132,199 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+(function(){
+    // Correct API path relative to admin.php
+    const API = 'AJAX/get_toppings.php';
+
+async function fetchToppings() {
+    try {
+        const res = await fetch(`${API}?action=list`);
+        const text = await res.text(); // get raw response to inspect HTML/errors
+        // show raw response in console when not valid JSON
+        try {
+            const data = JSON.parse(text);
+            if (!data.success) return;
+            const tbody = document.querySelector('#toppingsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = data.toppings.map(t => `
+                <tr data-id="${t.id}" data-status="${t.status}">
+                    <td style="width:60px;">${t.id}</td>
+                    <td>${t.name}</td>
+                    <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
+                    <td style="text-align:center;">
+                        <span class="status-badge ${t.status === 'active' ? 'active' : 'inactive'}">${t.status === 'active' ? 'Active' : 'Inactive'}</span>
+                    </td>
+                    <td style="text-align:center;white-space:nowrap;">
+                        <button class="btn-edit-topping btn-edit-topping-sm" data-id="${t.id}">Edit</button>
+                        <button class="btn-toggle-topping btn-toggle-topping-sm" data-id="${t.id}" data-status="${t.status}">${t.status === 'active' ? 'Set Inactive' : 'Set Active'}</button>
+                        <button class="btn-delete-topping btn-delete-topping-sm" data-id="${t.id}">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (parseErr) {
+            console.error('fetchToppings: response is not JSON — raw response below:');
+            console.log(text);
+            console.error('JSON parse error:', parseErr);
+            // optionally show a small UI hint
+            const tbody = document.querySelector('#toppingsTable tbody');
+            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console/network for response</td></tr>';
+        }
+    } catch (err) {
+        console.error('fetchToppings error', err);
+    }
+}
+
+
+async function loadActiveToppings() {
+  try {
+    const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.toppings)) return;
+    const container = document.getElementById('toppingsList');
+    if (!container) return;
+    // render each topping as checkbox; use topping id as data-id and price as data-price
+    container.innerHTML = data.toppings.map(t => {
+      const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<label style="display:block;margin-bottom:6px;"><input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> ${safeName} — ₱${Number(t.price).toFixed(2)}</label>`;
+    }).join('');
+    bindToppingCheckboxes(); // attach onchange handlers
+    recalcModalTotal(); // update displayed total
+  } catch (err) {
+    console.error('loadActiveToppings error', err);
+  }
+}
+
+function bindToppingCheckboxes() {
+  document.querySelectorAll('.topping-checkbox').forEach(cb => {
+    // remove any previous listener to avoid duplicates
+    cb.onchange = null;
+    cb.onchange = function () {
+      const key = cb.getAttribute('data-id') || cb.getAttribute('data-key') || cb.value;
+      const price = parseFloat(cb.getAttribute('data-price')) || 0;
+      if (cb.checked) {
+        modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
+      } else {
+        delete modalSelectedToppings[key];
+      }
+      recalcModalTotal();
+    };
+  });
+}
+
+// Run once on page load so product modal toppings reflect DB status
+document.addEventListener('DOMContentLoaded', function () {
+  loadActiveToppings();
+});
+
+
+    // Run immediately (outer DOMContentLoaded already handled)
+    fetchToppings();
+
+    // UI handlers (no inner DOMContentLoaded wrapper)
+    const showBtn = document.getElementById('showAddToppingModalBtn');
+    const addModal = document.getElementById('addToppingModal');
+    const closeBtn = document.getElementById('closeAddToppingModal');
+    const cancelBtn = document.getElementById('cancelToppingBtn');
+    const form = document.getElementById('toppingForm');
+    const resultEl = document.getElementById('toppingFormResult');
+
+    if (showBtn) {
+        showBtn.addEventListener('click', function(){
+            document.getElementById('addToppingTitle').textContent = 'Add Topping';
+            document.getElementById('toppingId').value = '';
+            document.getElementById('toppingName').value = '';
+            document.getElementById('toppingPrice').value = '';
+            if (addModal) addModal.style.display = 'flex';
+        });
+    }
+    if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+    if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+
+    // delegated actions: edit / toggle / delete
+    document.body.addEventListener('click', async function(e){
+        const target = e.target;
+
+        if (target.matches('.btn-edit-topping')) {
+            const id = target.dataset.id;
+            const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
+            if (!row) return;
+            document.getElementById('addToppingTitle').textContent = 'Edit Topping';
+            document.getElementById('toppingId').value = id;
+            document.getElementById('toppingName').value = row.children[1].textContent;
+            document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱','')) || 0;
+            if (addModal) addModal.style.display = 'flex';
+            return;
+        }
+
+        if (target.matches('.btn-toggle-topping')) {
+            const id = target.dataset.id;
+            const current = target.dataset.status === 'active' ? 'active' : 'inactive';
+            const next = current === 'active' ? 'inactive' : 'active';
+            const body = new URLSearchParams();
+            body.append('action','toggle_status');
+            body.append('id', id);
+            body.append('status', next);
+            try {
+                const res = await fetch(API, { method: 'POST', body });
+                const data = await res.json();
+                if (data.success) fetchToppings();
+            } catch (err) {
+                console.error('toggle topping error', err);
+            }
+            return;
+        }
+
+        if (target.matches('.btn-delete-topping')) {
+            const id = target.dataset.id;
+            if (!confirm('Delete this topping?')) return;
+            const body = new URLSearchParams();
+            body.append('action','delete');
+            body.append('id', id);
+            try {
+                const res = await fetch(API, { method: 'POST', body });
+                const data = await res.json();
+                if (data.success) fetchToppings();
+                else alert('Delete failed');
+            } catch (err) {
+                console.error('delete topping error', err);
+            }
+            return;
+        }
+    });
+
+    if (form) {
+        form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const id = document.getElementById('toppingId').value;
+            const name = document.getElementById('toppingName').value.trim();
+            const price = document.getElementById('toppingPrice').value;
+            if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
+            const body = new URLSearchParams();
+            body.append('name', name);
+            body.append('price', price);
+            if (!id) {
+                body.append('action','add');
+            } else {
+                body.append('action','update');
+                body.append('id', id);
+            }
+            try {
+                const res = await fetch(API, { method: 'POST', body });
+                const data = await res.json();
+                if (data.success) {
+                    if (addModal) addModal.style.display = 'none';
+                    fetchToppings();
+                } else {
+                    if (resultEl) resultEl.textContent = data.message || 'Failed';
+                }
+            } catch (err) {
+                console.error('save topping error', err);
+                if (resultEl) resultEl.textContent = 'Request failed';
+            }
+        });
+    }
+})();
+
 
   // Make table rows clickable for order details (guard currentSection)
   const tableRows = document.querySelectorAll(".orders-table tbody tr, .products-table tbody tr, .stock-table tbody tr");

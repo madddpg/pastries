@@ -15,6 +15,12 @@ $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($allProducts as $row) {
     $productStatuses[$row['id']] = $row['status'];
 }
+
+$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY created_at DESC");
+$promoStmt->execute();
+$activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -275,83 +281,20 @@ foreach ($allProducts as $row) {
             <div class="fade-right"></div>
 
             <div class="carousel-track">
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo1.jpg" alt="Testimonial 1" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo2.jpg" alt="Testimonial 2" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo3.jpg" alt="Testimonial 3" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo4.jpg" alt="Testimonial 4" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book1.jpg" alt="Testimonial 5" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book2.jpg" alt="Testimonial 6" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book3.jpg" alt="Testimonial 7" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo1.jpg" alt="Testimonial 1" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo2.jpg" alt="Testimonial 2" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo3.jpg" alt="Testimonial 3" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/promo4.jpg" alt="Testimonial 4" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book1.jpg" alt="Testimonial 5" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book2.jpg" alt="Testimonial 6" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-                <div class="testimonial">
-                    <div class="testimonial-header">
-                        <img src="img/book3.jpg" alt="Testimonial 7" class="testimonial-img" onclick="openTestimonialModal(this)">
-                    </div>
-                </div>
-            </div>
-            <!-- Testimonial Image Modal -->
-            <div id="testimonialImageModal" class="testimonial-image-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);z-index:5000;align-items:center;justify-content:center;">
-                <span class="testimonial-modal-close" onclick="closeTestimonialModal()" style="position:absolute;top:30px;right:40px;font-size:2.5rem;color:#fff;cursor:pointer;z-index:5100;">&times;</span>
-                <img id="testimonialModalImg" src="" alt="Testimonial" style="max-width:90vw;max-height:85vh;border-radius:18px;box-shadow:0 8px 32px rgba(0,0,0,0.25);background:#fff;">
-            </div>
+  <?php
+    if (!empty($activePromos)) {
+      foreach ($activePromos as $promo) {
+        $img = htmlspecialchars($promo['image']);
+        $title = htmlspecialchars($promo['title']);
+        echo '<div class="testimonial"><div class="testimonial-header"><img src="'.$img.'" alt="'.($title?:'Promo').'" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+      }
+    } else {
+      // fallback: existing static images if no promos found
+      echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+      // add other static fallbacks as needed...
+    }
+  ?>
+</div>
     </div>
     </section>
 
@@ -685,30 +628,36 @@ foreach ($allProducts as $row) {
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($p['cold_desc']) ?></p>
                             <div class="product-footer">
-                                <button class="view-btn" onclick="handleViewProduct('<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>', 120, '<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>', '<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>')">View</button>
+                                <button class="view-btn"
+                                           data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                           data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
+                                           data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                           data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
+                                          data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
+                                           data-type="cold">View</button>
                             </div>
                         </div>
                     </div>
                     <?php
                     ?>
 
-                    <div class="product-item" data-type="hot" data-category="5">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
-                        </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Premium Coffee</span>
-                            <p><?= htmlspecialchars($p['hot_desc']) ?></p>
-                  <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                     <div class="product-item" data-type="hot" data-category="5">
+                      <div class="product-image">
+                          <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
+                     </div>
+                       <div class="product-info">
+                           <h3><?= htmlspecialchars($p['name']) ?></h3>
+                           <span class="badge bg-success mb-2">Premium Coffee</span>
+                           <p><?= htmlspecialchars($p['hot_desc']) ?></p>
+                           <div class="product-footer">
+                               <button class="view-btn"
+                                  data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                   data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
+                                  data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                  data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
+                                   data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
+                                  data-type="hot">View</button>
+                           </div>
                         </div>
                     </div>
             <?php
@@ -1118,13 +1067,61 @@ foreach ($allProducts as $row) {
                             <button class="size-btn" onclick="selectSize('Supreme')">Supreme</button>
                         </div>
                     </div>
-                    <button class="product-modal-add-cart" onclick="addProductToCart()">
-                        Add to Cart
-                    </button>
+
+                    <!-- Toppings choices -->
+                   <div class="product-modal-toppings" style="margin-top:12px;">
+                        <h3>Add-ons / Toppings</h3>
+
+                       <?php if (!empty($_SESSION['user']['is_admin'])): ?>
+                        <div style="margin:8px 0;">
+                           <button id="showAddToppingModalBtn" class="btn" style="background:#059669;color:#fff;padding:6px 10px;border-radius:8px;font-weight:600;">
+                               + Add Topping
+                        </button>
+                    </div>
+                   <?php endif; ?>
+
+                        <div id="toppingsList" class="toppings-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+                            <label><input type="checkbox" class="topping-checkbox" data-key="extra_shot" data-price="40"> Extra shot (coffee) — ₱40</label>
+                            <label><input type="checkbox" class="topping-checkbox" data-key="oatmilk" data-price="50"> Oatmilk — ₱50</label>                            <label><input type="checkbox" class="topping-checkbox" data-key="extra_sauce" data-price="20"> Extra sauce (milk-based) — ₱20</label>
+                            <label><input type="checkbox" class="topping-checkbox" data-key="whipped_cream" data-price="20"> Additional whipped cream — ₱20</label>
+                        </div>
+                    </div>
+                   <!-- Add Topping Modal (public, admin-only) -->                   <div id="addToppingModalPublic" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.18);z-index:6000;">
+                       <div style="background:#fff;padding:18px;border-radius:12px;max-width:420px;width:100%;position:relative;">
+                           <button id="closeAddToppingModalPublic" style="position:absolute;right:12px;top:8px;border:none;background:none;font-size:22px;">&times;</button>
+                           <h4 style="margin-top:0;margin-bottom:12px;">Add Topping</h4>
+                          <form id="addToppingFormPublic">
+                               <div style="margin-bottom:8px;">
+                                   <label style="font-weight:600;display:block;margin-bottom:6px;">Name</label>
+                                   <input type="text" id="addToppingName" name="name" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;">
+                               </div>
+                               <div style="margin-bottom:12px;">
+                                   <label style="font-weight:600;display:block;margin-bottom:6px;">Price</label>
+                                <input type="number" step="0.01" id="addToppingPrice" name="price" value="0.00" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;text-align:right;">
+                               </div>
+                               <div style="display:flex;justify-content:flex-end;gap:8px;">
+                                 <button type="button" id="cancelAddToppingPublic" class="btn" style="background:#f3f4f6;border-radius:8px;padding:8px 12px;">Cancel</button>
+                                  <button type="submit" class="btn" style="background:#059669;color:#fff;border-radius:8px;padding:8px 12px;">Save</button>
+                               </div>
+                           </form>
+                           <div id="addToppingPublicResult" style="margin-top:8px;color:#b00020;"></div>
+                       </div>
+                  </div>
+
+                    <div style="height:12px"></div>
+
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <div style="font-weight:700;" id="modalTotalLabel">Total: ₱<span id="modalTotalAmount">0.00</span></div>
+                        <button class="product-modal-add-cart" onclick="addProductToCart()">
+                            Add to Cart
+                        </button>
+                   </div>
+          
                 </div>
-            </div>
-        </div>
-    </div>
+           </div>
+       </div>
+   </div>
+     </div>
 
     <!-- Cart Icon -->
     <button class="cart-icon" onclick="openCart()">

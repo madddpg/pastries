@@ -14,6 +14,37 @@ let deliveryMethod = "pickup"
 let selectedSize = "Grande"
 let currentProduct = null
 let lastDrinkType = 'cold';
+let modalSelectedToppings = {}; 
+
+const TOPPINGS = [
+  { key: 'extra_shot', name: 'Extra shot (coffee)', price: 40 },
+  { key: 'oatmilk', name: 'Oatmilk', price: 50 },
+  { key: 'extra_sauce', name: 'Extra sauce (milk-based)', price: 20 },
+  { key: 'whipped_cream', name: 'Additional whipped cream', price: 20 }
+];
+
+
+function recalcModalTotal() {
+ if (!currentProduct) return;
+ // base price depending on size/variant
+ let base = Number(currentProduct.price || 0);
+ if (currentProduct.dataType !== 'pastries') {
+   if (selectedSize === 'Grande') base = Number(currentProduct.grandePrice || base);
+   else base = Number(currentProduct.supremePrice || base);
+ } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
+   // price should already be set by selectSize for pastries
+   base = Number(currentProduct.price || base);
+ }
+  // sum toppings
+ let toppingsSum = 0;
+ Object.values(modalSelectedToppings).forEach(t => { toppingsSum += Number(t.price || 0) * (t.qty || 1); });
+ const total = base + toppingsSum;
+const totalEl = document.getElementById('modalTotalAmount');
+ if (totalEl) totalEl.textContent = Number(total).toFixed(2);
+ // also update the modal price text for clarity
+ const priceEl = document.getElementById('modalProductPrice');
+ if (priceEl) priceEl.textContent = `Php ${Number(total).toFixed(2)}`;
+}
 
 // Navigation
 function showSection(sectionName) {
@@ -104,43 +135,92 @@ function selectSize(size) {
 }
 
 function addProductToCart() {
-  if (currentProduct) {
-    const productName = `${currentProduct.name} (${selectedSize})`;
-    addToCart(currentProduct.id, productName, currentProduct.price, selectedSize);
-    closeProductModal();
-    showNotification("Product added to cart!", "success");
+  if (!currentProduct) return;
+  // build item object with toppings
+  // determine base price same way recalcModalTotal does (without toppings)
+  let base = Number(currentProduct.price || 0);
+  if (currentProduct.dataType !== 'pastries') {
+    base = selectedSize === 'Grande' ? Number(currentProduct.grandePrice || base) : Number(currentProduct.supremePrice || base);
+  } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
+    base = Number(currentProduct.price || base);
   }
+  const toppingsArr = Object.keys(modalSelectedToppings).map(k => {
+    const t = modalSelectedToppings[k];
+    return { id: k, name: t.name, price: Number(t.price || 0), quantity: Number(t.qty || 1) };
+  });
+  const toppingsSum = toppingsArr.reduce((s, t) => s + (t.price * t.quantity), 0);
+  const itemPrice = Number((base + toppingsSum).toFixed(2));
+
+  const item = {
+    product_id: currentProduct.id || ('manual-' + (currentProduct.name || '').replace(/\s+/g, '-').toLowerCase()),
+    name: `${currentProduct.name} ${currentProduct.dataType === 'pastries' ? '(' + selectedSize + ')' : '(' + selectedSize + ')'}`,
+    basePrice: base,
+    price: itemPrice,
+    quantity: 1,
+    size: selectedSize,
+    toppings: toppingsArr,
+    description: currentProduct.description || ''
+  };
+
+  // reuse existing addToCart by accepting an object
+  addToCart(item);
+  closeProductModal();
+  showNotification("Product added to cart!", "success");
 }
 
-// Cart functionality
-function addToCart(product_id, name, price, size) {
-  const existingItem = cart.find((item) =>
-    item.product_id === product_id && item.name === name && item.size === size
-  );
-  if (existingItem) {
-    existingItem.quantity += 1;
-  } else {
-    cart.push({
-      product_id: product_id,
-      name: name,
-      price: price,
-      quantity: 1,
-      size: size
+ document.querySelectorAll('.topping-checkbox').forEach(cb => {
+      cb.onchange = function (e) {
+        const key = cb.getAttribute('data-key');
+        const price = parseFloat(cb.getAttribute('data-price')) || 0;
+        if (cb.checked) {
+          modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
+        } else {
+          delete modalSelectedToppings[key];
+        }
+        recalcModalTotal();
+      };
     });
+
+function addToCart(product_id, name, price, size) {
+  if (typeof product_id === 'object') {
+    const itemObj = product_id;
+    const existing = cart.find(it => it.product_id === itemObj.product_id && it.size === itemObj.size && JSON.stringify(it.toppings || []) === JSON.stringify(itemObj.toppings || []));
+    if (existing) existing.quantity += (itemObj.quantity || 1);
+    else cart.push(Object.assign({ quantity: itemObj.quantity || 1 }, itemObj));
+  } else {
+    const existingItem = cart.find((item) =>
+      item.product_id === product_id && item.name === name && item.size === size
+    );
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.push({
+        product_id: product_id,
+        name: name,
+        price: Number(price || 0),
+        basePrice: Number(price || 0),
+        quantity: 1,
+        size: size,
+        toppings: []
+      });
+    }
   }
   updateCartCount();
   updateCartDisplay();
-  if (!currentProduct) {
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-check"></i> Added!';
-    button.style.background = "linear-gradient(135deg, #10B981, #059669)";
-    setTimeout(() => {
-      button.innerHTML = originalText;
-      button.style.background = "";
-    }, 1500);
-  }
-}
+
+  // Safe UI feedback (no undefined 'event' usage)
+  showNotification("Added to cart", "success");
+   if (!currentProduct) {
+     const button = event.target;
+     const originalText = button.innerHTML;
+     button.innerHTML = '<i class="fas fa-check"></i> Added!';
+     button.style.background = "linear-gradient(135deg, #10B981, #059669)";
+     setTimeout(() => {
+       button.innerHTML = originalText;
+       button.style.background = "";
+     }, 1500);
+   }
+ }
 
 function removeFromCart(product_id, size) {
   cart = cart.filter((item) => !(item.product_id === product_id && item.size === size));
@@ -226,10 +306,10 @@ function updateCartDisplay() {
     .map(
       (item) => `
         <div class="cart-item">
-            <div class="cart-item-info">
-                <div class="cart-item-name">${item.name}</div>
-                <div class="cart-item-price">₱${item.price.toFixed(2)} each</div>
-            </div>
+           <div class="cart-item-price">₱${Number((item.basePrice || item.price)).toFixed(2)} + toppings</div>
+                          ${Array.isArray(item.toppings) && item.toppings.length ? `<div class="cart-item-toppings" style="font-size:0.9em;color:#6b7280;margin-top:6px;">
+                 ${item.toppings.map(t=>`${t.name.replace(/\s*—.*$/,'')} (₱${Number(t.price).toFixed(2)}${t.quantity>1?` x${t.quantity}`:''})`).join('<br>')}
+              </div>` : ''}
             <div class="quantity-controls">
                 <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', -1, '${item.size}')">-</button>
                 <span class="quantity">${item.quantity}</span>
@@ -240,7 +320,11 @@ function updateCartDisplay() {
     `
     )
     .join("");
-  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const total = cart.reduce((sum, item) => {
+   const base = Number(item.basePrice || item.price || 0);
+    const toppingsSum = (item.toppings || []).reduce((s, t) => s + (Number(t.price || 0) * (Number(t.quantity || 1))), 0);
+ return sum + (base + toppingsSum) * Number(item.quantity || 1);
+ }, 0);
   cartTotalContainer.innerHTML = `
         <div class="total-amount">Total: ₱${total.toFixed(2)}</div>
         <button class="checkout-btn" onclick="handleCheckout()">
@@ -516,28 +600,70 @@ function handleLogin(event) {
     });
 }
 
+document.addEventListener('DOMContentLoaded', () => {
 
+  // make promo images clickable and show pointer
+  document.querySelectorAll('.testimonial-img').forEach(img => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', () => {
+      if (typeof openTestimonialModal === 'function') {
+        openTestimonialModal(img);
+        return;
+      }
+      // fallback lightbox
+      const overlay = document.createElement('div');
+      overlay.id = 'promoLightbox';
+      overlay.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:7000;';
+      overlay.innerHTML = `
+        <img src="${img.src}" style="max-width:90%;max-height:90%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.6)">
+        <button id="promoLightboxClose" style="position:absolute;top:18px;right:18px;background:#fff;border-radius:50%;width:40px;height:40px;border:none;font-size:20px;cursor:pointer;">×</button>
+      `;
+      document.body.appendChild(overlay);
+      overlay.querySelector('#promoLightboxClose').addEventListener('click', () => overlay.remove());
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    });
+  });
 
-// === Testimonial Image Modal Logic ===
-window.openTestimonialModal = function (imgElem) {
-  var modal = document.getElementById('testimonialImageModal');
-  var modalImg = document.getElementById('testimonialModalImg');
-  if (modal && modalImg && imgElem) {
-    modalImg.src = imgElem.src;
-    modalImg.alt = imgElem.alt || 'Testimonial';
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+  // faster carousel autoplay for .carousel-track
+  const track = document.querySelector('.carousel-track');
+  if (track) {
+    let autoTimer = null;
+    const firstItem = track.querySelector('.testimonial');
+    const step = firstItem ? (firstItem.offsetWidth + (parseInt(getComputedStyle(firstItem).marginRight) || 12)) : Math.floor(track.clientWidth / 3);
+    const intervalMs = 2500; // faster autoplay (2.5s)
+
+    function startAuto() {
+      stopAuto();
+      autoTimer = setInterval(() => {
+        // smooth scroll forward
+        track.scrollBy({ left: step, behavior: 'smooth' });
+        // if near end, go back to start after short delay
+        if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 8) {
+          setTimeout(() => track.scrollTo({ left: 0, behavior: 'smooth' }), 600);
+        }
+      }, intervalMs);
+    }
+    function stopAuto() {
+      if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    }
+
+    // start autoplay, but pause on hover/focus
+    startAuto();
+    track.addEventListener('mouseenter', stopAuto);
+    track.addEventListener('mouseleave', startAuto);
+    track.addEventListener('focusin', stopAuto);
+    track.addEventListener('focusout', startAuto);
+
+    // optional: make track keyboard accessible items scroll when arrows pressed
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { track.scrollBy({ left: step, behavior: 'smooth' }); }
+      if (e.key === 'ArrowLeft') { track.scrollBy({ left: -step, behavior: 'smooth' }); }
+    });
   }
-}
+
+});
 
 
-window.closeTestimonialModal = function () {
-  var modal = document.getElementById('testimonialImageModal');
-  if (modal) {
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-  }
-}
 function logout(event) {
   if (event) event.stopPropagation();
   fetch("logout.php", { method: "POST" })
@@ -641,6 +767,41 @@ document.addEventListener('click', function (e) {
     handleViewProduct(id, name, price, description, image, dataType, variants);
   } catch (err) {
     console.error('Error handling view button click:', err);
+  }
+});
+
+
+document.addEventListener('click', function (e) {
+  const nav = e.target.closest && e.target.closest('.nav-item');
+  if (!nav) return;
+  // prevent default anchor behavior
+  if (e.preventDefault) e.preventDefault();
+
+  // prefer data-section attribute if present, otherwise use text
+  const section = (nav.dataset && nav.dataset.section) ? nav.dataset.section.trim() : nav.textContent.trim().toLowerCase();
+  // normalize common labels
+  const map = {
+    home: 'home',
+    about: 'about',
+    shop: 'products',
+    menu: 'products',
+    products: 'products',
+    locations: 'locations',
+    promos: 'promos',
+    contact: 'contact'
+  };
+  const target = map[section] || section;
+  if (typeof showSection === 'function') {
+    showSection(target);
+  } else {
+    // fallback: try to find element by id
+    const el = document.getElementById(target);
+    if (el) {
+      document.querySelectorAll('.section-content').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+      el.style.display = 'block';
+      el.classList.add('active');
+      window.scrollTo(0, 0);
+    }
   }
 });
 
@@ -997,8 +1158,8 @@ function checkOrderStatusUpdates() {
           const cur = (order.status || '').toLowerCase();
 
           if (initialLoadComplete &&
-              previousOrderStatuses[ref] &&
-              previousOrderStatuses[ref].toLowerCase() !== cur) {
+            previousOrderStatuses[ref] &&
+            previousOrderStatuses[ref].toLowerCase() !== cur) {
             const key = `${ref}:${cur}`;
             if (!shownOrderNotifs.has(key)) {
               shownOrderNotifs.add(key);
@@ -1015,12 +1176,12 @@ function checkOrderStatusUpdates() {
 
 function showOrderStatusNotification(update) {
   const statusConfig = {
-    pending:   { color: '#f59e0b', icon: 'fa-clock',         text: 'Pending' },
-    confirmed: { color: '#3b82f6', icon: 'fa-check-circle',  text: 'Confirmed' },
-    preparing: { color: '#8b5cf6', icon: 'fa-mug-hot',       text: 'Preparing' },
-    ready:     { color: '#10b981', icon: 'fa-check-double',  text: 'Ready for Pickup' },
-    completed: { color: '#059669', icon: 'fa-check-square',  text: 'Completed' },
-    cancelled: { color: '#ef4444', icon: 'fa-times-circle',  text: 'Cancelled' }
+    pending: { color: '#f59e0b', icon: 'fa-clock', text: 'Pending' },
+    confirmed: { color: '#3b82f6', icon: 'fa-check-circle', text: 'Confirmed' },
+    preparing: { color: '#8b5cf6', icon: 'fa-mug-hot', text: 'Preparing' },
+    ready: { color: '#10b981', icon: 'fa-check-double', text: 'Ready for Pickup' },
+    completed: { color: '#059669', icon: 'fa-check-square', text: 'Completed' },
+    cancelled: { color: '#ef4444', icon: 'fa-times-circle', text: 'Cancelled' }
   };
 
   const status = (update.status || '').toLowerCase();
@@ -1278,6 +1439,121 @@ window.addEventListener("scroll", () => {
 });
 
 
+
+async function loadActiveToppings() {
+  try {
+    const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
+    if (!res.ok) throw new Error('Network response not ok');
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.toppings)) {
+      console.warn('loadActiveToppings: unexpected response', data);
+      return;
+    }
+    const container = document.getElementById('toppingsList');
+    if (!container) {
+      console.warn('loadActiveToppings: #toppingsList not found');
+      return;
+    }
+    container.innerHTML = data.toppings.map(t => {
+      const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<label style="display:block;margin-bottom:6px;">
+                <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}">
+                ${safeName} — ₱${Number(t.price).toFixed(2)}
+              </label>`;
+    }).join('');
+    bindToppingCheckboxes(); // existing function in your file
+    recalcModalTotal && recalcModalTotal(); // update total if function exists
+  } catch (err) {
+    console.error('loadActiveToppings error', err);
+  }
+}
+
+// ensure toppings are loaded on page ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadActiveToppings();
+});
+
+// also reload toppings whenever a product modal is opened.
+// Matches common openers; add any selector your theme uses (e.g. .btn-view, .view-product, [data-open-product])
+document.addEventListener('click', (e) => {
+  const sel = e.target;
+  if (sel.closest('.btn-view') || sel.closest('.view-product') || sel.closest('[data-open-product]') || sel.classList.contains('product-view-btn')) {
+    // tiny delay if modal content is created dynamically
+    setTimeout(loadActiveToppings, 40);
+  }
+});
+
+
+
+
+async function submitAddToppingPublic(formData) {
+  try {
+    // POST to admin AJAX endpoint; endpoint expects form-data with action=add
+    const body = new URLSearchParams();
+    body.append('action', 'add');
+    body.append('name', formData.get('name'));
+    body.append('price', formData.get('price'));
+    // Default status = active
+    body.append('status', 'active');
+
+    const res = await fetch('admin/AJAX/get_toppings.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+      credentials: 'same-origin'
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error('submitAddToppingPublic error', err);
+    return { success: false, message: 'Network error' };
+  }
+}
+
+// wire up public add-topping modal (admin-only button)
+document.addEventListener('DOMContentLoaded', () => {
+  const showBtn = document.getElementById('showAddToppingModalBtn');
+  const modal = document.getElementById('addToppingModalPublic');
+  const closeBtn = document.getElementById('closeAddToppingModalPublic');
+  const cancelBtn = document.getElementById('cancelAddToppingPublic');
+  const form = document.getElementById('addToppingFormPublic');
+  const resultEl = document.getElementById('addToppingPublicResult');
+
+  if (showBtn && modal) {
+    showBtn.addEventListener('click', () => {
+      resultEl.textContent = '';
+      form.reset();
+      modal.style.display = 'flex';
+    });
+  }
+  if (closeBtn) closeBtn.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+  if (cancelBtn) cancelBtn.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultEl.textContent = '';
+      const fd = new FormData(form);
+      // Basic client-side validation
+      const name = (fd.get('name') || '').toString().trim();
+      const price = (fd.get('price') || '0').toString().trim();
+      if (!name) { resultEl.textContent = 'Name required'; return; }
+      const data = await submitAddToppingPublic(fd);
+      if (data && data.success) {
+        // close modal and refresh toppings checkboxes shown in modal
+        if (modal) modal.style.display = 'none';
+        // reload active toppings into modal (public function)
+        if (typeof loadActiveToppings === 'function') {
+          // small delay to allow backend insert to commit
+          setTimeout(loadActiveToppings, 120);
+        }
+      } else {
+        resultEl.textContent = data.message || 'Failed to add topping';
+      }
+    });
+  }
+});
+
 function handleViewProduct(id, name, price, description, image, dataType, variants) {
   try {
     console.log("handleViewProduct called", { id, name, price, dataType, variants });
@@ -1285,6 +1561,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     if (!isLoggedIn) { showLoginModal(); return; }
 
     dataType = (dataType || 'cold').toString().toLowerCase();
+    
 
     // Get UI elements
     const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
@@ -1373,12 +1650,17 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
     // Populate modal UI
     if (nameEl) nameEl.textContent = name || '';
-    if (descEl) descEl.textContent = description || '';
-    if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
-    if (priceEl) {
-      priceEl.textContent = `Php ${currentProduct.price}${dataType === 'pastries' ? ' (' + selectedSize + ')' : ''}`;
-    }
-
+     if (descEl) descEl.textContent = description || '';
+     if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
+    
+    modalSelectedToppings = {};
+    const toppingsContainer = document.getElementById('toppingsList');
+       if (toppingsContainer) {
+     // keep the markup defined in index.php, ensure all checkboxes are unchecked
+      toppingsContainer.querySelectorAll('.topping-checkbox').forEach(cb => cb.checked = false);
+   }
+   // compute initial displayed price (includes selected size but not toppings)
+    recalcModalTotal();
     // Cleanly bind Add to Cart
     const detailsSection = document.querySelector(".product-modal-details");
     const addBtn = detailsSection ? detailsSection.querySelector(".product-modal-add-cart") : null;
@@ -1406,9 +1688,22 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
       if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
     }
-  } catch (err) {
-    console.error('handleViewProduct error', err);
-  }
+
+    document.querySelectorAll('.topping-checkbox').forEach(cb => {
+      cb.onchange = function (e) {
+        const key = cb.getAttribute('data-key');
+        const price = parseFloat(cb.getAttribute('data-price')) || 0;
+        if (cb.checked) {
+          modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
+        } else {
+          delete modalSelectedToppings[key];
+        }
+        recalcModalTotal();
+      };
+    });
+   } catch (err) {
+     console.error('handleViewProduct error', err);
+   }
 }
 // Replace selectSize with pastry-aware version
 function selectSize(size) {

@@ -306,92 +306,278 @@ class Database {
         return $order;
     }
 
-    // Create a pickup order (returns reference number or error)
-    public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions) {
-        $con = $this->opencon();
-        $con->beginTransaction();
-        try {
-            $total_amount = 0;
-            foreach ($cart_items as $item) {
-                $total_amount += floatval($item['price']) * intval($item['quantity']);
-            }
-            $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
-            $stmt->execute([$user_id, $total_amount]);
-            $transaction_id = $con->lastInsertId();
-            // Reference number
-            $reference_number = 'CNC-' . date('Ymd') . '-' . str_pad($transaction_id, 4, '0', STR_PAD_LEFT);
-            $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
-                ->execute([$reference_number, $transaction_id]);
-            // Insert items
-            foreach ($cart_items as $item) {
-                $product_id = $item['product_id'];
-                $quantity = intval($item['quantity']);
-                $size = isset($item['size']) ? $item['size'] : (preg_match('/\((.*?)\)$/', $item['name'], $m) ? $m[1] : '');
-                $price = floatval($item['price']);
-                $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)")
-                    ->execute([$transaction_id, $product_id, $quantity, $size, $price]);
-            }
-            // Insert pickup details
-            $pickup_datetime = date('Y-m-d') . ' ' . $pickup_time . ':00';
-            $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?, ?)")
-                ->execute([$transaction_id, $pickup_name, $pickup_location, $pickup_datetime, $special_instructions]);
-            $con->commit();
-            return ['success' => true, 'reference_number' => $reference_number];
-        } catch (Exception $e) {
-            $con->rollBack();
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
-    }
+   public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions) {
+    $con = $this->opencon();
+    $con->beginTransaction();
+    try {
+        $total_amount = 0;
 
-    // Create a transaction 
-    public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null) {
-        $con = $this->opencon();
-        $con->beginTransaction();
-        try {
-            $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
-            $stmt->execute([$user_id, $total]);
-            $transaction_id = $con->lastInsertId();
-            // Insert items
-            foreach ($items as $item) {
-                $size = '';
-                if (isset($item['size']) && $item['size']) {
-                    $size = $item['size'];
-                } elseif (isset($item['name'])) {
-                    if (preg_match('/\((.*?)\)$/', $item['name'], $matches)) {
-                        $size = $matches[1];
+        // Statements
+        $itemInsert = $con->prepare(
+            "INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)"
+        );
+        // match actual schema: transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price
+        $toppingInsert = $con->prepare(
+            "INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price) VALUES (?, ?, ?, ?, ?, ?)"
+        );
+
+        // helper: find topping by name (if not numeric id), and insert if missing
+        $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
+        $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
+
+        // Compute total_amount. Respect frontend semantics:
+        // - if item['basePrice'] is present => compute base + toppings (use toppings array)
+        // - otherwise treat item['price'] as final per-item price (do NOT add toppings separately)
+        foreach ($cart_items as $item) {
+            $item_qty = intval(isset($item['quantity']) ? $item['quantity'] : 1);
+
+            if (isset($item['basePrice'])) {
+                $base = floatval($item['basePrice']);
+                $toppings_sum = 0;
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    foreach ($item['toppings'] as $t) {
+                        $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
+                        $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
+                        $toppings_sum += ($t_price * $t_qty);
                     }
                 }
-                $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)")
-                    ->execute([$transaction_id, $item['id'], $item['quantity'], $size, $item['price']]);
-            }
-            // Insert pickup 
-            if ($method === 'pickup' && $pickupInfo) {
-                $special = isset($pickupInfo['special']) ? $pickupInfo['special'] : '';
-                $pickup_location = $pickupInfo['name'] . " (" . $pickupInfo['phone'] . ")";
-                $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
-                    ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
-            } elseif ($method === 'delivery' && $deliveryInfo) {
-                $con->prepare("INSERT INTO delivery_detail (transaction_id, recipient_name, total, phone, street, city, state, zip) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-                    ->execute([
-                        $transaction_id,
-                        $deliveryInfo['name'],
-                        $total,
-                        $deliveryInfo['phone'],
-                        $deliveryInfo['street'],
-                        $deliveryInfo['city'],
-                        $deliveryInfo['state'],
-                        $deliveryInfo['zip']
-                    ]);
+                $total_amount += ($base + $toppings_sum) * $item_qty;
             } else {
-                throw new Exception("No valid pickup or delivery info provided.");
+                // trust frontend-provided final price
+                $item_price = floatval(isset($item['price']) ? $item['price'] : 0);
+                $total_amount += $item_price * $item_qty;
             }
-            $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
-            $con->commit();
-            return ['success' => true, 'transaction_id' => $transaction_id];
-        } catch (Exception $e) {
-            $con->rollBack();
-            return ['success' => false, 'message' => $e->getMessage()];
         }
+
+        // Insert transaction
+        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
+        $stmt->execute([$user_id, $total_amount]);
+        $transaction_id = $con->lastInsertId();
+
+        // Reference number
+        $reference_number = 'CNC-' . date('Ymd') . '-' . str_pad($transaction_id, 4, '0', STR_PAD_LEFT);
+        $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
+            ->execute([$reference_number, $transaction_id]);
+
+        // Insert items and toppings
+        foreach ($cart_items as $item) {
+            $product_id = isset($item['product_id']) ? $item['product_id'] : (isset($item['id']) ? $item['id'] : null);
+            $quantity = intval(isset($item['quantity']) ? $item['quantity'] : 1);
+            $size = isset($item['size']) ? $item['size'] : (isset($item['name']) && preg_match('/\((.*?)\)$/', $item['name'], $m) ? $m[1] : '');
+
+            // Determine per-item price to store:
+            // - prefer explicit final price if provided (frontend uses this)
+            // - otherwise compute from basePrice + toppings
+            $computed_toppings_sum = 0;
+            if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                foreach ($item['toppings'] as $t) {
+                    $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
+                    $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
+                    $computed_toppings_sum += ($t_price * $t_qty);
+                }
+            }
+
+            if (isset($item['price'])) {
+                $price_to_store = floatval($item['price']);
+            } elseif (isset($item['basePrice'])) {
+                $price_to_store = floatval($item['basePrice']) + $computed_toppings_sum;
+            } else {
+                $price_to_store = 0.00;
+            }
+
+            $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
+            $transaction_item_id = $con->lastInsertId();
+
+            if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                foreach ($item['toppings'] as $topping) {
+                    // Determine topping_id: prefer numeric id, otherwise find by name or create
+                    $topping_id = null;
+                    $t_name = isset($topping['name']) ? trim($topping['name']) : '';
+                    $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
+                    $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
+
+                    if (isset($topping['id']) && is_numeric($topping['id']) && intval($topping['id']) > 0) {
+                        $topping_id = intval($topping['id']);
+                    } elseif ($t_name !== '') {
+                        $findTopping->execute([$t_name]);
+                        $found = $findTopping->fetch(PDO::FETCH_ASSOC);
+                        if ($found && isset($found['id'])) {
+                            $topping_id = intval($found['id']);
+                        } else {
+                            $insertTopping->execute([$t_name, $t_price]);
+                            $topping_id = $con->lastInsertId();
+                        }
+                    } else {
+                        throw new Exception("Invalid topping data for product_id {$product_id}");
+                    }
+
+                    // Insert into transaction_toppings matching schema
+                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price]);
+                }
+            }
+        }
+
+        // Insert pickup details
+        $pickup_datetime = date('Y-m-d') . ' ' . $pickup_time . ':00';
+        $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?, ?)")
+            ->execute([$transaction_id, $pickup_name, $pickup_location, $pickup_datetime, $special_instructions]);
+
+        $con->commit();
+        return ['success' => true, 'reference_number' => $reference_number];
+    } catch (Exception $e) {
+        $con->rollBack();
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null) {
+    $con = $this->opencon();
+    $con->beginTransaction();
+    try {
+        // If caller didn't provide total (or it's <= 0), compute same as pickup logic
+        if (empty($total) || floatval($total) <= 0) {
+            $total_calc = 0;
+            foreach ($items as $item) {
+                $qty = intval(isset($item['quantity']) ? $item['quantity'] : 1);
+                if (isset($item['basePrice'])) {
+                    $base = floatval($item['basePrice']);
+                    $toppings_sum = 0;
+                    if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                        foreach ($item['toppings'] as $t) {
+                            $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
+                            $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
+                            $toppings_sum += ($t_price * $t_qty);
+                        }
+                    }
+                    $total_calc += ($base + $toppings_sum) * $qty;
+                } else {
+                    $price = floatval(isset($item['price']) ? $item['price'] : 0);
+                    $total_calc += $price * $qty;
+                }
+            }
+            $total = $total_calc;
+        }
+
+        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
+        $stmt->execute([$user_id, $total]);
+        $transaction_id = $con->lastInsertId();
+
+        // prepared statements for items and toppings (match schema)
+        $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
+        $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price) VALUES (?, ?, ?, ?, ?, ?)");
+
+        // Insert items and their toppings (if any)
+        foreach ($items as $item) {
+            $size = '';
+            if (isset($item['size']) && $item['size']) {
+                $size = $item['size'];
+            } elseif (isset($item['name']) && preg_match('/\((.*?)\)$/', $item['name'], $matches)) {
+                $size = $matches[1];
+            }
+
+            $product_id = isset($item['id']) ? $item['id'] : (isset($item['product_id']) ? $item['product_id'] : null);
+            $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
+
+            // compute price to store same rules as pickup
+            $computed_toppings_sum = 0;
+            if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                foreach ($item['toppings'] as $t) {
+                    $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
+                    $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
+                    $computed_toppings_sum += ($t_price * $t_qty);
+                }
+            }
+            if (isset($item['price'])) {
+                $price_to_store = floatval($item['price']);
+            } elseif (isset($item['basePrice'])) {
+                $price_to_store = floatval($item['basePrice']) + $computed_toppings_sum;
+            } else {
+                $price_to_store = 0.00;
+            }
+
+            $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
+            $transaction_item_id = $con->lastInsertId();
+
+            if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                foreach ($item['toppings'] as $topping) {
+                    $topping_id = isset($topping['id']) ? $topping['id'] : null;
+                    $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
+                    $t_price = isset($topping['price']) ? floatval($topping['price']) : 0.00;
+                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price]);
+                }
+            }
+        }
+
+        // Insert pickup or delivery details
+        if ($method === 'pickup' && $pickupInfo) {
+            $special = isset($pickupInfo['special']) ? $pickupInfo['special'] : '';
+            $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
+            $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
+                ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
+        } else {
+            throw new Exception("No valid pickup or delivery info provided.");
+        }
+
+        $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
+        $con->commit();
+        return ['success' => true, 'transaction_id' => $transaction_id];
+    } catch (Exception $e) {
+        $con->rollBack();
+        return ['success' => false, 'message' => $e->getMessage()];
+    }
+}
+
+ public function fetch_toppings_pdo() {
+        $con = $this->opencon();
+        $stmt = $con->prepare("
+            SELECT 
+                id,
+                name,
+                price,
+                CASE WHEN COALESCE(status,1)=1 THEN 'active' ELSE 'inactive' END AS status,
+                created_at,
+                updated_at
+            FROM toppings
+            ORDER BY id DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function fetch_active_toppings() {
+        $con = $this->opencon();
+        $stmt = $con->prepare("
+            SELECT 
+                id,
+                name,
+                price
+            FROM toppings
+            WHERE COALESCE(status,1) = 1
+            ORDER BY id ASC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function add_topping($name, $price, $status = 'active') {
+        $con = $this->opencon();
+        $st = ($status === 'active') ? 1 : 0;
+        $stmt = $con->prepare("INSERT INTO toppings (name, price, status, created_at) VALUES (?, ?, ?, NOW())");
+        $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), $st]);
+        return $con->lastInsertId();
+    }
+
+    public function update_topping($id, $name, $price) {
+        $con = $this->opencon();
+        $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), intval($id)]);
+    }
+
+    public function update_topping_status($id, $status) {
+        $con = $this->opencon();
+        $st = ($status === 'active') ? 1 : 0;
+        $stmt = $con->prepare("UPDATE toppings SET status = ?, updated_at = NOW() WHERE id = ?");
+        return $stmt->execute([$st, intval($id)]);
     }
 
     // Update user information (firstname, lastname, email, password, profile image)
