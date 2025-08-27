@@ -14,7 +14,8 @@ let deliveryMethod = "pickup"
 let selectedSize = "Grande"
 let currentProduct = null
 let lastDrinkType = 'cold';
-let modalSelectedToppings = {}; 
+let modalSelectedToppings = {};
+let __lastFocusedBeforePaymentModal = null;
 
 const TOPPINGS = [
   { key: 'extra_shot', name: 'Extra shot (coffee)', price: 40 },
@@ -23,28 +24,99 @@ const TOPPINGS = [
   { key: 'whipped_cream', name: 'Additional whipped cream', price: 20 }
 ];
 
-
 function recalcModalTotal() {
- if (!currentProduct) return;
- // base price depending on size/variant
- let base = Number(currentProduct.price || 0);
- if (currentProduct.dataType !== 'pastries') {
-   if (selectedSize === 'Grande') base = Number(currentProduct.grandePrice || base);
-   else base = Number(currentProduct.supremePrice || base);
- } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
-   // price should already be set by selectSize for pastries
-   base = Number(currentProduct.price || base);
- }
+  if (!currentProduct) return;
+
+  // determine base price for the currently selected size/variant
+  let base = Number(currentProduct.price || 0);
+  if (currentProduct.dataType !== 'pastries') {
+    base = selectedSize === 'Grande'
+      ? Number(currentProduct.grandePrice ?? base)
+      : Number(currentProduct.supremePrice ?? base);
+  } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
+    base = Number(currentProduct.price ?? base);
+  }
+
   // sum toppings
- let toppingsSum = 0;
- Object.values(modalSelectedToppings).forEach(t => { toppingsSum += Number(t.price || 0) * (t.qty || 1); });
- const total = base + toppingsSum;
-const totalEl = document.getElementById('modalTotalAmount');
- if (totalEl) totalEl.textContent = Number(total).toFixed(2);
- // also update the modal price text for clarity
- const priceEl = document.getElementById('modalProductPrice');
- if (priceEl) priceEl.textContent = `Php ${Number(total).toFixed(2)}`;
+  let toppingsSum = 0;
+  Object.values(modalSelectedToppings || {}).forEach(t => {
+    const qty = Number(t.qty || t.quantity || 1);
+    toppingsSum += Number(t.price || 0) * qty;
+  });
+
+  const total = base + toppingsSum;
+
+  // update modal total (base + toppings)
+  const totalEl = document.getElementById('modalTotalAmount');
+  if (totalEl) totalEl.textContent = Number(total).toFixed(2);
+
+  // update product base price display (do NOT overwrite with total)
+  const priceEl = document.getElementById('modalProductPrice');
+  if (priceEl) priceEl.textContent = `Php ${Number(base).toFixed(2)}`;
+
+  // update variant label if present
+  const pv = document.getElementById('modalPriceVariant');
+  if (pv) pv.textContent = `(${selectedSize})`;
 }
+
+// ...existing code...
+
+// REPLACED: when opening modal via delegated view-btn handler - use module-level toppings and recalc
+document.addEventListener('click', function (e) {
+  const viewBtn = e.target.closest('.view-btn');
+  if (viewBtn) {
+    const id = viewBtn.dataset.id;
+    const name = viewBtn.dataset.name || '';
+    const price = parseFloat(viewBtn.dataset.price || 0);
+    const desc = viewBtn.dataset.desc || '';
+    const img = viewBtn.dataset.image || 'img/placeholder.svg';
+
+    // populate modal
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
+    document.getElementById('modalProductDescription').textContent = desc;
+    const imgEl = document.getElementById('modalProductImage');
+    if (imgEl) imgEl.src = img;
+
+    // reset selections
+    selectedSize = 'Grande';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    const s = document.querySelector('.size-btn[data-size="Grande"]');
+    if (s) s.classList.add('active');
+
+    // use module-level toppings object (not window.*)
+    modalSelectedToppings = {};
+    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
+
+    // reset sugar selection to default
+    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
+    const defaultSugar = document.querySelector('.sugar-btn[data-sugar="Less Sweet"]') || document.querySelector('.sugar-btn');
+    if (defaultSugar) defaultSugar.classList.add('active');
+
+    // compute and display totals properly
+    // ensure currentProduct.price is set so recalcModalTotal computes base correctly
+    if (!currentProduct) currentProduct = { id, name, price };
+    // if currentProduct doesn't have grande/supreme, ensure price is available
+    if (typeof currentProduct.grandePrice === 'undefined' && typeof currentProduct.price !== 'undefined') {
+      currentProduct.grandePrice = currentProduct.price;
+      currentProduct.supremePrice = currentProduct.price;
+    }
+
+    recalcModalTotal();
+
+    // show modal
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    return;
+  }
+
+  // existing delegated handlers for size / sugar / add-on buttons (keep your previous code)
+});
 
 // Navigation
 function showSection(sectionName) {
@@ -115,16 +187,67 @@ function openProductModal(id, name, price, description, image) {
     };
   }
 }
+// ...existing code...
 
-function closeProductModal() {
-  const modal = document.getElementById("productModal");
-  if (modal) {
-    modal.classList.remove("active");
-    modal.style.display = "none";
+// Open modal when .view-btn clicked (delegated)
+document.addEventListener('click', function (e) {
+  const viewBtn = e.target.closest('.view-btn');
+  if (viewBtn) {
+    const id = viewBtn.dataset.id;
+    const name = viewBtn.dataset.name || '';
+    const price = parseFloat(viewBtn.dataset.price || 0);
+    const desc = viewBtn.dataset.desc || '';
+    const img = viewBtn.dataset.image || 'img/placeholder.svg';
+
+    // populate modal
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
+    document.getElementById('modalProductDescription').textContent = desc;
+    const imgEl = document.getElementById('modalProductImage');
+    if (imgEl) imgEl.src = img;
+
+    // reset selections
+    selectedSize = 'Grande';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    const s = document.querySelector('.size-btn[data-size="Grande"]');
+    if (s) s.classList.add('active');
+
+    window.modalSelectedToppings = {};
+    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
+
+    // set total
+    const totalAmountEl = document.getElementById('modalTotalAmount');
+    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
+
+    // show modal
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    return;
   }
-  document.body.style.overflow = "auto";
-  currentProduct = null;
+
+  // existing delegated handlers for size / sugar / add-on buttons (keep your previous code)
+});
+
+// Close modal helper
+function closeProductModal() {
+  const modal = document.getElementById('productModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+  }
 }
+
+// close modal on backdrop click
+document.getElementById('productModal')?.addEventListener('click', function (e) {
+  if (e.target === this) closeProductModal();
+});
+
 
 function selectSize(size) {
   selectedSize = size;
@@ -133,6 +256,88 @@ function selectSize(size) {
     if (btn.textContent.trim() === size) btn.classList.add("active");
   });
 }
+
+
+
+
+// ...existing code...
+
+// Ensure view-button handler resets module-level toppings and uses data-size attributes
+document.addEventListener('click', function (e) {
+  const viewBtn = e.target.closest('.view-btn');
+  if (viewBtn) {
+    const id = viewBtn.dataset.id;
+    const name = viewBtn.dataset.name || '';
+    const price = parseFloat(viewBtn.dataset.price || 0);
+    const desc = viewBtn.dataset.desc || '';
+    const img = viewBtn.dataset.image || 'img/placeholder.svg';
+
+    // populate modal
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
+    document.getElementById('modalProductDescription').textContent = desc;
+    const imgEl = document.getElementById('modalProductImage');
+    if (imgEl) imgEl.src = img;
+
+    // reset selections (use module variable, not window.*)
+    selectedSize = 'Grande';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    const s = document.querySelector('.size-btn[data-size="Grande"]');
+    if (s) s.classList.add('active');
+
+    modalSelectedToppings = {}; // reset toppings state
+    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
+
+    // reset sugar selection to default
+    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
+    const defaultSugar = document.querySelector('.sugar-btn[data-sugar="Less Sweet"]') || document.querySelector('.sugar-btn');
+    if (defaultSugar) defaultSugar.classList.add('active');
+
+    // set total
+    const totalAmountEl = document.getElementById('modalTotalAmount');
+    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
+
+    // show modal
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    return;
+  }
+
+  // ...existing delegated handlers (size, sugar, add-on) follow below ...
+});
+
+// Add sugar-selection helper to support inline onclick or programmatic calls
+function selectSugar(level) {
+  // Normalize level (accept 'Less', 'Less Sweet', etc.)
+  const normalized = (level || '').toString().trim().toLowerCase();
+  document.querySelectorAll('.sugar-btn').forEach(btn => btn.classList.remove('active'));
+  const found = Array.from(document.querySelectorAll('.sugar-btn')).find(btn => {
+    const ds = (btn.dataset.sugar || btn.textContent || '').toString().trim().toLowerCase();
+    return ds === normalized || ds.startsWith(normalized);
+  });
+  if (found) found.classList.add('active');
+  // store selected sugar if you need it later
+  window.selectedSugar = found ? (found.dataset.sugar || found.textContent.trim()) : (level || '');
+  if (typeof recalcModalTotal === 'function') recalcModalTotal();
+}
+
+// Ensure delegated sugar button clicks are exclusive (if you already have a sugar click handler, this keeps behavior)
+document.addEventListener('click', function (e) {
+  const sugarBtn = e.target.closest('.sugar-btn');
+  if (sugarBtn) {
+    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
+    sugarBtn.classList.add('active');
+    window.selectedSugar = sugarBtn.dataset.sugar || sugarBtn.textContent.trim();
+    if (typeof recalcModalTotal === 'function') recalcModalTotal();
+    return;
+  }
+});
+
 
 function addProductToCart() {
   if (!currentProduct) return;
@@ -168,18 +373,56 @@ function addProductToCart() {
   showNotification("Product added to cart!", "success");
 }
 
- document.querySelectorAll('.topping-checkbox').forEach(cb => {
-      cb.onchange = function (e) {
-        const key = cb.getAttribute('data-key');
-        const price = parseFloat(cb.getAttribute('data-price')) || 0;
-        if (cb.checked) {
-          modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
-        } else {
-          delete modalSelectedToppings[key];
-        }
-        recalcModalTotal();
-      };
-    });
+// ...existing code...
+// small delegated handlers to match the new button UI in the modal
+document.addEventListener('click', function (e) {
+  // size buttons
+  const sizeBtn = e.target.closest('.size-btn');
+  if (sizeBtn) {
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    sizeBtn.classList.add('active');
+    selectedSize = sizeBtn.dataset.size || sizeBtn.textContent.trim();
+    // update variant label if present
+    const pv = document.getElementById('modalPriceVariant');
+    if (pv) pv.textContent = `(${selectedSize})`;
+    if (window.recalcModalTotal) window.recalcModalTotal();
+    return;
+  }
+
+  // sugar buttons (visual only)
+  const sugarBtn = e.target.closest('.sugar-btn');
+  if (sugarBtn) {
+    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
+    sugarBtn.classList.add('active');
+    if (window.recalcModalTotal) window.recalcModalTotal();
+    return;
+  }
+  const addonBtn = e.target.closest('.add-on-btn');
+  if (addonBtn) {
+    addonBtn.classList.toggle('active');
+    const key = addonBtn.dataset.key;
+    const price = parseFloat(addonBtn.dataset.price || 0);
+
+    // ensure we use the module-level modalSelectedToppings object
+    if (!modalSelectedToppings) modalSelectedToppings = {};
+    if (addonBtn.classList.contains('active')) {
+      modalSelectedToppings[key] = { name: addonBtn.querySelector('span')?.textContent.trim() || key, price: price, qty: 1 };
+    } else {
+      delete modalSelectedToppings[key];
+    }
+
+    if (window.recalcModalTotal) window.recalcModalTotal();
+    else {
+      // fallback simple total update if recalcModalTotal not defined
+      const base = parseFloat((document.getElementById('modalProductPrice')?.textContent||'0').replace(/[^0-9.]/g,'')) || 0;
+      let addons = 0;
+      Object.values(modalSelectedToppings || {}).forEach(t=> addons += (t.price||0));
+      document.getElementById('modalTotalAmount').textContent = (base + addons).toFixed(2);
+    }
+    return;
+  }
+});
+// ...existing code...
 
 function addToCart(product_id, name, price, size) {
   if (typeof product_id === 'object') {
@@ -210,17 +453,17 @@ function addToCart(product_id, name, price, size) {
 
   // Safe UI feedback (no undefined 'event' usage)
   showNotification("Added to cart", "success");
-   if (!currentProduct) {
-     const button = event.target;
-     const originalText = button.innerHTML;
-     button.innerHTML = '<i class="fas fa-check"></i> Added!';
-     button.style.background = "linear-gradient(135deg, #10B981, #059669)";
-     setTimeout(() => {
-       button.innerHTML = originalText;
-       button.style.background = "";
-     }, 1500);
-   }
- }
+  if (!currentProduct) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Added!';
+    button.style.background = "linear-gradient(135deg, #10B981, #059669)";
+    setTimeout(() => {
+      button.innerHTML = originalText;
+      button.style.background = "";
+    }, 1500);
+  }
+}
 
 function removeFromCart(product_id, size) {
   cart = cart.filter((item) => !(item.product_id === product_id && item.size === size));
@@ -286,18 +529,18 @@ function updateCartCount() {
   }
   saveCart();
 }
-
+// Update the updateCartDisplay function to use button styling
 function updateCartDisplay() {
   const cartItemsContainer = document.getElementById("cartItems");
   const cartTotalContainer = document.getElementById("cartTotal");
   if (cart.length === 0) {
     cartItemsContainer.innerHTML = `
-            <div class="empty-cart">
-                <i class="fas fa-shopping-cart"></i>
-                <h4>Your cart is empty</h4>
-                <p>Add some delicious coffee to get started!</p>
-            </div>
-        `;
+      <div class="empty-cart">
+        <i class="fas fa-shopping-cart"></i>
+        <h4>Your cart is empty</h4>
+        <p>Add some delicious coffee to get started!</p>
+      </div>
+    `;
     cartTotalContainer.innerHTML = "";
     document.getElementById("deliveryOptions").style.display = "none";
     return;
@@ -306,32 +549,47 @@ function updateCartDisplay() {
     .map(
       (item) => `
         <div class="cart-item">
-           <div class="cart-item-price">₱${Number((item.basePrice || item.price)).toFixed(2)} + toppings</div>
-                          ${Array.isArray(item.toppings) && item.toppings.length ? `<div class="cart-item-toppings" style="font-size:0.9em;color:#6b7280;margin-top:6px;">
-                 ${item.toppings.map(t=>`${t.name.replace(/\s*—.*$/,'')} (₱${Number(t.price).toFixed(2)}${t.quantity>1?` x${t.quantity}`:''})`).join('<br>')}
-              </div>` : ''}
-            <div class="quantity-controls">
-                <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', -1, '${item.size}')">-</button>
-                <span class="quantity">${item.quantity}</span>
-                <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', 1, '${item.size}')">+</button>
-            </div>
-            <button class="remove-item" onclick="removeFromCart('${item.product_id}', '${item.size}')">Remove</button>
+          <div class="cart-item-details">
+            <div class="cart-item-name">${item.name}</div>
+            <div class="cart-item-price">₱${Number((item.basePrice || item.price)).toFixed(2)}</div>
+            ${Array.isArray(item.toppings) && item.toppings.length ? `
+              <div class="cart-item-toppings">
+                ${item.toppings.map(t => `
+                  <div class="selected-topping">
+                    ${t.name.replace(/\s*—.*$/, '')} (₱${Number(t.price).toFixed(2)}${t.quantity > 1 ? ` x${t.quantity}` : ''})
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+          <div class="quantity-controls">
+            <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', -1, '${item.size}')">-</button>
+            <span class="quantity">${item.quantity}</span>
+            <button class="quantity-btn" onclick="updateQuantity('${item.product_id}', 1, '${item.size}')">+</button>
+          </div>
+          <button class="remove-item" onclick="removeFromCart('${item.product_id}', '${item.size}')">Remove</button>
         </div>
-    `
+      `
     )
     .join("");
+    
+  // Update total calculation
   const total = cart.reduce((sum, item) => {
-   const base = Number(item.basePrice || item.price || 0);
+    const base = Number(item.basePrice || item.price || 0);
     const toppingsSum = (item.toppings || []).reduce((s, t) => s + (Number(t.price || 0) * (Number(t.quantity || 1))), 0);
- return sum + (base + toppingsSum) * Number(item.quantity || 1);
- }, 0);
+    return sum + (base + toppingsSum) * Number(item.quantity || 1);
+  }, 0);
+
   cartTotalContainer.innerHTML = `
-        <div class="total-amount">Total: ₱${total.toFixed(2)}</div>
-        <button class="checkout-btn" onclick="handleCheckout()">
-            <i class="fas fa-credit-card"></i> Checkout
-        </button>
-    `;
+    <div class="total-amount">Total: ₱${total.toFixed(2)}</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="checkout-btn" id="cartCheckoutBtn">
+        <i class="fas fa-credit-card"></i> Checkout
+      </button>
+    </div>
+  `;
 }
+
 
 function openCart() {
   updateCartDisplay();
@@ -424,48 +682,266 @@ function startCheckout() {
     }
   }, 0);
 }
-
-
+// Replace the existing completePickupCheckout function with this:
 function completePickupCheckout() {
   const pickup_name = document.getElementById("pickupName").value;
   const pickup_location = document.getElementById("pickupLocation").value;
   const pickup_time = document.getElementById("pickupTime").value;
   const special_instructions = document.getElementById("specialInstructions").value;
 
-  fetch('pickup_checkout.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `pickup_name=${encodeURIComponent(pickup_name)}&pickup_location=${encodeURIComponent(pickup_location)}&pickup_time=${encodeURIComponent(pickup_time)}&special_instructions=${encodeURIComponent(special_instructions)}`
+  // Before submitting pickup details, show payment method modal
+  const paymentModal = document.getElementById('paymentMethodModal');
+  if (paymentModal) {
+    // store current pickup details temporarily
+    paymentModal.dataset.pickupName = pickup_name;
+    paymentModal.dataset.pickupLocation = pickup_location;
+    paymentModal.dataset.pickupTime = pickup_time;
+    paymentModal.dataset.specialInstructions = special_instructions;
+    paymentModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  } else {
+    // fallback: submit directly
+    submitPickupForm({ pickup_name, pickup_location, pickup_time, special_instructions, payment_method: 'cash' });
+  }
+}
+
+// Add these new functions:
+function handlePaymentChoice(method) {
+  const paymentModal = document.getElementById('paymentMethodModal');
+  if (!paymentModal) return;
+  if (method === 'cash') {
+    // close payment modal and proceed to placing pickup details
+    paymentModal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    const pickup = {
+      pickup_name: paymentModal.dataset.pickupName || '',
+      pickup_location: paymentModal.dataset.pickupLocation || '',
+      pickup_time: paymentModal.dataset.pickupTime || '',
+      special_instructions: paymentModal.dataset.specialInstructions || ''
+    };
+    submitPickupForm({ ...pickup, payment_method: 'cash' });
+    return;
+  }
+  if (method === 'gcash') {
+    // show gcash preview inside modal
+    const preview = document.getElementById('gcashPreview');
+    if (preview) preview.style.display = 'block';
+  }
+}
+
+function submitGcashCheckout() {
+  const paymentModal = document.getElementById('paymentMethodModal');
+  if (!paymentModal) return;
+  const pickup = {
+    pickup_name: paymentModal.dataset.pickupName || '',
+    pickup_location: paymentModal.dataset.pickupLocation || '',
+    pickup_time: paymentModal.dataset.pickupTime || '',
+    special_instructions: paymentModal.dataset.specialInstructions || ''
+  };
+  // submit with payment_method=gcash
+  paymentModal.style.display = 'none';
+  document.body.style.overflow = 'auto';
+  submitPickupForm({ ...pickup, payment_method: 'gcash' });
+}
+
+
+function submitPickupForm(payload) {
+  // debug log to help verify what is being sent
+  try { console.debug("submitPickupForm payload:", payload); } catch (e) { }
+
+  const cart_items = JSON.stringify(cart || []);
+  const body = new URLSearchParams();
+  body.append("pickup_name", payload.pickup_name || "");
+  body.append("pickup_location", payload.pickup_location || "");
+  body.append("pickup_time", payload.pickup_time || "");
+  body.append("special_instructions", payload.special_instructions || "");
+  // send exact payment_method value or explicit 'cash' fallback
+  body.append("payment_method", (typeof payload.payment_method !== "undefined" && payload.payment_method !== null) ? String(payload.payment_method) : "cash");
+  body.append("cart_items", cart_items);
+
+  try { console.debug("Submitting to pickup_checkout.php ->", body.toString()); } catch (e) { }
+
+  showNotification("Placing order...", "success");
+  fetch("pickup_checkout.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+    credentials: "same-origin"
   })
-    .then(res => {
-      console.log('Pickup checkout response status:', res.status);
-      return res.text().then(text => {
-        console.log('Pickup checkout raw response:', text);
+    .then((res) => res.json())
+    .then((data) => {
+      if (data && data.success) {
+        // Ensure any open modals are closed before showing the reference UI
+        try { closeCart(); } catch (e) { /* ignore */ }
         try {
-          return JSON.parse(text);
-        } catch (e) {
-          showNotification("Invalid server response.", "error");
-          throw e;
-        }
-      });
-    })
-    .then(data => {
-      if (data.success) {
-        showNotification("Pickup order placed successfully!", "success");
-        closeCart();
+          const paymentModal = document.getElementById('paymentMethodModal');
+          if (paymentModal) {
+            paymentModal.style.display = 'none';
+          }
+        } catch (e) { /* ignore */ }
+        try { closeProductModal(); } catch (e) { /* ignore */ }
+        try { closeAuthModal(); } catch (e) { /* ignore */ }
+
+        // Clear client cart and update UI
         cart = [];
+        saveCart();
         updateCartCount();
         updateCartDisplay();
+
+        // Small delay to ensure modal removal/scroll reset before showing reference
+        setTimeout(() => {
+          if (typeof showReferenceModal === "function") {
+            showReferenceModal(data.reference_number || data.reference || "N/A");
+          } else {
+            alert("Order placed! Reference: " + (data.reference_number || "N/A"));
+          }
+        }, 140);
       } else {
-        showNotification(data.message || "Pickup order failed.", "error");
+        showNotification((data && data.message) ? data.message : "Failed to place order.", "error");
       }
     })
     .catch((err) => {
-      console.error('Pickup checkout error:', err);
+      console.error("pickup submit error", err);
       showNotification("Network error. Please try again.", "error");
     });
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  // Checkout buttons (cart total area)
+  document.querySelectorAll(".checkout-btn").forEach(btn => {
+    btn.removeEventListener("click", handleCheckout);
+    btn.addEventListener("click", function (e) {
+      e.preventDefault && e.preventDefault();
+      handleCheckout();
+    });
+  });
+
+  // Delegated handler for checkout buttons created after load
+  document.body.addEventListener('click', function (ev) {
+    const checkoutBtn = ev.target.closest && ev.target.closest('.checkout-btn');
+    if (checkoutBtn) {
+      ev.preventDefault && ev.preventDefault();
+      handleCheckout();
+      return;
+    }
+
+    // existing inline payment handlers
+    if (ev.target && ev.target.id === 'payCashInlineBtn') {
+      const cartTotal = document.getElementById('cartTotal');
+      const payload = {
+        pickup_name: cartTotal?.dataset?.pickupName || '',
+        pickup_location: cartTotal?.dataset?.pickupLocation || '',
+        pickup_time: cartTotal?.dataset?.pickupTime || '',
+        special_instructions: cartTotal?.dataset?.specialInstructions || '',
+        payment_method: 'cash'
+      };
+      const inline = document.getElementById("paymentChoicesInline");
+      if (inline) inline.style.display = "none";
+      submitPickupForm(payload);
+    }
+    if (ev.target && ev.target.id === 'payGcashInlineBtn') {
+      const gcashInline = document.getElementById('gcashPreviewInline');
+      if (gcashInline) gcashInline.style.display = 'block';
+    }
+    if (ev.target && ev.target.id === 'gcashDoneInlineBtn') {
+      const cartTotal = document.getElementById('cartTotal');
+      const payload = {
+        pickup_name: cartTotal?.dataset?.pickupName || '',
+        pickup_location: cartTotal?.dataset?.pickupLocation || '',
+        pickup_time: cartTotal?.dataset?.pickupTime || '',
+        special_instructions: cartTotal?.dataset?.specialInstructions || '',
+        payment_method: 'gcash'
+      };
+      const inline = document.getElementById("paymentChoicesInline");
+      if (inline) inline.style.display = "none";
+      submitPickupForm(payload);
+    }
+  });
+
+  // Also wire GCash Done button if it exists (modal flow)
+  const gcashDone = document.getElementById("gcashDoneBtn");
+  if (gcashDone) {
+    gcashDone.removeEventListener("click", submitGcashCheckout);
+    gcashDone.addEventListener("click", function (e) {
+      e.preventDefault && e.preventDefault();
+      submitGcashCheckout();
+    });
+  }
+
+  // Close payment modal when clicking outside content
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (paymentModal) {
+    paymentModal.addEventListener("click", function (ev) {
+      if (ev.target === paymentModal) {
+        paymentModal.style.display = "none";
+        document.body.style.overflow = "auto";
+      }
+    });
+  }
+});
+
+function showReferenceModal(ref) {
+  // Remove old modal if present
+  let existing = document.getElementById('orderReferenceModal');
+  if (existing) existing.remove();
+
+  // Build modal
+  const modal = document.createElement('div');
+  modal.id = 'orderReferenceModal';
+  modal.style.cssText = `
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.35); z-index: 10050; padding: 20px;
+    `;
+
+  modal.innerHTML = `
+      <div style="width:100%;max-width:520px;background:#fff;border-radius:14px;padding:22px;box-shadow:0 18px 50px rgba(0,0,0,0.2);text-align:center;position:relative;">
+        <button id="orderRefClose" aria-label="Close" style="position:absolute;right:12px;top:12px;border:none;background:transparent;font-size:22px;cursor:pointer;color:#374151;">&times;</button>
+        <div style="font-size:14px;color:#10B981;font-weight:800;margin-bottom:8px;">
+          Order placed successfully
+        </div>
+        <h2 style="margin:6px 0 4px;color:#23433a;font-size:1.6rem;">Reference number</h2>
+        <div id="orderRefValue" style="margin:14px 0;padding:14px;border-radius:10px;background:#f6faf8;border:1px dashed #e6efe9;font-weight:800;font-size:1.2rem;color:#114032;word-break:break-all;">
+          ${String(ref || 'N/A')}
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px;">
+          <button id="copyRefBtn" style="padding:10px 14px;border-radius:10px;border:1px solid #e6efe9;background:#fff;cursor:pointer;font-weight:700;">Copy</button>
+          <button id="closeRefBtn" style="padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(135deg,#10B981,#059669);color:#fff;cursor:pointer;font-weight:700;">Close</button>
+        </div>
+      </div>
+    `;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  // Handlers
+  const removeModal = () => {
+    modal.remove();
+    document.body.style.overflow = 'auto';
+  };
+  modal.querySelector('#orderRefClose').addEventListener('click', removeModal);
+  modal.querySelector('#closeRefBtn').addEventListener('click', removeModal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) removeModal();
+  });
+
+  const copyBtn = modal.querySelector('#copyRefBtn');
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(String(ref || ''));
+      copyBtn.textContent = 'Copied';
+      copyBtn.style.background = '#10B981';
+      copyBtn.style.color = '#fff';
+      setTimeout(() => {
+        copyBtn.textContent = 'Copy';
+        copyBtn.style.background = '';
+        copyBtn.style.color = '';
+      }, 1600);
+    } catch (err) {
+      showNotification('Unable to copy reference to clipboard.', 'error');
+    }
+  });
+}
 // Auth functions
 function showAuthModal() {
   if (isLoggedIn) {
@@ -1439,7 +1915,6 @@ window.addEventListener("scroll", () => {
 });
 
 
-
 async function loadActiveToppings() {
   try {
     const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
@@ -1454,15 +1929,22 @@ async function loadActiveToppings() {
       console.warn('loadActiveToppings: #toppingsList not found');
       return;
     }
+
+    // render as pill buttons (matches your modal UI)
     container.innerHTML = data.toppings.map(t => {
-      const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `<label style="display:block;margin-bottom:6px;">
-                <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}">
-                ${safeName} — ₱${Number(t.price).toFixed(2)}
-              </label>`;
+      const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const key = (t.key || t.id || safeName.toLowerCase().replace(/\s+/g,'-'));
+      const price = Number(t.price || 0).toFixed(2);
+      return `<button type="button" class="add-on-btn" data-key="${key}" data-price="${price}">
+                <span>${safeName}</span>
+                <span class="price">₱${price}</span>
+              </button>`;
     }).join('');
-    bindToppingCheckboxes(); // existing function in your file
-    recalcModalTotal && recalcModalTotal(); // update total if function exists
+
+    // clear any previously selected toppings state
+    modalSelectedToppings = {};
+    // trigger total recalc if available
+    if (typeof recalcModalTotal === 'function') recalcModalTotal();
   } catch (err) {
     console.error('loadActiveToppings error', err);
   }
@@ -1561,7 +2043,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     if (!isLoggedIn) { showLoginModal(); return; }
 
     dataType = (dataType || 'cold').toString().toLowerCase();
-    
+
 
     // Get UI elements
     const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
@@ -1650,16 +2132,20 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
     // Populate modal UI
     if (nameEl) nameEl.textContent = name || '';
-     if (descEl) descEl.textContent = description || '';
-     if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
-    
+    if (descEl) descEl.textContent = description || '';
+    if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
+
     modalSelectedToppings = {};
+    document.querySelectorAll('.add-on-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
     const toppingsContainer = document.getElementById('toppingsList');
-       if (toppingsContainer) {
-     // keep the markup defined in index.php, ensure all checkboxes are unchecked
+    if (toppingsContainer) {
+      // keep the markup defined in index.php, ensure all checkboxes are unchecked
       toppingsContainer.querySelectorAll('.topping-checkbox').forEach(cb => cb.checked = false);
-   }
-   // compute initial displayed price (includes selected size but not toppings)
+    }
+    // compute initial displayed price (includes selected size but not toppings)
     recalcModalTotal();
     // Cleanly bind Add to Cart
     const detailsSection = document.querySelector(".product-modal-details");
@@ -1701,137 +2187,252 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
         recalcModalTotal();
       };
     });
-   } catch (err) {
-     console.error('handleViewProduct error', err);
-   }
-}
-// Replace selectSize with pastry-aware version
-function selectSize(size) {
-  selectedSize = size;
-
-  // Update UI highlight
-  document.querySelectorAll(".size-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.textContent.trim() === size);
-  });
-
-  if (!currentProduct) return;
-
-  if (currentProduct.dataType === 'pastries' && Array.isArray(currentProduct.variants)) {
-    const chosen = currentProduct.variants.find(v => v.label === size) || currentProduct.variants[0];
-    currentProduct.price = chosen.price;
-    document.getElementById("modalProductPrice").textContent = `Php ${chosen.price} (${chosen.label})`;
-  } else {
-    if (size === "Grande") {
-      currentProduct.price = currentProduct.grandePrice || currentProduct.price;
-      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.grandePrice || currentProduct.price} (Grande)`;
-    } else {
-      currentProduct.price = currentProduct.supremePrice || (currentProduct.price + 30);
-      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.supremePrice || (currentProduct.price + 30)} (Supreme)`;
-    }
+  } catch (err) {
+    console.error('handleViewProduct error', err);
   }
-}
-
-// Replace BOTH selectSize implementations with this single version
-function selectSize(size) {
+}function selectSize(size) {
   selectedSize = size;
 
-  // Update UI highlight
+  // update UI highlight (match by text, data-size or data-label)
   document.querySelectorAll(".size-btn").forEach((btn) => {
-    btn.classList.remove("active");
-    if (btn.textContent.trim() === size) btn.classList.add("active");
+    const txt = btn.textContent.trim();
+    const ds = btn.dataset.size || btn.dataset.label || '';
+    btn.classList.toggle("active", txt === size || ds === size);
   });
 
-  // Update price text based on size without reopening the modal
+  // Update price text based on size
   if (currentProduct) {
     if (currentProduct.dataType === 'pastries' && Array.isArray(currentProduct.variants)) {
       const chosen = currentProduct.variants.find(v => v.label === size) || currentProduct.variants[0];
       currentProduct.price = chosen.price;
-      document.getElementById("modalProductPrice").textContent = `Php ${chosen.price} (${chosen.label})`;
+      const priceEl = document.getElementById("modalProductPrice");
+      if (priceEl) priceEl.textContent = `Php ${chosen.price} (${chosen.label})`;
     } else if (size === "Grande") {
-      currentProduct.price = currentProduct.grandePrice || currentProduct.price;
-      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.grandePrice || currentProduct.price} (Grande)`;
-    } else if (size === "Supreme") {
-      currentProduct.price = currentProduct.supremePrice || (currentProduct.price + 30);
-      document.getElementById("modalProductPrice").textContent = `Php ${currentProduct.supremePrice || (currentProduct.price + 30)} (Supreme)`;
+      currentProduct.price = currentProduct.grandePrice ?? currentProduct.price;
+      const priceEl = document.getElementById("modalProductPrice");
+      if (priceEl) priceEl.textContent = `Php ${currentProduct.grandePrice ?? currentProduct.price} (Grande)`;
+    } else {
+      currentProduct.price = currentProduct.supremePrice ?? currentProduct.price;
+      const priceEl = document.getElementById("modalProductPrice");
+      if (priceEl) priceEl.textContent = `Php ${currentProduct.supremePrice ?? currentProduct.price} (Supreme)`;
     }
   }
-}
-// Handle checkout button click
-function handleCheckout() {
+
+  // recalc total so modalTotal updates immediately when size changes
+  if (typeof recalcModalTotal === 'function') recalcModalTotal();
+}function handleCheckout() {
   const deliveryOptions = document.getElementById("deliveryOptions");
-  if (!deliveryOptions || deliveryOptions.style.display !== "block") {
+
+  // If delivery/pickup form is not visible yet — show it first
+  const deliveryVisible = deliveryOptions && window.getComputedStyle(deliveryOptions).display !== "none";
+  if (!deliveryVisible) {
     startCheckout();
     return;
   }
 
-  const pickup_name = document.getElementById("pickupName") ? document.getElementById("pickupName").value : "";
-  const pickup_location = document.getElementById("pickupLocation") ? document.getElementById("pickupLocation").value : "";
-  const pickup_time = document.getElementById("pickupTime") ? document.getElementById("pickupTime").value : "";
-  const special_instructions = document.getElementById("specialInstructions") ? document.getElementById("specialInstructions").value : "";
-
-  if (pickup_time) {
-    const [h, m] = pickup_time.split(":").map(Number);
-    const mins = h * 60 + m;
-    const open = 15 * 60;
-    const close = 20 * 60 + 30;
-
-    if (mins < open || mins > close) {
-      showNotification("Pickup time must be between 3:00 p.m and 8:30 p.m.", "error");
-      return;
-    }
-  }
-
-
+  // validate pickup fields
+  const pickup_name = (document.getElementById("pickupName")?.value || "").trim();
+  const pickup_location = (document.getElementById("pickupLocation")?.value || "").trim();
+  const pickup_time = (document.getElementById("pickupTime")?.value || "").trim();
   if (!pickup_name || !pickup_location || !pickup_time) {
     showNotification("Please fill out all required pickup details.", "error");
     return;
   }
 
-  fetch('pickup_checkout.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:
-      `pickup_name=${encodeURIComponent(pickup_name)}` +
-      `&pickup_location=${encodeURIComponent(pickup_location)}` +
-      `&pickup_time=${encodeURIComponent(pickup_time)}` +
-      `&special_instructions=${encodeURIComponent(special_instructions)}` +
-      `&cart_items=${encodeURIComponent(JSON.stringify(cart))}`
-  })
-    .then(res => res.text())
-    .then(text => {
-      console.log('Pickup checkout raw response:', text);
-      if (!text.trim()) {
-        showNotification("Empty server response.", "error");
-        return;
-      }
+  // stash pickup details on cartTotal element for later use (keeps previous behaviour)
+  const cartTotal = document.getElementById('cartTotal');
+  if (cartTotal) {
+    cartTotal.dataset.pickupName = pickup_name;
+    cartTotal.dataset.pickupLocation = pickup_location;
+    cartTotal.dataset.pickupTime = pickup_time;
+    cartTotal.dataset.specialInstructions = document.getElementById("specialInstructions")?.value || '';
+  }
 
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        showNotification("Invalid server response: " + text, "error");
-        return;
-      }
-
-      if (data.success) {
-        showNotification("Pickup order placed successfully!", "success");
-        closeCart();
-        cart = [];
-        updateCartCount();
-        updateCartDisplay();
-
-        if (typeof showReceiptModal === "function" && data.reference_number) {
-          showReceiptModal(data.reference_number);
-        }
-      } else {
-        showNotification(data.message || "Pickup order failed.", "error");
-      }
-    })
-    .catch((err) => {
-      console.error('Pickup checkout error:', err);
-      showNotification("Network error. Please try again.", "error");
-    });
+  // Open the payment modal via the safe helper below
+  openPaymentModal({
+    pickup_name,
+    pickup_location,
+    pickup_time,
+    special_instructions: document.getElementById("specialInstructions")?.value || ''
+  });
 }
+
+
+// Safe modal open helper — sets aria-hidden correctly and focuses dialog
+function openPaymentModal(pickupData = {}) {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+
+  // store the focused element so we can restore focus after closing
+  __lastFocusedBeforePaymentModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  // ensure no element inside modal is focused while aria-hidden is true
+  try { if (document.activeElement && paymentModal.contains(document.activeElement)) document.activeElement.blur(); } catch (e) { /* ignore */ }
+
+  // store pickup data on modal dataset
+  paymentModal.dataset.pickupName = pickupData.pickup_name || '';
+  paymentModal.dataset.pickupLocation = pickupData.pickup_location || '';
+  paymentModal.dataset.pickupTime = pickupData.pickup_time || '';
+  paymentModal.dataset.specialInstructions = pickupData.special_instructions || '';
+
+  // make modal visible and accessible
+  paymentModal.classList.add("open");
+  paymentModal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+
+  // hide any inline payment UI and GCASH preview
+  const inline = document.getElementById("paymentChoicesInline");
+  if (inline) inline.style.display = "none";
+  const gcashPreview = document.getElementById("gcashPreview");
+  if (gcashPreview) gcashPreview.style.display = "none";
+
+  // focus the dialog panel for screen readers / keyboard users
+  const dialog = paymentModal.querySelector('.payment-modal-dialog');
+  if (dialog) {
+    // ensure it is focusable
+    dialog.setAttribute('tabindex', '-1');
+    dialog.focus({ preventScroll: true });
+  } else {
+    // fallback focus first actionable button
+    const firstBtn = paymentModal.querySelector('button, a, [tabindex]');
+    if (firstBtn) firstBtn.focus();
+  }
+}
+
+
+  // Store pickup details on modal dataset so GCash Done can read them
+  paymentModal.dataset.pickupName = pickup_name;
+  paymentModal.dataset.pickupLocation = pickup_location;
+  paymentModal.dataset.pickupTime = pickup_time;
+  paymentModal.dataset.specialInstructions = special_instructions || "";
+
+  // Reset payment UI
+  const gcashPreview = document.getElementById("gcashPreview");
+  if (gcashPreview) gcashPreview.style.display = "none";
+
+  paymentModal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+
+
+
+  
+// close helper updated to restore focus
+function closePaymentModal() {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+  paymentModal.classList.remove("open");
+  paymentModal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "auto";
+
+  // hide GCASH preview to reset state
+  const gcashPreview = document.getElementById("gcashPreview");
+  if (gcashPreview) gcashPreview.style.display = "none";
+
+  // restore focus to previously focused element if safe
+  try {
+    if (__lastFocusedBeforePaymentModal && typeof __lastFocusedBeforePaymentModal.focus === 'function') {
+      __lastFocusedBeforePaymentModal.focus();
+    } else {
+      // fallback: focus checkout button in cart
+      const checkout = document.querySelector('.checkout-btn');
+      if (checkout) checkout.focus();
+    }
+  } catch (e) { /* ignore focus restore errors */ }
+}
+
+// update handlePaymentChoice to call closePaymentModal/open helpers (no other change needed)
+function handlePaymentChoice(method) {
+  const paymentModal = document.getElementById('paymentMethodModal');
+  if (!paymentModal) return;
+  paymentModal.dataset.paymentMethod = method;
+
+  if (method === "cash") {
+    // close modal then submit
+    closePaymentModal();
+    const payload = {
+      pickup_name: paymentModal.dataset.pickupName || '',
+      pickup_location: paymentModal.dataset.pickupLocation || '',
+      pickup_time: paymentModal.dataset.pickupTime || '',
+      special_instructions: paymentModal.dataset.specialInstructions || '',
+      payment_method: "cash"
+    };
+    submitPickupForm(payload);
+    return;
+  }
+
+  if (method === "gcash") {
+    // reveal gcash preview inside dialog
+    const gcashPreview = document.getElementById("gcashPreview");
+    if (gcashPreview) gcashPreview.style.display = "block";
+    // move focus to done button in preview
+    const done = document.getElementById('gcashDoneBtn');
+    if (done) done.focus();
+  }
+}
+function handlePaymentChoice(method) {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+  paymentModal.dataset.paymentMethod = method;
+
+  if (method === "cash") {
+    // close modal then submit
+    closePaymentModal();
+    const payload = {
+      pickup_name: paymentModal.dataset.pickupName || '',
+      pickup_location: paymentModal.dataset.pickupLocation || '',
+      pickup_time: paymentModal.dataset.pickupTime || '',
+      special_instructions: paymentModal.dataset.specialInstructions || '',
+      payment_method: "cash"
+    };
+    submitPickupForm(payload);
+    return;
+  }
+
+  if (method === "gcash") {
+    // reveal gcash preview inside dialog
+    const gcashPreview = document.getElementById("gcashPreview");
+    if (gcashPreview) gcashPreview.style.display = "block";
+  }
+}
+
+
+function submitGcashCheckout() {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+  const payload = {
+    pickup_name: paymentModal.dataset.pickupName || '',
+    pickup_location: paymentModal.dataset.pickupLocation || '',
+    pickup_time: paymentModal.dataset.pickupTime || '',
+    special_instructions: paymentModal.dataset.specialInstructions || '',
+    payment_method: "gcash"
+  };
+  closePaymentModal();
+  submitPickupForm(payload);
+}
+
+// wire modal close actions on DOMContentLoaded
+document.addEventListener("DOMContentLoaded", function () {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (paymentModal) {
+    // close when clicking backdrop
+    paymentModal.querySelectorAll('[data-close="backdrop"]').forEach(el => {
+      el.addEventListener('click', closePaymentModal);
+    });
+    // close button
+    const closeBtn = paymentModal.querySelector(".payment-modal-close");
+    if (closeBtn) closeBtn.addEventListener('click', closePaymentModal);
+  }
+
+  // wire GCash Done inside dialog (if exists)
+  const gcashDone = document.getElementById("gcashDoneBtn");
+  if (gcashDone) {
+    gcashDone.removeEventListener("click", submitGcashCheckout);
+    gcashDone.addEventListener("click", function (e) {
+      e.preventDefault && e.preventDefault();
+      submitGcashCheckout();
+    });
+  }
+});
 
 function handlePickupCheckout() {
   const pickup_name = document.getElementById("pickupName").value;

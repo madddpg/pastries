@@ -281,20 +281,20 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="fade-right"></div>
 
             <div class="carousel-track">
-  <?php
-    if (!empty($activePromos)) {
-      foreach ($activePromos as $promo) {
-        $img = htmlspecialchars($promo['image']);
-        $title = htmlspecialchars($promo['title']);
-        echo '<div class="testimonial"><div class="testimonial-header"><img src="'.$img.'" alt="'.($title?:'Promo').'" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
-      }
-    } else {
-      // fallback: existing static images if no promos found
-      echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
-      // add other static fallbacks as needed...
-    }
-  ?>
-</div>
+                <?php
+                if (!empty($activePromos)) {
+                    foreach ($activePromos as $promo) {
+                        $img = htmlspecialchars($promo['image']);
+                        $title = htmlspecialchars($promo['title']);
+                        echo '<div class="testimonial"><div class="testimonial-header"><img src="' . $img . '" alt="' . ($title ?: 'Promo') . '" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+                    }
+                } else {
+                    // fallback: existing static images if no promos found
+                    echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+                    // add other static fallbacks as needed...
+                }
+                ?>
+            </div>
     </div>
     </section>
 
@@ -581,14 +581,14 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
                         </div>
                     </div>
                 <?php
@@ -629,35 +629,35 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <p><?= htmlspecialchars($p['cold_desc']) ?></p>
                             <div class="product-footer">
                                 <button class="view-btn"
-                                           data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
-                                           data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                           data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
-                                           data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
-                                          data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
-                                           data-type="cold">View</button>
+                                    data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                    data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                    data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
+                                    data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
+                                    data-type="cold">View</button>
                             </div>
                         </div>
                     </div>
                     <?php
                     ?>
 
-                     <div class="product-item" data-type="hot" data-category="5">
-                      <div class="product-image">
-                          <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
-                     </div>
-                       <div class="product-info">
-                           <h3><?= htmlspecialchars($p['name']) ?></h3>
-                           <span class="badge bg-success mb-2">Premium Coffee</span>
-                           <p><?= htmlspecialchars($p['hot_desc']) ?></p>
-                           <div class="product-footer">
-                               <button class="view-btn"
-                                  data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
-                                   data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                  data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
-                                  data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
-                                   data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
-                                  data-type="hot">View</button>
-                           </div>
+                    <div class="product-item" data-type="hot" data-category="5">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($p['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Premium Coffee</span>
+                            <p><?= htmlspecialchars($p['hot_desc']) ?></p>
+                            <div class="product-footer">
+                                <button class="view-btn"
+                                    data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                    data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                    data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
+                                    data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
+                                    data-type="hot">View</button>
+                            </div>
                         </div>
                     </div>
             <?php
@@ -722,16 +722,16 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                                     $basePrice = isset($basePrice) ? $basePrice : 0;
                                     $imgSrc = isset($imgSrc) ? $imgSrc : '';
                                     ?>
-                                 <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars($basePrice, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="pastries"
-  data-variants='<?= htmlspecialchars($variants_json, ENT_QUOTES) ?>'>
-  View
-</button>
+                                    <button type="button" class="view-btn"
+                                        data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                        data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                        data-price="<?= htmlspecialchars($basePrice, ENT_QUOTES) ?>"
+                                        data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                        data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                        data-type="pastries"
+                                        data-variants='<?= htmlspecialchars($variants_json, ENT_QUOTES) ?>'>
+                                        View
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -775,15 +775,15 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Specialty Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
-                          <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
                         </div>
                     </div>
             <?php
@@ -823,15 +823,15 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Chocolate Overload</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
-                         <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
                         </div>
                     </div>
             <?php
@@ -871,17 +871,17 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Matcha Series</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
-                          <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
-                                </div>
-                            </div>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
+                        </div>
+                    </div>
             <?php
                     $premiumIndex++;
                 }
@@ -919,15 +919,15 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Milk Based</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
-   <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
                         </div>
                     </div>
             <?php
@@ -967,15 +967,15 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">All Time Fav</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
-                          <button type="button" class="view-btn"
-  data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-  data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-  data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-  data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-  data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-  data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-  View
-</button>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
                         </div>
                     </div>
             <?php
@@ -1039,6 +1039,27 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 
+      <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
+     <div class="payment-modal-backdrop" data-close="backdrop"></div>
+          <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+      <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
+       <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Choose payment method</h3>
+        <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
+          <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('cash')">Pay with Cash</button>
+          <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('gcash')">Pay with GCash</button>
+        </div>
+        <div id="gcashPreview" class="gcash-preview" style="display:none;margin-top:18px;text-align:center;">
+          <p style="font-weight:600;color:#374151;">Scan or save this GCash QR.</p>
+          <img src="img/gcash_pic.jpg" alt="GCash QR" style="max-width:320px;border-radius:8px;border:1px solid #e5e7eb;" />
+          <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+            <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 18px;" onclick="submitGcashCheckout()">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
     <!-- Product Detail Modal -->
     <div id="productModal" class="product-modal">
         <button class="product-modal-close-yellow" onclick="closeProductModal()" aria-label="Close">
@@ -1068,45 +1089,46 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
 
-                    <!-- Toppings choices -->
-                   <div class="product-modal-toppings" style="margin-top:12px;">
-                        <h3>Add-ons / Toppings</h3>
-
-                       <?php if (!empty($_SESSION['user']['is_admin'])): ?>
-                        <div style="margin:8px 0;">
-                           <button id="showAddToppingModalBtn" class="btn" style="background:#059669;color:#fff;padding:6px 10px;border-radius:8px;font-weight:600;">
-                               + Add Topping
-                        </button>
-                    </div>
-                   <?php endif; ?>
-
-                        <div id="toppingsList" class="toppings-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-                            <label><input type="checkbox" class="topping-checkbox" data-key="extra_shot" data-price="40"> Extra shot (coffee) — ₱40</label>
-                            <label><input type="checkbox" class="topping-checkbox" data-key="oatmilk" data-price="50"> Oatmilk — ₱50</label>                            <label><input type="checkbox" class="topping-checkbox" data-key="extra_sauce" data-price="20"> Extra sauce (milk-based) — ₱20</label>
-                            <label><input type="checkbox" class="topping-checkbox" data-key="whipped_cream" data-price="20"> Additional whipped cream — ₱20</label>
+                      <div class="product-modal-sugar">
+                        <h3>Sugar</h3>
+                        <div class="sugar-buttons">
+                            <button type="button" class="sugar-btn active" data-sugar="Less Sweet">Less Sweet</button>
+                            <button type="button" class="sugar-btn" data-sugar="More Sweet">More Sweet</button>
                         </div>
                     </div>
-                   <!-- Add Topping Modal (public, admin-only) -->                   <div id="addToppingModalPublic" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.18);z-index:6000;">
-                       <div style="background:#fff;padding:18px;border-radius:12px;max-width:420px;width:100%;position:relative;">
-                           <button id="closeAddToppingModalPublic" style="position:absolute;right:12px;top:8px;border:none;background:none;font-size:22px;">&times;</button>
-                           <h4 style="margin-top:0;margin-bottom:12px;">Add Topping</h4>
-                          <form id="addToppingFormPublic">
-                               <div style="margin-bottom:8px;">
-                                   <label style="font-weight:600;display:block;margin-bottom:6px;">Name</label>
-                                   <input type="text" id="addToppingName" name="name" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;">
-                               </div>
-                               <div style="margin-bottom:12px;">
-                                   <label style="font-weight:600;display:block;margin-bottom:6px;">Price</label>
-                                <input type="number" step="0.01" id="addToppingPrice" name="price" value="0.00" required style="width:100%;padding:8px;border-radius:8px;border:1px solid #e6e6e6;text-align:right;">
-                               </div>
-                               <div style="display:flex;justify-content:flex-end;gap:8px;">
-                                 <button type="button" id="cancelAddToppingPublic" class="btn" style="background:#f3f4f6;border-radius:8px;padding:8px 12px;">Cancel</button>
-                                  <button type="submit" class="btn" style="background:#059669;color:#fff;border-radius:8px;padding:8px 12px;">Save</button>
-                               </div>
-                           </form>
-                           <div id="addToppingPublicResult" style="margin-top:8px;color:#b00020;"></div>
-                       </div>
-                  </div>
+
+
+                    <!-- Toppings choices -->
+                    <div class="product-modal-toppings" style="margin-top:12px;">
+                        <h3>Add-ons / Toppings</h3>
+
+                        <?php if (!empty($_SESSION['user']['is_admin'])): ?>
+                            <div style="margin:8px 0;">
+                                <button id="showAddToppingModalBtn" class="btn" style="background:#059669;color:#fff;padding:6px 10px;border-radius:8px;font-weight:600;">
+                                    + Add Topping
+                                </button>
+                            </div>
+                        <?php endif; ?>
+
+                        <div id="toppingsList" class="add-ons-grid" style="margin-top:10px;">
+                            <button class="add-on-btn" data-key="extra_shot" data-price="40">
+                                <span>Extra Shot</span>
+                                <span class="price">₱40</span>
+                            </button>
+                            <button class="add-on-btn" data-key="extra_sauce" data-price="20">
+                                <span>Extra Sauce</span>
+                                <span class="price">₱20</span>
+                            </button>
+                            <button class="add-on-btn" data-key="oatmilk" data-price="50">
+                                <span>Oat Milk</span>
+                                <span class="price">₱50</span>
+                            </button>
+                            <button class="add-on-btn" data-key="whipped_cream" data-price="20">
+                                <span>Additional Whip Cream</span>
+                                <span class="price">₱20</span>
+                            </button>
+                        </div>
+                    </div>
 
                     <div style="height:12px"></div>
 
@@ -1115,19 +1137,23 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                         <button class="product-modal-add-cart" onclick="addProductToCart()">
                             Add to Cart
                         </button>
-                   </div>
-          
+                    </div>
+
                 </div>
-           </div>
-       </div>
-   </div>
-     </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+
+
 
     <!-- Cart Icon -->
     <button class="cart-icon" onclick="openCart()">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-badge" id="cartCount">0</span>
     </button>
+
 
     <!-- Cart Modal -->
     <div id="cartModal" class="cart-modal">

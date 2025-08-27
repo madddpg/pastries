@@ -1,13 +1,15 @@
 <?php
 
 
-class Database {
+class Database
+{
     private $host = "localhost";
     private $user = "root";
     private $password = "";
     private $db = "ordering";
 
-    public function opencon() {
+    public function opencon()
+    {
         $pdo = new PDO(
             "mysql:host={$this->host};dbname={$this->db}",
             $this->user,
@@ -17,11 +19,13 @@ class Database {
         return $pdo;
     }
 
-    public function closecon() {
-    return true;
-}
+    public function closecon()
+    {
+        return true;
+    }
     // Fetch all picked up orders 
-    public function fetch_pickedup_orders_pdo() {
+    public function fetch_pickedup_orders_pdo()
+    {
         $con = $this->opencon();
         $orders = [];
         $sql = "SELECT t.transac_id, t.reference_number, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name
@@ -41,10 +45,9 @@ class Database {
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         return $orders;
-    }
-
-    // Fetch all live orders 
-    public function fetch_live_orders_pdo($status = '') {
+    } // Update the fetch_live_orders_pdo method
+    public function fetch_live_orders_pdo($status = '')
+    {
         $con = $this->opencon();
         $allowed_statuses = ['pending', 'preparing', 'ready'];
         if ($status !== '' && in_array($status, $allowed_statuses)) {
@@ -54,19 +57,24 @@ class Database {
             $where = "WHERE t.status IN ('pending','preparing','ready')";
             $params = [];
         }
-        $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, p.pickup_name AS customer_name, p.pickup_time, p.special_instructions
-                FROM transaction t
-                LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
-                $where
-                ORDER BY t.created_at DESC";
+
+        // Added payment_method to the SELECT statement
+        $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, 
+            t.payment_method, p.pickup_name AS customer_name, p.pickup_time, p.special_instructions
+            FROM transaction t
+            LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
+            $where
+            ORDER BY t.created_at DESC";
+
         $stmt = $con->prepare($sql);
         $stmt->execute($params);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-                FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.id 
-                WHERE ti.transaction_id = ?");
+            FROM transaction_items ti 
+            JOIN products p ON ti.product_id = p.id 
+            WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -74,7 +82,8 @@ class Database {
     }
 
     // Fetch all products with sales count 
-    public function fetch_products_with_sales_pdo() {
+    public function fetch_products_with_sales_pdo()
+    {
         $con = $this->opencon();
         $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
@@ -87,14 +96,16 @@ class Database {
     }
 
     // Fetch all locations (PDO)
-    public function fetch_locations_pdo() {
+    public function fetch_locations_pdo()
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function fetch_pickedup_orders() {
+    public function fetch_pickedup_orders()
+    {
         $con = $this->opencon();
         $orders = [];
         $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name
@@ -115,7 +126,10 @@ class Database {
         }
         return $orders;
     }
-    public function fetch_live_orders($status = '') {
+
+    // Update the fetch_live_orders method
+    public function fetch_live_orders($status = '')
+    {
         $con = $this->opencon();
         $allowed_statuses = ['pending', 'preparing', 'ready'];
         if ($status !== '' && in_array($status, $allowed_statuses)) {
@@ -126,12 +140,15 @@ class Database {
             $params = [];
         }
 
-        $sql = "SELECT t.transac_id, t.user_id, t.total_amount, p.pickup_time, p.special_instructions, t.status, t.created_at, p.pickup_Name AS customer_name
-                FROM transaction t
-                LEFT JOIN users u ON t.user_id = u.user_id
-                JOIN pickup_detail p ON t.transac_id = p.transaction_id
-                $where
-                ORDER BY t.created_at DESC";
+        // Added payment_method to the SELECT statement
+        $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.payment_method, 
+            p.pickup_time, p.special_instructions, t.status, t.created_at, 
+            p.pickup_Name AS customer_name
+            FROM transaction t
+            LEFT JOIN users u ON t.user_id = u.user_id
+            JOIN pickup_detail p ON t.transac_id = p.transaction_id
+            $where
+            ORDER BY t.created_at DESC";
 
         $stmt = $con->prepare($sql);
         $stmt->execute($params);
@@ -139,16 +156,21 @@ class Database {
 
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-                FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.id 
-                WHERE ti.transaction_id = ?");
+            FROM transaction_items ti 
+            JOIN products p ON ti.product_id = p.id 
+            WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
+
             if (!isset($order['pickup_time'])) {
                 $order['pickup_time'] = null;
             }
             if (!isset($order['special_instructions'])) {
                 $order['special_instructions'] = null;
+            }
+            // Ensure payment_method has a default value if null
+            if (!isset($order['payment_method'])) {
+                $order['payment_method'] = 'cash';
             }
         }
 
@@ -156,7 +178,8 @@ class Database {
     }
 
 
-    public function fetch_products_with_sales() {
+    public function fetch_products_with_sales()
+    {
         $con = $this->opencon();
         $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
@@ -168,14 +191,16 @@ class Database {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function fetch_locations() {
+    public function fetch_locations()
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
-    public function loginUser($user_email, $password) {
+    public function loginUser($user_email, $password)
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT admin_id, username, password FROM admin_users WHERE admin_email = ?");
         $stmt->execute([$user_email]);
@@ -187,7 +212,7 @@ class Database {
                     'user' => [
                         'user_id' => $admin['admin_id'],
                         'user_FN' => $admin['username'],
-                        'user_LN' => '', 
+                        'user_LN' => '',
                         'user_email' => $user_email,
                         'is_admin' => true
                     ]
@@ -219,7 +244,8 @@ class Database {
         return ['success' => false, 'message' => 'User not found in both admin and regular user tables.'];
     }
 
-    public function loginAdmin($admin_email, $password) {
+    public function loginAdmin($admin_email, $password)
+    {
         $pdo = $this->opencon();
         $stmt = $pdo->prepare("SELECT admin_id, username, admin_email, password, role FROM admin_users WHERE admin_email = ? LIMIT 1");
         $stmt->execute([$admin_email]);
@@ -240,7 +266,8 @@ class Database {
         ];
     }
 
-    public function registerUser($name, $lastName, $email, $password, $confirmPassword, $profile_image = null) {
+    public function registerUser($name, $lastName, $email, $password, $confirmPassword, $profile_image = null)
+    {
         $errors = [];
         if (empty($name) || empty($lastName) || empty($email) || empty($password) || empty($confirmPassword)) {
             $errors[] = 'All fields are required.';
@@ -285,7 +312,8 @@ class Database {
     }
 
     // Fetch all orders for a user (order history)
-    public function fetchUserOrders($user_id) {
+    public function fetchUserOrders($user_id)
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT t.transac_id, t.reference_number, t.created_at, t.total_amount, t.status FROM transaction t WHERE t.user_id = ? ORDER BY t.created_at DESC");
         $stmt->execute([$user_id]);
@@ -293,7 +321,8 @@ class Database {
     }
 
     // Fetch order details for a specific transaction and user
-    public function fetchOrderDetail($user_id, $transac_id) {
+    public function fetchOrderDetail($user_id, $transac_id)
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT t.transac_id, t.created_at, t.total_amount, t.status FROM transaction t WHERE t.transac_id = ? AND t.user_id = ?");
         $stmt->execute([$transac_id, $user_id]);
@@ -305,8 +334,8 @@ class Database {
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         return $order;
     }
-
-   public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions) {
+public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, $payment_method = 'cash')
+{
     $con = $this->opencon();
     $con->beginTransaction();
     try {
@@ -316,18 +345,16 @@ class Database {
         $itemInsert = $con->prepare(
             "INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)"
         );
-        // match actual schema: transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price
+        // UPDATED: include sugar_level column as last param
         $toppingInsert = $con->prepare(
-            "INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price) VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
 
         // helper: find topping by name (if not numeric id), and insert if missing
         $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
         $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
-        // Compute total_amount. Respect frontend semantics:
-        // - if item['basePrice'] is present => compute base + toppings (use toppings array)
-        // - otherwise treat item['price'] as final per-item price (do NOT add toppings separately)
+        // Compute total_amount with same logic
         foreach ($cart_items as $item) {
             $item_qty = intval(isset($item['quantity']) ? $item['quantity'] : 1);
 
@@ -343,15 +370,14 @@ class Database {
                 }
                 $total_amount += ($base + $toppings_sum) * $item_qty;
             } else {
-                // trust frontend-provided final price
                 $item_price = floatval(isset($item['price']) ? $item['price'] : 0);
                 $total_amount += $item_price * $item_qty;
             }
         }
 
-        // Insert transaction
-        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
-        $stmt->execute([$user_id, $total_amount]);
+        // Insert transaction with payment_method
+        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, payment_method, created_at) VALUES (?, ?, 'pending', ?, NOW())");
+        $stmt->execute([$user_id, $total_amount, $payment_method]);
         $transaction_id = $con->lastInsertId();
 
         // Reference number
@@ -359,15 +385,13 @@ class Database {
         $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
             ->execute([$reference_number, $transaction_id]);
 
-        // Insert items and toppings
+        // Insert items and toppings (same logic as before)
         foreach ($cart_items as $item) {
             $product_id = isset($item['product_id']) ? $item['product_id'] : (isset($item['id']) ? $item['id'] : null);
             $quantity = intval(isset($item['quantity']) ? $item['quantity'] : 1);
             $size = isset($item['size']) ? $item['size'] : (isset($item['name']) && preg_match('/\((.*?)\)$/', $item['name'], $m) ? $m[1] : '');
 
-            // Determine per-item price to store:
-            // - prefer explicit final price if provided (frontend uses this)
-            // - otherwise compute from basePrice + toppings
+            // Calculate price_to_store
             $computed_toppings_sum = 0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -388,9 +412,12 @@ class Database {
             $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
             $transaction_item_id = $con->lastInsertId();
 
+            // Handle toppings
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                // capture sugar selection for this cart item (null if not present)
+                $item_sugar = isset($item['sugar']) ? $item['sugar'] : null;
+
                 foreach ($item['toppings'] as $topping) {
-                    // Determine topping_id: prefer numeric id, otherwise find by name or create
                     $topping_id = null;
                     $t_name = isset($topping['name']) ? trim($topping['name']) : '';
                     $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
@@ -411,8 +438,8 @@ class Database {
                         throw new Exception("Invalid topping data for product_id {$product_id}");
                     }
 
-                    // Insert into transaction_toppings matching schema
-                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price]);
+                    // pass sugar_level as the final parameter to match prepared statement (7 placeholders)
+                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price, $item_sugar]);
                 }
             }
         }
@@ -426,45 +453,27 @@ class Database {
         return ['success' => true, 'reference_number' => $reference_number];
     } catch (Exception $e) {
         $con->rollBack();
+        error_log("createPickupOrder failed: " . $e->getMessage());
         return ['success' => false, 'message' => $e->getMessage()];
     }
 }
-
-public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null) {
+public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
+{
     $con = $this->opencon();
     $con->beginTransaction();
     try {
-        // If caller didn't provide total (or it's <= 0), compute same as pickup logic
-        if (empty($total) || floatval($total) <= 0) {
-            $total_calc = 0;
-            foreach ($items as $item) {
-                $qty = intval(isset($item['quantity']) ? $item['quantity'] : 1);
-                if (isset($item['basePrice'])) {
-                    $base = floatval($item['basePrice']);
-                    $toppings_sum = 0;
-                    if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                        foreach ($item['toppings'] as $t) {
-                            $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
-                            $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
-                            $toppings_sum += ($t_price * $t_qty);
-                        }
-                    }
-                    $total_calc += ($base + $toppings_sum) * $qty;
-                } else {
-                    $price = floatval(isset($item['price']) ? $item['price'] : 0);
-                    $total_calc += $price * $qty;
-                }
-            }
-            $total = $total_calc;
-        }
-
+        // Insert base transaction
         $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
         $stmt->execute([$user_id, $total]);
         $transaction_id = $con->lastInsertId();
 
-        // prepared statements for items and toppings (match schema)
+        // prepared statements for items and toppings (match schema including sugar_level)
         $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
-        $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price) VALUES (?, ?, ?, ?, ?, ?)");
+        $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+        // helper: find topping by name (if not numeric id), and insert if missing
+        $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
+        $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
         // Insert items and their toppings (if any)
         foreach ($items as $item) {
@@ -478,7 +487,7 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
             $product_id = isset($item['id']) ? $item['id'] : (isset($item['product_id']) ? $item['product_id'] : null);
             $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
 
-            // compute price to store same rules as pickup
+            // compute price to store (base + toppings)
             $computed_toppings_sum = 0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -498,17 +507,39 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
             $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
             $transaction_item_id = $con->lastInsertId();
 
+            // Handle toppings (create/find topping and insert into transaction_toppings with sugar_level)
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                // sugar selected for this cart item (null if not provided)
+                $item_sugar = isset($item['sugar']) ? $item['sugar'] : null;
+
                 foreach ($item['toppings'] as $topping) {
-                    $topping_id = isset($topping['id']) ? $topping['id'] : null;
+                    $topping_id = null;
+                    $t_name = isset($topping['name']) ? trim($topping['name']) : '';
+                    $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
                     $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
-                    $t_price = isset($topping['price']) ? floatval($topping['price']) : 0.00;
-                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price]);
+
+                    if (isset($topping['id']) && is_numeric($topping['id']) && intval($topping['id']) > 0) {
+                        $topping_id = intval($topping['id']);
+                    } elseif ($t_name !== '') {
+                        $findTopping->execute([$t_name]);
+                        $found = $findTopping->fetch(PDO::FETCH_ASSOC);
+                        if ($found && isset($found['id'])) {
+                            $topping_id = intval($found['id']);
+                        } else {
+                            $insertTopping->execute([$t_name, $t_price]);
+                            $topping_id = $con->lastInsertId();
+                        }
+                    } else {
+                        throw new Exception("Invalid topping data for product_id {$product_id}");
+                    }
+
+                    // insert topping record including sugar_level
+                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price, $item_sugar]);
                 }
             }
         }
 
-        // Insert pickup or delivery details
+        // Insert pickup details if provided
         if ($method === 'pickup' && $pickupInfo) {
             $special = isset($pickupInfo['special']) ? $pickupInfo['special'] : '';
             $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
@@ -518,7 +549,9 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
             throw new Exception("No valid pickup or delivery info provided.");
         }
 
+        // clear cart for user if applicable
         $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
+
         $con->commit();
         return ['success' => true, 'transaction_id' => $transaction_id];
     } catch (Exception $e) {
@@ -527,7 +560,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     }
 }
 
- public function fetch_toppings_pdo() {
+    public function fetch_toppings_pdo()
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("
             SELECT 
@@ -544,7 +578,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function fetch_active_toppings() {
+    public function fetch_active_toppings()
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("
             SELECT 
@@ -559,7 +594,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function add_topping($name, $price, $status = 'active') {
+    public function add_topping($name, $price, $status = 'active')
+    {
         $con = $this->opencon();
         $st = ($status === 'active') ? 1 : 0;
         $stmt = $con->prepare("INSERT INTO toppings (name, price, status, created_at) VALUES (?, ?, ?, NOW())");
@@ -567,13 +603,15 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $con->lastInsertId();
     }
 
-    public function update_topping($id, $name, $price) {
+    public function update_topping($id, $name, $price)
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE id = ?");
         return $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), intval($id)]);
     }
 
-    public function update_topping_status($id, $status) {
+    public function update_topping_status($id, $status)
+    {
         $con = $this->opencon();
         $st = ($status === 'active') ? 1 : 0;
         $stmt = $con->prepare("UPDATE toppings SET status = ?, updated_at = NOW() WHERE id = ?");
@@ -581,7 +619,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     }
 
     // Update user information (firstname, lastname, email, password, profile image)
-    public function updateUserInfo($user_id, $new_FN, $new_LN, $new_email, $new_password = null) {
+    public function updateUserInfo($user_id, $new_FN, $new_LN, $new_email, $new_password = null)
+    {
         $con = $this->opencon();
         $errors = [];
         error_log('updateUserInfo: user_id=' . $user_id . ', new_email=' . $new_email . ', new_LN=' . $new_LN);
@@ -614,7 +653,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     }
 
     // Fetch top 3 products
-    public function fetch_top_products_by_category($category, $limit = 3) {
+    public function fetch_top_products_by_category($category, $limit = 3)
+    {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
         $sql = "SELECT ti.product_id, p.name, p.image, p.description, COUNT(ti.product_id) AS sales_count
@@ -634,9 +674,10 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     }
 
 
-    public function fetch_recent_products_by_category($category, $limit = 3) {
+    public function fetch_recent_products_by_category($category, $limit = 3)
+    {
         $con = $this->opencon();
-        $limit = intval($limit) > 0 ? intval($limit) : 3; 
+        $limit = intval($limit) > 0 ? intval($limit) : 3;
         $sql = "SELECT id as product_id, name, image, description, 0 as sales_count
                 FROM products
                 WHERE status = 'active' AND name != '__placeholder__'
@@ -650,7 +691,8 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     }
 
     // Fetch top N products by sales for a specific data type
-    public function fetch_top_products_by_data_type($data_type, $limit = 3) {
+    public function fetch_top_products_by_data_type($data_type, $limit = 3)
+    {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
         $sql = "SELECT ti.product_id, p.name, p.image, p.description, p.data_type, COUNT(ti.product_id) AS sales_count
@@ -667,8 +709,9 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-   
-    public function fetch_recent_products_by_data_type($data_type, $limit = 3) {
+
+    public function fetch_recent_products_by_data_type($data_type, $limit = 3)
+    {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3;
         $sql = "SELECT id as product_id, name, image, description, data_type, 0 as sales_count
@@ -681,18 +724,20 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getCategories() {
+    public function getCategories()
+    {
         $con = $this->opencon();
         $stmt = $con->prepare("SELECT DISTINCT category_id FROM products WHERE name != '__placeholder__' ORDER BY category_id ASC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    public static function isSuperAdmin() {
+    public static function isSuperAdmin()
+    {
         return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'super_admin';
     }
-    public static function isAdmin() {
+    public static function isAdmin()
+    {
         return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'admin';
     }
 }
-?>

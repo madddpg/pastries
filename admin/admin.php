@@ -133,10 +133,10 @@ function fetch_locations_pdo($con)
                     <span class="nav-icon"><i class="bi bi-geo-alt-fill"></i></span>
                     <span>Active Location</span>
                 </a>
-                 <a href="#" class="nav-item" data-section="promos">
-                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
-                     <span>Promotions</span>
-                 </a>
+                <a href="#" class="nav-item" data-section="promos">
+                    <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
+                    <span>Promotions</span>
+                </a>
                 <?php if (Database::isSuperAdmin()): ?>
                     <a href="#" class="nav-item" data-section="add-admin">
                         <span class="nav-icon"><i class="bi bi-person-plus-fill"></i></span>
@@ -339,6 +339,12 @@ function fetch_locations_pdo($con)
                                     <div>
                                         <h4><?= htmlspecialchars($order['customer_name'] ?? 'Unknown') ?></h4>
                                         <p>₱<?= htmlspecialchars($order['total_amount']) ?></p>
+                                        <!-- Add payment method display -->
+                                        <p><strong>Payment:</strong>
+                                            <span class="payment-badge <?= htmlspecialchars($order['payment_method']) ?>">
+                                                <?= ucfirst(htmlspecialchars($order['payment_method'] ?? 'cash')) ?>
+                                            </span>
+                                        </p>
                                     </div>
                                     <div class="pickup-info" style="margin: 10px 0;">
                                         <?php if (!empty($order['pickup_time'])): ?>

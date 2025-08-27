@@ -1833,6 +1833,148 @@ label[for="acceptTerms"] { white-space: nowrap; }
   /* Remove max-width, margin, fixed, overlay, align-items, justify-content */
 }
 
+
+.product-modal-details {
+  background: white;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+/* Title / price */
+.product-modal-title { font-size: 20px; font-weight:800; color:#0f2a22; margin-bottom:6px; }
+.product-modal-price { font-size:14px; color:#374151; }
+
+/* Field label */
+.field-label { font-size:12px; color:#94a3b8; font-weight:700; }
+
+/* Chips (size / sugar) */
+.chip-row { display:flex; gap:8px; flex-wrap:wrap; }
+.chip {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  border: 2px solid #edf2f7;
+  font-weight:700;
+  cursor:pointer;
+  font-size:13px;
+}
+.chip.active { background:#235c3e; color:#fff; border-color:#235c3e; }
+
+/* Add-ons styling */
+.add-ons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.add-on-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 2px solid #e5e7eb;
+  background: transparent;
+  font-weight: 700;
+  color: #374151;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.add-on-btn .price {
+  font-weight: 700;
+  color: #374151;
+  font-size: 12px;
+}
+
+.add-on-btn.active {
+  background: #235c3e;
+  color: #fff;
+  border-color: #235c3e;
+}
+
+.add-on-btn.active .price {
+  color: #fff;
+}
+
+/* Selected toppings in cart */
+.cart-item-toppings {
+  font-size: 0.9em;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+
+
+.product-modal-sugar .sugar-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+.product-modal-sugar .sugar-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f6f7f6;
+  color: #374151;
+  border: 2px solid #e6eef0;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .14s ease;
+  min-width: 92px;
+  text-align: center;
+}
+.product-modal-sugar .sugar-btn:hover { transform: translateY(-2px); }
+
+/* active state */
+.product-modal-sugar .sugar-btn.active {
+  background: #23433e;
+  color: #fff;
+  border-color: #23433e;
+  box-shadow: 0 8px 18px rgba(35,67,58,0.12);
+}
+
+/* ensure sugar buttons don't inherit odd styles from other rules */
+.sugar-buttons .sugar-btn,
+.product-modal-sugar .sugar-btn { box-shadow: none; }
+
+/* small screens */
+@media (max-width: 780px) {
+  .product-modal-sugar .sugar-btn { padding: 8px 14px; min-width: 80px; font-size: 13px; }
+}
+
+.selected-topping {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #f3f4f6;
+  border-radius: 999px;
+  margin: 2px;
+  font-size: 0.85em;
+}
+
+/* Add to cart button (prominent) */
+.product-modal-add-cart {
+  background: #235c3e;
+  color: #fff;
+  border: none;
+  font-weight:800;
+  border-radius: 999px;
+  padding: 12px 18px;
+}
+.product-modal-add-cart:hover { background:#1a472f; transform:translateY(-2px); }
+
+/* Responsive tweaks */
+@media (max-width:780px) {
+  .product-modal-details { padding:16px; border-radius:14px; }
+  .add-ons-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 .product-modal.active {
   display: block;
 }
@@ -1860,6 +2002,68 @@ label[for="acceptTerms"] { white-space: nowrap; }
   width: 100%;
 }
 
+.payment-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 12050;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.payment-modal.open {
+  display: flex;
+  pointer-events: auto;
+}
+
+/* subtle backdrop separate from dialog so content behind is dimmed */
+.payment-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.18);
+  backdrop-filter: blur(0.3px);
+  border-radius: 14px;
+}
+
+/* dialog panel */
+.payment-modal-dialog {
+  position: relative;
+  z-index: 12060;
+  background: #fff;
+  width: 100%;
+  max-width: 560px;
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+  pointer-events: auto;
+}
+
+/* close button */
+.payment-modal-close {
+  position: absolute;
+  right: 14px;
+  top: 10px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  color: #2d4a3a;
+  cursor: pointer;
+}
+
+/* actions row */
+.payment-modal-actions .auth-btn {
+  border-radius: 10px;
+}
+
+/* GCash preview */
+.gcash-preview img { max-width: 100%; height: auto; display:block; margin: 8px auto; }
+.gcash-preview { display: none; }
+
+/* small screens */
+@media (max-width: 600px) {
+  .payment-modal-dialog { margin: 12px; width: calc(100% - 24px); max-width: 420px; padding: 18px; }
+}
+
 .product-modal-image {
   background-color: white;
   border-radius: 24px;
@@ -1884,126 +2088,141 @@ label[for="acceptTerms"] { white-space: nowrap; }
   max-height: unset;
 }
 
+/* -- Product details: match pasted image (white card, large title, clean spacing) -- */
 .product-modal-details {
-  background-color: white;
-  border-radius: 24px;
-  padding: 48px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;      /* keep white card */
+  border-radius: 18px;           /* soft rounded corners */
+  padding: 36px 36px 28px;       /* roomy padding like image 2 */
+  box-shadow: 0 20px 40px rgba(10,20,15,0.06);
+  max-width: 560px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  flex: unset;
-  justify-content: unset;
+  gap: 18px;
 }
 
+/* Title / price hierarchy */
 .product-modal-title {
-  font-size: 3rem;
-  font-weight: bold;
-  color: var(--dark-text);
-  margin-bottom: 16px;
+  font-size: 44px;       /* large heading like image 2 */
+  line-height: 1;
+  font-weight: 900;
+  color: #0f2a22;
+  margin: 0 0 6px 0;
 }
 
 .product-modal-price {
-  font-size: 2rem;
-  color: var(--dark-text);
-  margin-bottom: 48px;
+  font-size: 22px;
+  color: #23433a;
+  margin-bottom: 8px;
+  font-weight: 700;
 }
 
-.product-modal-description {
-  margin-bottom: 48px;
-}
-
+/* Description block */
 .product-modal-description h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: #9ca3af;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
-
 .product-modal-description p {
   color: #6b7280;
-  line-height: 1.6;
-  font-size: 1rem;
+  font-size: 15px;
+  margin: 0 0 6px 0;
 }
 
-.product-modal-sizes {
-  margin-bottom: 48px;
+/* Field label spacing */
+.product-modal-sizes h3,
+.product-modal-sugar h3,
+.product-modal-toppings h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 8px 0 12px;
 }
 
-.product-modal-sizes h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--dark-text);
-  margin-bottom: 24px;
-}
-
+/* Size buttons (pill style) */
 .size-buttons {
   display: flex;
-  gap: 16px;
+  gap: 12px;
 }
-
-.size-btn {
-  padding: 12px 32px;
-  border-radius: 25px;
-  border: 2px solid var(--primary-purple);
-  background-color: transparent;
-  color: var(--primary-purple);
-  font-size: 1.1rem;
-  font-weight: 600;
+.size-buttons .size-btn {
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 2px solid #23433a;
+  background: transparent;
+  color: #23433a;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
+  box-shadow: none;
+  transition: all .15s ease;
 }
-
-.size-btn.active,
-.size-btn:hover {
-  background-color: var(--primary-purple);
-  color: white;
-}
-
-.product-modal-add-cart {
-  background-color: var(--primary-purple);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 18px;
-  font-size: 1.2rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  margin-top: auto;
-}
-
-.product-modal-add-cart:hover {
-  background-color: var(--secondary-purple);
+.size-buttons .size-btn.active,
+.size-buttons .size-btn:hover {
+  background: #23433a;
+  color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(64, 83, 75, 0.4);
 }
 
-/* Add this for the yellow close button in the modal */
-.product-modal-close-yellow {
-  position: absolute;
-  top: 32px;
-  right: 32px;
-  width: 44px;
-  height: 44px;
-  background: #ffe066;
+/* Sugar buttons use same pill style but smaller */
+.product-modal-sugar .size-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 2px solid #e6eef0;
+  color: #374151;
+  background: #f6f7f6;
+}
+.product-modal-sugar .size-btn.active {
+  background: #23433a;
+  color: #fff;
+  border-color: #23433a;
+}
+
+
+
+/* Total + add to cart row (button prominent, aligned right) */
+.product-modal-add-cart,
+.product-modal .product-modal-add-cart,
+.product-modal .product-modal-add-cart:focus {
+  background: #23433a !important;
+  color: #fff !important;
   border: none;
-  border-radius: 14px;
-  color: #222;
-  font-size: 2rem;
-  font-weight: bold;
+  padding: 14px 24px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 16px;
   cursor: pointer;
-  z-index: 10;
+  box-shadow: 0 8px 22px rgba(35,68,58,0.18);
+}
+
+.product-modal .modal-total,
+#modalTotalLabel {
+  font-weight: 800;
+  color: #23433a;
+  font-size: 16px;
+}
+
+/* Footer row: keep total left and button right */
+.product-modal-details > div:last-child,
+.product-modal-details .product-modal-footer,
+.product-modal-details > .footer-row {
   display: flex;
   align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  transition: background 0.2s, transform 0.2s;
+  gap: 14px;
+  margin-top: 8px;
 }
-.product-modal-close-yellow:hover {
-  background: #ffd43b;
-  transform: scale(1.08) rotate(10deg);
+
+/* Small screens: keep layout tidy */
+@media (max-width: 900px) {
+  .product-modal-details {
+    padding: 28px;
+    border-radius: 14px;
+  }
+  .product-modal-title { font-size: 28px; }
+  .product-modal-price { font-size: 18px; }
+  .size-buttons .size-btn { padding: 10px 18px; }
+  .product-modal .product-modal-image img { max-width: 180px; }
 }
+
 
 /* Responsive for mobile: stack vertically */
 @media (max-width: 900px) {

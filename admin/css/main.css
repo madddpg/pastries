@@ -106,6 +106,25 @@ body {
   cursor: pointer;
 }
 
+.payment-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.payment-badge.cash {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.payment-badge.gcash {
+    background-color: #009de6;
+    color: white;
+}
+
 /* small action buttons used inside table rows */
 .btn-edit-topping, .btn-toggle-topping {
   padding: 6px 8px;
@@ -126,6 +145,147 @@ body {
 
 
 
+/* Product Modal Styles */
+.product-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.15);
+  display: none;
+  z-index: 3000;
+  justify-content: center;
+  align-items: center;
+}
+
+.product-modal-content {
+  background: #fff;
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 900px;
+  position: relative;
+}
+
+.product-modal-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.product-modal-price {
+  color: #374151;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.product-modal-description {
+  color: #6B7280;
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+.size-section {
+  margin-bottom: 24px;
+}
+
+.size-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.size-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.size-btn {
+  padding: 8px 16px;
+  border: 2px solid #E5E7EB;
+  border-radius: 20px;
+  background: transparent;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.size-btn.active {
+  background: #235c3e;
+  color: white;
+  border-color: #235c3e;
+}
+
+.sugar-section {
+  margin-bottom: 24px;
+}
+
+.sugar-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.sugar-slider {
+  width: 100%;
+  max-width: 300px;
+}
+
+.add-ons-section {
+  margin-bottom: 24px;
+}
+
+.add-ons-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.add-ons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.add-on-btn {
+  padding: 8px;
+  border: 2px solid #E5E7EB;
+  border-radius: 8px;
+  background: transparent;
+  color: #374151;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.add-on-btn.active {
+  background: #235c3e;
+  color: white;
+  border-color: #235c3e;
+}
+
+.cart-button {
+  background: #235c3e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.cart-button:hover {
+  background: #1a472f;
+}
 
 /* Stats Grid - Top 4 Cards */
 .stats-grid {
