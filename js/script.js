@@ -5,34 +5,7 @@ window.toggleProfileDropdown = function (event) {
     menu.classList.toggle("show");
   }
 };
-function showSection(sectionName) {
-  try {
-    document.querySelectorAll('.section-content').forEach(s => {
-      s.style.display = 'none';
-      s.classList.remove('active');
-    });
-    const target = document.getElementById(sectionName);
-    if (target) {
-      target.style.display = 'block';
-      target.classList.add('active');
-      window.scrollTo(0, 0);
-    }
-    // best-effort nav highlight
-    try {
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      const match = Array.from(document.querySelectorAll('.nav-item')).find(n =>
-        (n.dataset && n.dataset.section && n.dataset.section === sectionName) ||
-        (n.textContent || '').toLowerCase().trim() === sectionName.toLowerCase().trim()
-      );
-      if (match) match.classList.add('active');
-    } catch (e) { /* ignore */ }
-  } catch (e) {
-    console && console.warn && console.warn('showSection error', e);
-  }
-}
-// ensure global exposure (redundant if declared at top-level but explicit is fine)
 
-window.showSection = showSection;
 let cart = []
 let currentSection = "home"
 let isLoggedIn = false
@@ -50,7 +23,6 @@ const TOPPINGS = [
   { key: 'extra_sauce', name: 'Extra sauce (milk-based)', price: 20 },
   { key: 'whipped_cream', name: 'Additional whipped cream', price: 20 }
 ];
-
 
 function recalcModalTotal() {
   if (!currentProduct) return;
@@ -147,6 +119,35 @@ document.addEventListener('click', function (e) {
 });
 
 // Navigation
+function showSection(sectionName) {
+  document.querySelectorAll(".section-content").forEach((section) => {
+    section.style.display = "none"
+    section.classList.remove("active")
+  })
+  const targetSection = document.getElementById(sectionName)
+  if (targetSection) {
+    targetSection.style.display = "block"
+    targetSection.classList.add("active")
+    if (sectionName === "products") {
+      filterDrinks(lastDrinkType);
+    }
+  }
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.classList.remove("active")
+  })
+  const clickedNavItem = Array.from(document.querySelectorAll(".nav-item")).find((item) => {
+    const itemText = item.textContent.toLowerCase().trim()
+    const targetText = sectionName.toLowerCase().trim()
+    if (itemText === "menu" && targetText === "about") return true
+    if (itemText === "shop" && targetText === "products") return true
+    return itemText === targetText
+  })
+  if (clickedNavItem) {
+    clickedNavItem.classList.add("active")
+  }
+  currentSection = sectionName
+  window.scrollTo(0, 0)
+}
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
@@ -602,8 +603,6 @@ function closeCart() {
   document.getElementById("deliveryOptions").style.display = "none";
   deliveryMethod = "pickup";
 }
-
-
 
 
 function startCheckout() {
@@ -1281,48 +1280,6 @@ document.addEventListener('click', function (e) {
     }
   }
 });
-
-
-// Safe modal open helper — sets aria-hidden correctly and focuses dialog
-function openPaymentModal(pickupData = {}) {
-  const paymentModal = document.getElementById("paymentMethodModal");
-  if (!paymentModal) return;
-
-  // store the focused element so we can restore focus after closing
-  __lastFocusedBeforePaymentModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-  // ensure no element inside modal is focused while aria-hidden is true
-  try { if (document.activeElement && paymentModal.contains(document.activeElement)) document.activeElement.blur(); } catch (e) { /* ignore */ }
-
-  // store pickup data on modal dataset
-  paymentModal.dataset.pickupName = pickupData.pickup_name || '';
-  paymentModal.dataset.pickupLocation = pickupData.pickup_location || '';
-  paymentModal.dataset.pickupTime = pickupData.pickup_time || '';
-  paymentModal.dataset.specialInstructions = pickupData.special_instructions || '';
-
-  // make modal visible and accessible
-  paymentModal.classList.add("open");
-  paymentModal.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-
-  // hide any inline payment UI and GCASH preview
-  const inline = document.getElementById("paymentChoicesInline");
-  if (inline) inline.style.display = "none";
-  const gcashPreview = document.getElementById("gcashPreview");
-  if (gcashPreview) gcashPreview.style.display = "none";
-
-  // focus the dialog panel for screen readers / keyboard users
-  const dialog = paymentModal.querySelector('.payment-modal-dialog');
-  if (dialog) {
-    // ensure it is focusable
-    dialog.setAttribute('tabindex', '-1');
-    dialog.focus({ preventScroll: true });
-  } else {
-    // fallback focus first actionable button
-    const firstBtn = paymentModal.querySelector('button, a, [tabindex]');
-    if (firstBtn) firstBtn.focus();
-  }
-}
 
 function showNotification(message, type = "success") {
   const notification = document.createElement("div");
@@ -2301,6 +2258,46 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 }
 
 
+// Safe modal open helper — sets aria-hidden correctly and focuses dialog
+function openPaymentModal(pickupData = {}) {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+
+  // store the focused element so we can restore focus after closing
+  __lastFocusedBeforePaymentModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+  // ensure no element inside modal is focused while aria-hidden is true
+  try { if (document.activeElement && paymentModal.contains(document.activeElement)) document.activeElement.blur(); } catch (e) { /* ignore */ }
+
+  // store pickup data on modal dataset
+  paymentModal.dataset.pickupName = pickupData.pickup_name || '';
+  paymentModal.dataset.pickupLocation = pickupData.pickup_location || '';
+  paymentModal.dataset.pickupTime = pickupData.pickup_time || '';
+  paymentModal.dataset.specialInstructions = pickupData.special_instructions || '';
+
+  // make modal visible and accessible
+  paymentModal.classList.add("open");
+  paymentModal.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+
+  // hide any inline payment UI and GCASH preview
+  const inline = document.getElementById("paymentChoicesInline");
+  if (inline) inline.style.display = "none";
+  const gcashPreview = document.getElementById("gcashPreview");
+  if (gcashPreview) gcashPreview.style.display = "none";
+
+  // focus the dialog panel for screen readers / keyboard users
+  const dialog = paymentModal.querySelector('.payment-modal-dialog');
+  if (dialog) {
+    // ensure it is focusable
+    dialog.setAttribute('tabindex', '-1');
+    dialog.focus({ preventScroll: true });
+  } else {
+    // fallback focus first actionable button
+    const firstBtn = paymentModal.querySelector('button, a, [tabindex]');
+    if (firstBtn) firstBtn.focus();
+  }
+}
 
 
   // Store pickup details on modal dataset so GCash Done can read them
@@ -2319,6 +2316,29 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
 
   
+// close helper updated to restore focus
+function closePaymentModal() {
+  const paymentModal = document.getElementById("paymentMethodModal");
+  if (!paymentModal) return;
+  paymentModal.classList.remove("open");
+  paymentModal.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "auto";
+
+  // hide GCASH preview to reset state
+  const gcashPreview = document.getElementById("gcashPreview");
+  if (gcashPreview) gcashPreview.style.display = "none";
+
+  // restore focus to previously focused element if safe
+  try {
+    if (__lastFocusedBeforePaymentModal && typeof __lastFocusedBeforePaymentModal.focus === 'function') {
+      __lastFocusedBeforePaymentModal.focus();
+    } else {
+      // fallback: focus checkout button in cart
+      const checkout = document.querySelector('.checkout-btn');
+      if (checkout) checkout.focus();
+    }
+  } catch (e) { /* ignore focus restore errors */ }
+}
 
 // update handlePaymentChoice to call closePaymentModal/open helpers (no other change needed)
 function handlePaymentChoice(method) {

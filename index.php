@@ -1332,7 +1332,39 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     <script src="js/script.js" onload="console.info('js/script.js loaded')" onerror="console.error('Failed to load js/script.js')"></script>
     <script src="js/receipt.js" onload="console.info('js/receipt.js loaded')" onerror="console.error('Failed to load js/receipt.js')"></script>
 
-
+   
+  <script>
+    // Safe fallback for showSection to avoid ReferenceError when script.js hasn't executed yet.
+    if (typeof window.showSection !== 'function') {
+      window.showSection = function (sectionName) {
+        try {
+          // hide all sections
+          document.querySelectorAll('.section-content').forEach(function (s) {
+            s.style.display = 'none';
+            s.classList.remove('active');
+          });
+          // show target
+          var target = document.getElementById(sectionName);
+          if (target) {
+            target.style.display = 'block';
+            target.classList.add('active');
+            window.scrollTo(0, 0);
+          }
+          // update nav active state (best-effort)
+          try {
+            document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
+            var match = Array.from(document.querySelectorAll('.nav-item')).find(function (n) {
+              return (n.dataset && n.dataset.section && n.dataset.section === sectionName) ||
+                     (n.textContent || '').toLowerCase().trim() === sectionName.toLowerCase().trim();
+            });
+            if (match) match.classList.add('active');
+          } catch (e) { /* ignore nav update errors */ }
+        } catch (e) {
+          try { console && console.warn && console.warn('fallback showSection error', e); } catch (e) {}
+        }
+      };
+    }
+  </script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const pickupTimeInput = document.getElementById("pickupTime");
