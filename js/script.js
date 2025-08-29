@@ -6,6 +6,7 @@ window.toggleProfileDropdown = (event) => {
   }
 }
 
+console.log('[cupscuddles] js/script.js loaded')
 const cart = []
 let currentSection = "home"
 let isLoggedIn = false
