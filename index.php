@@ -1295,13 +1295,21 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </script>
     <script src="js/script.js"></script>
     <script src="js/receipt.js"></script>
-    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const pickupTimeInput = document.getElementById("pickupTime");
+            const note = document.getElementById("pickupTimeNote");
+            // ...existing code...
+        });
+    </script>
+
+</body>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const pickupTimeInput = document.getElementById("pickupTime");
             const note = document.getElementById("pickupTimeNote");
 
-            if (pickupTimeInput && note) {
+            if (pickupTimeInput && note) {  
                 pickupTimeInput.addEventListener("input", function() {
                     const val = this.value;
                     if (!val) {
@@ -1330,9 +1338,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
             }
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
 
 <!-- Edit Profile Modal -->
