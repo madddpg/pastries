@@ -626,10 +626,10 @@ function completePickupCheckout() {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (paymentModal) {
     // store current pickup details temporarily
-    
-    
-    
-    
+
+
+
+
     paymentModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   } else {
@@ -1154,33 +1154,6 @@ function handleRegister(event) {
 
 // Delegated handler for "View" buttons that use data-* attributes
 document.addEventListener('click', function (e) {
-  const btn = e.target.closest && e.target.closest('.view-btn');
-  if (!btn) return;
-  try {
-    const id = btn.dataset.id;
-    const name = btn.dataset.name;
-    const price = Number(btn.dataset.price) || 0;
-    const description = btn.dataset.desc || '';
-    const image = btn.dataset.image || '';
-    const dataType = btn.dataset.type || 'cold';
-    let variants = null;
-    if (btn.dataset.variants && btn.dataset.variants !== 'null') {
-      try {
-        variants = JSON.parse(btn.dataset.variants);
-      } catch (err) {
-        console.error('Failed to parse variants JSON:', err);
-        variants = null;
-      }
-    }
-    // Call product view handler
-    handleViewProduct(id, name, price, description, image, dataType, variants);
-  } catch (err) {
-    console.error('Error handling view button click:', err);
-  }
-});
-
-
-document.addEventListener('click', function (e) {
   const nav = e.target.closest && e.target.closest('.nav-item');
   if (!nav) return;
   // prevent default anchor behavior
@@ -1227,10 +1200,9 @@ function openPaymentModal(pickupData = {}) {
   try { if (document.activeElement && paymentModal.contains(document.activeElement)) document.activeElement.blur(); } catch (e) { /* ignore */ }
 
   // store pickup data on modal dataset
-  
-  
-  
-  
+
+
+
 
   // make modal visible and accessible
   paymentModal.classList.add("open");
@@ -2236,10 +2208,9 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
 
   // Store pickup details on modal dataset so GCash Done can read them
-  
-  
-  
-  
+
+
+
 
   // Reset payment UI
   const gcashPreview = document.getElementById("gcashPreview");
@@ -2256,7 +2227,6 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
-  
 
   if (method === "cash") {
     // close modal then submit
@@ -2284,7 +2254,6 @@ function handlePaymentChoice(method) {
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById("paymentMethodModal");
   if (!paymentModal) return;
-  
 
   if (method === "cash") {
     // close modal then submit
