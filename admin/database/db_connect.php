@@ -3,10 +3,10 @@
 
 class Database
 {
-    private $host = "localhost";
-    private $user = "root";
-    private $password = "";
-    private $db = "ordering";
+    private $host = "mysql.hostinger.com";
+    private $user = "u778762049_cupsandcuddles";
+    private $password = "CupS@1234";
+    private $db = "u778762049_ordering";
 
     public function opencon()
     {
