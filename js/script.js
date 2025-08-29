@@ -189,6 +189,49 @@ function openProductModal(id, name, price, description, image) {
 // ...existing code...
 
 // Open modal when .view-btn clicked (delegated)
+document.addEventListener('click', function (e) {
+  const viewBtn = e.target.closest('.view-btn');
+  if (viewBtn) {
+    const id = viewBtn.dataset.id;
+    const name = viewBtn.dataset.name || '';
+    const price = parseFloat(viewBtn.dataset.price || 0);
+    const desc = viewBtn.dataset.desc || '';
+    const img = viewBtn.dataset.image || 'img/placeholder.svg';
+
+    // populate modal
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
+    document.getElementById('modalProductDescription').textContent = desc;
+    const imgEl = document.getElementById('modalProductImage');
+    if (imgEl) imgEl.src = img;
+
+    // reset selections
+    selectedSize = 'Grande';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    const s = document.querySelector('.size-btn[data-size="Grande"]');
+    if (s) s.classList.add('active');
+
+    window.modalSelectedToppings = {};
+    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
+
+    // set total
+    const totalAmountEl = document.getElementById('modalTotalAmount');
+    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
+
+    // show modal
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    return;
+  }
+
+  // existing delegated handlers for size / sugar / add-on buttons (keep your previous code)
+});
+
 // Close modal helper
 function closeProductModal() {
   const modal = document.getElementById('productModal');
@@ -219,6 +262,54 @@ function selectSize(size) {
 // ...existing code...
 
 // Ensure view-button handler resets module-level toppings and uses data-size attributes
+document.addEventListener('click', function (e) {
+  const viewBtn = e.target.closest('.view-btn');
+  if (viewBtn) {
+    const id = viewBtn.dataset.id;
+    const name = viewBtn.dataset.name || '';
+    const price = parseFloat(viewBtn.dataset.price || 0);
+    const desc = viewBtn.dataset.desc || '';
+    const img = viewBtn.dataset.image || 'img/placeholder.svg';
+
+    // populate modal
+    document.getElementById('modalProductName').textContent = name;
+    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
+    document.getElementById('modalProductDescription').textContent = desc;
+    const imgEl = document.getElementById('modalProductImage');
+    if (imgEl) imgEl.src = img;
+
+    // reset selections (use module variable, not window.*)
+    selectedSize = 'Grande';
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+    const s = document.querySelector('.size-btn[data-size="Grande"]');
+    if (s) s.classList.add('active');
+
+    modalSelectedToppings = {}; // reset toppings state
+    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
+
+    // reset sugar selection to default
+    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
+    const defaultSugar = document.querySelector('.sugar-btn[data-sugar="Less Sweet"]') || document.querySelector('.sugar-btn');
+    if (defaultSugar) defaultSugar.classList.add('active');
+
+    // set total
+    const totalAmountEl = document.getElementById('modalTotalAmount');
+    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
+
+    // show modal
+    const modal = document.getElementById('productModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    return;
+  }
+
+  // ...existing delegated handlers (size, sugar, add-on) follow below ...
+});
+
 // Add sugar-selection helper to support inline onclick or programmatic calls
 function selectSugar(level) {
   // Normalize level (accept 'Less', 'Less Sweet', etc.)
@@ -513,29 +604,6 @@ function closeCart() {
 }
 
 
-// close helper updated to restore focus
-function closePaymentModal() {
-  const paymentModal = document.getElementById("paymentMethodModal");
-  if (!paymentModal) return;
-  paymentModal.classList.remove("open");
-  paymentModal.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "auto";
-
-  // hide GCASH preview to reset state
-  const gcashPreview = document.getElementById("gcashPreview");
-  if (gcashPreview) gcashPreview.style.display = "none";
-
-  // restore focus to previously focused element if safe
-  try {
-    if (__lastFocusedBeforePaymentModal && typeof __lastFocusedBeforePaymentModal.focus === 'function') {
-      __lastFocusedBeforePaymentModal.focus();
-    } else {
-      // fallback: focus checkout button in cart
-      const checkout = document.querySelector('.checkout-btn');
-      if (checkout) checkout.focus();
-    }
-  } catch (e) { /* ignore focus restore errors */ }
-}
 
 
 function startCheckout() {
@@ -626,10 +694,10 @@ function completePickupCheckout() {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (paymentModal) {
     // store current pickup details temporarily
-
-
-
-
+    paymentModal.dataset.pickupName = pickup_name;
+    paymentModal.dataset.pickupLocation = pickup_location;
+    paymentModal.dataset.pickupTime = pickup_time;
+    paymentModal.dataset.specialInstructions = special_instructions;
     paymentModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
   } else {
@@ -1154,6 +1222,33 @@ function handleRegister(event) {
 
 // Delegated handler for "View" buttons that use data-* attributes
 document.addEventListener('click', function (e) {
+  const btn = e.target.closest && e.target.closest('.view-btn');
+  if (!btn) return;
+  try {
+    const id = btn.dataset.id;
+    const name = btn.dataset.name;
+    const price = Number(btn.dataset.price) || 0;
+    const description = btn.dataset.desc || '';
+    const image = btn.dataset.image || '';
+    const dataType = btn.dataset.type || 'cold';
+    let variants = null;
+    if (btn.dataset.variants && btn.dataset.variants !== 'null') {
+      try {
+        variants = JSON.parse(btn.dataset.variants);
+      } catch (err) {
+        console.error('Failed to parse variants JSON:', err);
+        variants = null;
+      }
+    }
+    // Call product view handler
+    handleViewProduct(id, name, price, description, image, dataType, variants);
+  } catch (err) {
+    console.error('Error handling view button click:', err);
+  }
+});
+
+
+document.addEventListener('click', function (e) {
   const nav = e.target.closest && e.target.closest('.nav-item');
   if (!nav) return;
   // prevent default anchor behavior
@@ -1200,9 +1295,10 @@ function openPaymentModal(pickupData = {}) {
   try { if (document.activeElement && paymentModal.contains(document.activeElement)) document.activeElement.blur(); } catch (e) { /* ignore */ }
 
   // store pickup data on modal dataset
-
-
-
+  paymentModal.dataset.pickupName = pickupData.pickup_name || '';
+  paymentModal.dataset.pickupLocation = pickupData.pickup_location || '';
+  paymentModal.dataset.pickupTime = pickupData.pickup_time || '';
+  paymentModal.dataset.specialInstructions = pickupData.special_instructions || '';
 
   // make modal visible and accessible
   paymentModal.classList.add("open");
@@ -2208,9 +2304,10 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
 
   // Store pickup details on modal dataset so GCash Done can read them
-
-
-
+  paymentModal.dataset.pickupName = pickup_name;
+  paymentModal.dataset.pickupLocation = pickup_location;
+  paymentModal.dataset.pickupTime = pickup_time;
+  paymentModal.dataset.specialInstructions = special_instructions || "";
 
   // Reset payment UI
   const gcashPreview = document.getElementById("gcashPreview");
@@ -2227,6 +2324,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
+  paymentModal.dataset.paymentMethod = method;
 
   if (method === "cash") {
     // close modal then submit
@@ -2254,6 +2352,7 @@ function handlePaymentChoice(method) {
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById("paymentMethodModal");
   if (!paymentModal) return;
+  paymentModal.dataset.paymentMethod = method;
 
   if (method === "cash") {
     // close modal then submit
@@ -2587,62 +2686,3 @@ function handleEditProfile(event) {
 
 
 
-
-
-
-// ---- Auto-added helpers to match index.php ----
-if (typeof openTestimonialModal !== 'function') {
-  window.openTestimonialModal = function (elOrImg) {
-    try {
-      var src = '';
-      if (!elOrImg) src = '';
-      else if (typeof elOrImg === 'string') src = elOrImg;
-      else if (elOrImg.src) src = elOrImg.src;
-      else if (elOrImg.getAttribute) src = elOrImg.getAttribute('data-src') || elOrImg.getAttribute('src') || '';
-      var modal = document.createElement('div');
-      modal.id = 'testimonialLightbox';
-      modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:7000;padding:20px;';
-      modal.innerHTML = '<div style="position:relative;max-width:920px;width:100%;max-height:90%;"><img src=\"' + (src||'') + '\" style=\"max-width:100%;max-height:80vh;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.6)\"><button aria-label=\"Close\" id=\"testimonialLightboxClose\" style=\"position:absolute;right:-10px;top:-10px;background:#fff;border-radius:50%;width:40px;height:40px;border:none;font-size:20px;cursor:pointer;\">×</button></div>';
-      document.body.appendChild(modal);
-      var closeBtn = modal.querySelector('#testimonialLightboxClose');
-      if (closeBtn) closeBtn.addEventListener('click', function () { modal.remove(); });
-      modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
-    } catch (err) {
-      console.warn('openTestimonialModal error', err);
-    }
-  };
-}
-
-// Ensure footer exists / is visible (fixes cases where footer is present but hidden)
-document.addEventListener('DOMContentLoaded', function () {
-  try {
-    var footer = document.querySelector('footer');
-    if (footer) {
-      // ensure not hidden accidentally
-      footer.style.display = footer.style.display || '';
-    } else {
-      var f = document.createElement('footer');
-      f.id = 'siteFooter';
-      f.className = 'site-footer';
-      f.innerHTML = '\
-        <div class=\"container\" style=\"max-width:1100px;margin:0 auto;padding:24px 16px;\">\
-          <div style=\"display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-start\">\
-            <div style=\"flex:1;min-width:200px\">\
-              <h4 style=\"margin:0 0 8px;\">About</h4>\
-              <p style=\"margin:0;color:#6b7280;\">Local coffee shop — handcrafted drinks and pastries.</p>\
-            </div>\
-            <div style=\"flex:1;min-width:180px\">\
-              <h4 style=\"margin:0 0 8px;\">Contact</h4>\
-              <p style=\"margin:0;color:#6b7280;\">Email: info@example.com<br>Phone: 0917-000-0000</p>\
-            </div>\
-            <div style=\"flex:1;min-width:150px\">\
-              <h4 style=\"margin:0 0 8px;\">Follow</h4>\
-              <p style=\"margin:0;color:#6b7280;\"><a href=\"#\">Facebook</a> · <a href=\"#\">Instagram</a></p>\
-            </div>\
-          </div>\
-          <div style=\"text-align:center;margin-top:16px;color:#9CA3AF;font-size:13px;\">&copy; ' + (new Date().getFullYear()) + ' Your Coffee Shop</div>\
-        </div>';
-      document.body.appendChild(f);
-    }
-  } catch (e) { console.warn('Footer fix error', e); }
-});
