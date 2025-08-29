@@ -24,6 +24,34 @@ const TOPPINGS = [
   { key: 'whipped_cream', name: 'Additional whipped cream', price: 20 }
 ];
 
+function showSection(sectionName) {
+  try {
+    document.querySelectorAll('.section-content').forEach(s => {
+      s.style.display = 'none';
+      s.classList.remove('active');
+    });
+    const target = document.getElementById(sectionName);
+    if (target) {
+      target.style.display = 'block';
+      target.classList.add('active');
+      window.scrollTo(0, 0);
+    }
+    // best-effort nav highlight
+    try {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const match = Array.from(document.querySelectorAll('.nav-item')).find(n =>
+        (n.dataset && n.dataset.section && n.dataset.section === sectionName) ||
+        (n.textContent || '').toLowerCase().trim() === sectionName.toLowerCase().trim()
+      );
+      if (match) match.classList.add('active');
+    } catch (e) { /* ignore */ }
+  } catch (e) {
+    console && console.warn && console.warn('showSection error', e);
+  }
+}
+// ensure global exposure (redundant if declared at top-level but explicit is fine)
+window.showSection = showSection;
+
 function recalcModalTotal() {
   if (!currentProduct) return;
 
@@ -119,35 +147,6 @@ document.addEventListener('click', function (e) {
 });
 
 // Navigation
-function showSection(sectionName) {
-  document.querySelectorAll(".section-content").forEach((section) => {
-    section.style.display = "none"
-    section.classList.remove("active")
-  })
-  const targetSection = document.getElementById(sectionName)
-  if (targetSection) {
-    targetSection.style.display = "block"
-    targetSection.classList.add("active")
-    if (sectionName === "products") {
-      filterDrinks(lastDrinkType);
-    }
-  }
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.classList.remove("active")
-  })
-  const clickedNavItem = Array.from(document.querySelectorAll(".nav-item")).find((item) => {
-    const itemText = item.textContent.toLowerCase().trim()
-    const targetText = sectionName.toLowerCase().trim()
-    if (itemText === "menu" && targetText === "about") return true
-    if (itemText === "shop" && targetText === "products") return true
-    return itemText === targetText
-  })
-  if (clickedNavItem) {
-    clickedNavItem.classList.add("active")
-  }
-  currentSection = sectionName
-  window.scrollTo(0, 0)
-}
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
