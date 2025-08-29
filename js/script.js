@@ -122,34 +122,35 @@ document.addEventListener("click", (e) => {
 
 // Navigation
 function showSection(sectionName) {
-  document.querySelectorAll(".section-content").forEach((section) => {
-    section.style.display = "none"
-    section.classList.remove("active")
-  })
-  const targetSection = document.getElementById(sectionName)
-  if (targetSection) {
-    targetSection.style.display = "block"
-    targetSection.classList.add("active")
-    if (sectionName === "products") {
-      filterDrinks(lastDrinkType)
+  try {
+    document.querySelectorAll(".section-content").forEach((section) => {
+      section.style.display = "none"
+      section.classList.remove("active")
+    })
+    const targetSection = document.getElementById(sectionName)
+    if (targetSection) {
+      targetSection.style.display = "block"
+      targetSection.classList.add("active")
+      if (sectionName === "products" && typeof filterDrinks === "function") {
+        filterDrinks(lastDrinkType)
+      }
     }
+    document.querySelectorAll(".nav-item").forEach((item) => item.classList.remove("active"))
+    const clickedNavItem = Array.from(document.querySelectorAll(".nav-item")).find((item) => {
+      const itemText = (item.textContent || "").toLowerCase().trim()
+      const targetText = (sectionName || "").toLowerCase().trim()
+      if (itemText === "menu" && targetText === "about") return true
+      if ((itemText === "shop" || itemText === "products") && targetText === "products") return true
+      return itemText === targetText
+    })
+    if (clickedNavItem) clickedNavItem.classList.add("active")
+    currentSection = sectionName
+    window.scrollTo(0, 0)
+  } catch (e) {
+    console && console.warn && console.warn("showSection error", e)
   }
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.classList.remove("active")
-  })
-  const clickedNavItem = Array.from(document.querySelectorAll(".nav-item")).find((item) => {
-    const itemText = item.textContent.toLowerCase().trim()
-    const targetText = sectionName.toLowerCase().trim()
-    if (itemText === "menu" && targetText === "about") return true
-    if (itemText === "shop" && targetText === "products") return true
-    return itemText === targetText
-  })
-  if (clickedNavItem) {
-    clickedNavItem.classList.add("active")
-  }
-  currentSection = sectionName
-  window.scrollTo(0, 0)
 }
+window.showSection = showSection
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
