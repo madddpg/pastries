@@ -62,6 +62,30 @@ body {
   font-weight: bold;
 }
 
+
+.nav-menu.mobile-open {
+  display: flex !important;
+  flex-direction: column;
+  gap: 8px;
+  background: white;
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  z-index: 3002;
+  min-width: 160px;
+  align-items: flex-start;
+}
+
+/* Make sure nav items are full-width and tappable on mobile */
+@media (max-width: 768px) {
+  .nav-menu.mobile-open .nav-item {
+    display: block;
+    width: 100%;
+    padding: 10px 4px;
+    border-radius: 8px;
+  }
+}
+
 /* Header Styles */
 .header-content {
   display: flex;

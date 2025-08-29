@@ -2732,6 +2732,39 @@ function showEditProfileModal() {
   document.body.style.overflow = "hidden"
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  const hamburger = document.querySelector('.hamburger-menu')
+  const navMenu = document.querySelector('.nav-menu')
+
+  if (hamburger && navMenu) {
+    // Toggle mobile nav
+    hamburger.addEventListener('click', (e) => {
+      e.stopPropagation()
+      navMenu.classList.toggle('mobile-open')
+      const opened = navMenu.classList.contains('mobile-open')
+      hamburger.setAttribute('aria-expanded', opened ? 'true' : 'false')
+      // when opened, ensure focus and scrolling handled
+      if (opened) {
+        navMenu.style.position = 'absolute'
+        navMenu.style.top = (hamburger.getBoundingClientRect().bottom + 8) + 'px'
+        navMenu.style.right = '12px'
+      } else {
+        navMenu.style.position = ''
+        navMenu.style.top = ''
+        navMenu.style.right = ''
+      }
+    })
+
+    // Close mobile nav when clicking outside
+    document.addEventListener('click', (ev) => {
+      if (!navMenu.contains(ev.target) && !hamburger.contains(ev.target) && navMenu.classList.contains('mobile-open')) {
+        navMenu.classList.remove('mobile-open')
+        hamburger.setAttribute('aria-expanded', 'false')
+      }
+    })
+  }
+})
+
 function closeEditProfileModal() {
   document.getElementById("editProfileModal").classList.remove("active")
   document.body.style.overflow = "auto"
