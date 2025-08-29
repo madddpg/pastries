@@ -2587,3 +2587,62 @@ function handleEditProfile(event) {
 
 
 
+
+
+
+// ---- Auto-added helpers to match index.php ----
+if (typeof openTestimonialModal !== 'function') {
+  window.openTestimonialModal = function (elOrImg) {
+    try {
+      var src = '';
+      if (!elOrImg) src = '';
+      else if (typeof elOrImg === 'string') src = elOrImg;
+      else if (elOrImg.src) src = elOrImg.src;
+      else if (elOrImg.getAttribute) src = elOrImg.getAttribute('data-src') || elOrImg.getAttribute('src') || '';
+      var modal = document.createElement('div');
+      modal.id = 'testimonialLightbox';
+      modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:7000;padding:20px;';
+      modal.innerHTML = '<div style="position:relative;max-width:920px;width:100%;max-height:90%;"><img src=\"' + (src||'') + '\" style=\"max-width:100%;max-height:80vh;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.6)\"><button aria-label=\"Close\" id=\"testimonialLightboxClose\" style=\"position:absolute;right:-10px;top:-10px;background:#fff;border-radius:50%;width:40px;height:40px;border:none;font-size:20px;cursor:pointer;\">×</button></div>';
+      document.body.appendChild(modal);
+      var closeBtn = modal.querySelector('#testimonialLightboxClose');
+      if (closeBtn) closeBtn.addEventListener('click', function () { modal.remove(); });
+      modal.addEventListener('click', function (e) { if (e.target === modal) modal.remove(); });
+    } catch (err) {
+      console.warn('openTestimonialModal error', err);
+    }
+  };
+}
+
+// Ensure footer exists / is visible (fixes cases where footer is present but hidden)
+document.addEventListener('DOMContentLoaded', function () {
+  try {
+    var footer = document.querySelector('footer');
+    if (footer) {
+      // ensure not hidden accidentally
+      footer.style.display = footer.style.display || '';
+    } else {
+      var f = document.createElement('footer');
+      f.id = 'siteFooter';
+      f.className = 'site-footer';
+      f.innerHTML = '\
+        <div class=\"container\" style=\"max-width:1100px;margin:0 auto;padding:24px 16px;\">\
+          <div style=\"display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:flex-start\">\
+            <div style=\"flex:1;min-width:200px\">\
+              <h4 style=\"margin:0 0 8px;\">About</h4>\
+              <p style=\"margin:0;color:#6b7280;\">Local coffee shop — handcrafted drinks and pastries.</p>\
+            </div>\
+            <div style=\"flex:1;min-width:180px\">\
+              <h4 style=\"margin:0 0 8px;\">Contact</h4>\
+              <p style=\"margin:0;color:#6b7280;\">Email: info@example.com<br>Phone: 0917-000-0000</p>\
+            </div>\
+            <div style=\"flex:1;min-width:150px\">\
+              <h4 style=\"margin:0 0 8px;\">Follow</h4>\
+              <p style=\"margin:0;color:#6b7280;\"><a href=\"#\">Facebook</a> · <a href=\"#\">Instagram</a></p>\
+            </div>\
+          </div>\
+          <div style=\"text-align:center;margin-top:16px;color:#9CA3AF;font-size:13px;\">&copy; ' + (new Date().getFullYear()) + ' Your Coffee Shop</div>\
+        </div>';
+      document.body.appendChild(f);
+    }
+  } catch (e) { console.warn('Footer fix error', e); }
+});
