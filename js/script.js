@@ -431,7 +431,6 @@ document.addEventListener("click", (e) => {
   }
 })
 // ...existing code...
-
 function addToCart(product_id, name, price, size) {
   if (typeof product_id === "object") {
     const itemObj = product_id
@@ -462,19 +461,27 @@ function addToCart(product_id, name, price, size) {
   updateCartCount()
   updateCartDisplay()
 
-  // Safe UI feedback (no undefined 'event' usage)
+  // Safe UI feedback: avoid using undefined 'event'
   showNotification("Added to cart", "success")
-  if (!currentProduct) {
-    const button = event.target
-    const originalText = button.innerHTML
-    button.innerHTML = '<i class="fas fa-check"></i> Added!'
-    button.style.background = "linear-gradient(135deg, #10B981, #059669)"
-    setTimeout(() => {
-      button.innerHTML = originalText
-      button.style.background = ""
-    }, 1500)
+
+  try {
+    // prefer the active element if it's the add button, else skip transient UI
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const button = active && (active.tagName === "BUTTON" || active.closest && active.closest("button")) ? (active.tagName === "BUTTON" ? active : active.closest("button")) : null
+    if (button) {
+      const originalText = button.innerHTML
+      button.innerHTML = '<i class="fas fa-check"></i> Added!'
+      button.style.background = "linear-gradient(135deg, #10B981, #059669)"
+      setTimeout(() => {
+        button.innerHTML = originalText
+        button.style.background = ""
+      }, 1500)
+    }
+  } catch (e) {
+    // ignore UI feedback failures
   }
 }
+
 
 function removeFromCart(product_id, size) {
   cart = cart.filter((item) => !(item.product_id === product_id && item.size === size))
