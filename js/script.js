@@ -445,3 +445,17 @@ function updateCartDisplay() {
     )
     .join("")
 }
+
+
+function showLoginModal(){ document.getElementById('loginModal')?.classList.add('active') }
+function closeAuthModal(){ document.getElementById('loginModal')?.classList.remove('active'); document.getElementById('registerModal')?.classList.remove('active'); document.getElementById('termsModal')?.classList.remove('active') }
+function switchToRegister(){ closeAuthModal(); document.getElementById('registerModal')?.classList.add('active') }
+function switchToLogin(){ closeAuthModal(); document.getElementById('loginModal')?.classList.add('active') }
+function showEditProfileModal(){ document.getElementById('editProfileModal')?.classList.add('active') }
+function closeEditProfileModal(){ document.getElementById('editProfileModal')?.classList.remove('active') }
+function logout(e){ if(e && e.preventDefault) e.preventDefault(); window.location.href='logout.php' }
+function openCart(){ document.getElementById('cartModal')?.classList.add('open'); document.body.style.overflow='hidden' }
+function closeCart(){ document.getElementById('cartModal')?.classList.remove('open'); document.body.style.overflow='auto' }
+function closeProductModal(){ document.getElementById('productModal')?.classList.remove('open'); document.body.style.overflow='auto' }
+function openTestimonialModal(img){ if(img && img.tagName) { /* simple preview */ const src = img.src || img.getAttribute('data-src'); window.open(src || '#', '_blank') } }
+function addProductToCart(){ showNotification('Added to cart (placeholder)','success'); closeProductModal() }
