@@ -26,6 +26,38 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 <html lang="en">
 
 <head>
+
+  <script>
+    // Minimal safe fallback for showSection to prevent ReferenceError from inline onclicks.
+    // This will be overridden by js/script.js when it loads.
+    if (typeof window.showSection !== 'function') {
+      window.showSection = function (sectionName) {
+        try {
+          document.querySelectorAll('.section-content').forEach(function (s) {
+            s.style.display = 'none';
+            s.classList.remove('active');
+          });
+          var target = document.getElementById(sectionName);
+          if (target) {
+            target.style.display = 'block';
+            target.classList.add('active');
+            window.scrollTo(0, 0);
+          }
+          // best-effort nav highlight
+          try {
+            document.querySelectorAll('.nav-item').forEach(function (n) { n.classList.remove('active'); });
+            var match = Array.from(document.querySelectorAll('.nav-item')).find(function (n) {
+              return (n.dataset && n.dataset.section && n.dataset.section === sectionName) ||
+                     (n.textContent || '').toLowerCase().trim() === sectionName.toLowerCase().trim();
+            });
+            if (match) match.classList.add('active');
+          } catch (e) {}
+        } catch (e) {
+          try { console && console.warn && console.warn('fallback showSection error', e); } catch (e) {}
+        }
+      };
+    }
+  </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cups & Cuddles </title>
@@ -1039,23 +1071,23 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 
-    <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
-        <div class="payment-modal-backdrop" data-close="backdrop"></div>
-        <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
-            <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
-            <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Choose payment method</h3>
-            <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
-                <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('cash')">Pay with Cash</button>
-                <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('gcash')">Pay with GCash</button>
-            </div>
-            <div id="gcashPreview" class="gcash-preview" style="display:none;margin-top:18px;text-align:center;">
-                <p style="font-weight:600;color:#374151;">Scan or save this GCash QR.</p>
-                <img src="img/gcash_pic.jpg" alt="GCash QR" style="max-width:320px;border-radius:8px;border:1px solid #e5e7eb;" />
-                <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
-                    <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 18px;" onclick="submitGcashCheckout()">Done</button>
-                </div>
-            </div>
+      <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
+     <div class="payment-modal-backdrop" data-close="backdrop"></div>
+          <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+      <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
+       <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Choose payment method</h3>
+        <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
+          <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('cash')">Pay with Cash</button>
+          <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('gcash')">Pay with GCash</button>
         </div>
+        <div id="gcashPreview" class="gcash-preview" style="display:none;margin-top:18px;text-align:center;">
+          <p style="font-weight:600;color:#374151;">Scan or save this GCash QR.</p>
+          <img src="img/gcash_pic.jpg" alt="GCash QR" style="max-width:320px;border-radius:8px;border:1px solid #e5e7eb;" />
+          <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+            <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 18px;" onclick="submitGcashCheckout()">Done</button>
+          </div>
+        </div>
+      </div>
     </div>
 
 
@@ -1089,7 +1121,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
 
-                    <div class="product-modal-sugar">
+                      <div class="product-modal-sugar">
                         <h3>Sugar</h3>
                         <div class="sugar-buttons">
                             <button type="button" class="sugar-btn active" data-sugar="Less Sweet">Less Sweet</button>
@@ -1297,55 +1329,49 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         window.PHP_USER_LN = "<?php echo addslashes($_SESSION['user']['user_LN'] ?? ''); ?>";
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
         window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? addslashes($_SESSION['user']['profile_image']) : 'img/default-avatar.png'; ?>";
-        // expose numeric user id and fullname for client-side cart scoping / UI
-+       window.PHP_USER_ID = <?php echo $isLoggedIn && isset($_SESSION['user']['id']) ? intval($_SESSION['user']['id']) : 'null'; ?>;
-+       window.PHP_USER_FULLNAME = "<?php echo addslashes(trim(($_SESSION['user']['user_FN'] ?? '') . ' ' . ($_SESSION['user']['user_LN'] ?? ''))); ?>";
     </script>
     <script src="js/script.js"></script>
     <script src="js/receipt.js"></script>
+    </script>
+    <!-- main scripts with diagnostic onload/onerror -->
+    <script src="js/script.js" onload="console.info('js/script.js loaded')" onerror="console.error('Failed to load js/script.js')"></script>
+    <script src="js/receipt.js" onload="console.info('js/receipt.js loaded')" onerror="console.error('Failed to load js/receipt.js')"></script>
+
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const pickupTimeInput = document.getElementById("pickupTime");
             const note = document.getElementById("pickupTimeNote");
-            // ...existing code...
+
+            if (pickupTimeInput && note) {
+                pickupTimeInput.addEventListener("input", function() {
+                    const val = this.value;
+                    if (!val) {
+                        note.textContent = "Note: Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.";
+                        note.style.color = "#b45309";
+                        this.setCustomValidity("");
+                        return;
+                    }
+
+                    const [hour, minute] = val.split(":").map(Number);
+                    const totalMins = hour * 60 + minute;
+
+                    const openMins = 15 * 60; // 3:00 PM
+                    const closeMins = 20 * 60 + 30; // 8:30 PM
+
+                    if (totalMins < openMins || totalMins > closeMins) {
+                        note.textContent = "❌ Please select a time between 3:00 p.m. and 8:30 p.m.";
+                        note.style.color = "#dc2626";
+                        this.setCustomValidity("Invalid time selected.");
+                    } else {
+                        note.textContent = "✅ Valid time.";
+                        note.style.color = "#22a06b";
+                        this.setCustomValidity("");
+                    }
+                });
+            }
         });
     </script>
-
-</body>
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const pickupTimeInput = document.getElementById("pickupTime");
-        const note = document.getElementById("pickupTimeNote");
-
-        if (pickupTimeInput && note) {
-            pickupTimeInput.addEventListener("input", function() {
-                const val = this.value;
-                if (!val) {
-                    note.textContent = "Note: Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.";
-                    note.style.color = "#b45309";
-                    this.setCustomValidity("");
-                    return;
-                }
-
-                const [hour, minute] = val.split(":").map(Number);
-                const totalMins = hour * 60 + minute;
-
-                const openMins = 15 * 60; // 3:00 PM
-                const closeMins = 20 * 60 + 30; // 8:30 PM
-
-                if (totalMins < openMins || totalMins > closeMins) {
-                    note.textContent = "❌ Please select a time between 3:00 p.m. and 8:30 p.m.";
-                    note.style.color = "#dc2626";
-                    this.setCustomValidity("Invalid time selected.");
-                } else {
-                    note.textContent = "✅ Valid time.";
-                    note.style.color = "#22a06b";
-                    this.setCustomValidity("");
-                }
-            });
-        }
-    });
-</script>
 </body>
 
 </html>
