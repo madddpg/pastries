@@ -1,6 +1,15 @@
-
 <?php
 header('Content-Type: application/json');
+session_start();
+
+// Basic server-side admin gate - adjust to your auth scheme if needed.
+// If you use a different session key for admin, replace this check.
+if (empty($_SESSION['admin_id'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    exit;
+}
+
 require_once __DIR__ . '/../database/db_connect.php';
 
 $db = new Database();
@@ -59,14 +68,44 @@ try {
     // Delete topping
     if ($method === 'POST' && $action === 'delete') {
         $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        if ($id <= 0) throw new Exception('Invalid id');
-        $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
-        $ok = $stmt->execute([$id]);
-        echo json_encode(['success' => (bool)$ok]);
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid id']);
+            exit;
+        }
+
+        try {
+            $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
+            $ok = $stmt->execute([$id]);
+
+            if ($ok && $stmt->rowCount() > 0) {
+                echo json_encode(['success' => true, 'message' => 'Deleted']);
+            } else {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Topping not found or already deleted']);
+            }
+        } catch (PDOException $pdoEx) {
+            // foreign key / constraint violation often SQLSTATE 23000
+            if ($pdoEx->getCode() === '23000') {
+                http_response_code(409);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Cannot delete topping: it is referenced by other records. Mark it inactive instead.'
+                ]);
+            } else {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()]);
+            }
+        }
         exit;
     }
 
-    throw new Exception('Unsupported action');
+    // Unsupported action
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Unsupported action']);
+    exit;
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    exit;
 }
