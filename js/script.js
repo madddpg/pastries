@@ -1227,9 +1227,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function logout(event) {
   if (event) event.stopPropagation()
-  fetch("logout.php", { method: "POST" }).then(() => {
-    window.location.reload()
-  })
+  fetch("logout.php", { method: "POST" })
+    .then(() => {
+      try {
+        // remove any per-user and guest carts from localStorage
+        if (currentUser && currentUser.id) localStorage.removeItem(`cart_user_${currentUser.id}`)
+        localStorage.removeItem("cart_guest")
+      } catch (e) {
+        console.warn("Error clearing cart storage on logout", e)
+      }
+
+      // clear in-memory state and update UI immediately
+      isLoggedIn = false
+      currentUser = null
+      cart = []
+      try {
+        updateCartCount()
+        updateCartDisplay()
+      } catch (e) {
+        console.warn("Error updating cart UI on logout", e)
+      }
+
+      // reload so server session state is reflected
+      window.location.reload()
+    })
+    .catch((err) => {
+      console.error("Logout failed", err)
+      // still clear client state even if server call failed
+      try {
+        localStorage.removeItem("cart_guest")
+      } catch (e) {}
+      isLoggedIn = false
+      currentUser = null
+      cart = []
+      updateCartCount()
+      updateCartDisplay()
+    })
 }
 
 // Modify the handleRegister function (around line 340-375)
