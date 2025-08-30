@@ -2256,6 +2256,8 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
   } catch (err) {
     console.error('handleViewProduct error', err);
   }
+
+
 }function selectSize(size) {
   selectedSize = size;
 
@@ -2324,24 +2326,6 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 }
 
 
-
-
-  // Store pickup details on modal dataset so GCash Done can read them
-  paymentModal.dataset.pickupName = pickup_name;
-  paymentModal.dataset.pickupLocation = pickup_location;
-  paymentModal.dataset.pickupTime = pickup_time;
-  paymentModal.dataset.specialInstructions = special_instructions || "";
-
-  // Reset payment UI
-  const gcashPreview = document.getElementById("gcashPreview");
-  if (gcashPreview) gcashPreview.style.display = "none";
-
-  paymentModal.style.display = "flex";
-  document.body.style.overflow = "hidden";
-
-
-
-  
 
 // update handlePaymentChoice to call closePaymentModal/open helpers (no other change needed)
 function handlePaymentChoice(method) {
