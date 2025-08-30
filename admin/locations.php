@@ -37,6 +37,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+
+
+     if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
+        $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
+        if ($admin_id === null) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Admin not logged in.']);
+            exit;
+        }
+
+        $id = intval($_POST['id']);
+        $status = $_POST['status'];
+        $allowed = ['open', 'closed'];
+        if ($id <= 0 || !in_array($status, $allowed)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
+            exit;
+        }
+
+        try {
+            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ?, updated_at = NOW() WHERE id = ?");
+            $ok = $stmt->execute([$status, $admin_id, $id]);
+            echo json_encode(['success' => (bool)$ok]);
+        } catch (PDOException $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+    
 if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
@@ -90,7 +120,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         exit;
     }
 
-    
+
     if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
         $id = intval($_POST['id']);
 
