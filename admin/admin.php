@@ -9,7 +9,16 @@ if (!ini_get('date.timezone')) {
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Ensure the Database helper is available so we can check admin role
 require_once __DIR__ . '/database/db_connect.php';
+
+// Server-side access control: redirect any non-admin visitor
+if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin_id']) && $_SESSION['admin_id']))) {
+    // Adjust destination to your admin login page if you have one, e.g. 'admin/login.php'
+    header('Location: ../index.php');
+    exit;
+}
 $db = new Database();
 $con = $db->opencon();
 
