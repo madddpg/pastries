@@ -832,24 +832,19 @@ function submitPickupForm(payload) {
 
 document.addEventListener("DOMContentLoaded", function () {
   // Checkout buttons (cart total area)
-  document.querySelectorAll(".checkout-btn").forEach(btn => {
-    btn.removeEventListener("click", handleCheckout);
-    btn.addEventListener("click", function (e) {
-      e.preventDefault && e.preventDefault();
-      handleCheckout();
-    });
-  });
-
-  // Delegated handler for checkout buttons created after load
-  document.body.addEventListener('click', function (ev) {
+    document.body.addEventListener('click', function (ev) {
     const checkoutBtn = ev.target.closest && ev.target.closest('.checkout-btn');
     if (checkoutBtn) {
       ev.preventDefault && ev.preventDefault();
+      // debounce guard to prevent double/spam clicks
+      if (checkoutBtn.dataset.processing === '1') return;
+      checkoutBtn.dataset.processing = '1';
+      setTimeout(() => { delete checkoutBtn.dataset.processing; }, 700);
       handleCheckout();
       return;
     }
 
-    // existing inline payment handlers
+    // inline payment handlers
     if (ev.target && ev.target.id === 'payCashInlineBtn') {
       const cartTotal = document.getElementById('cartTotal');
       const payload = {
@@ -862,11 +857,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const inline = document.getElementById("paymentChoicesInline");
       if (inline) inline.style.display = "none";
       submitPickupForm(payload);
+      return;
     }
+
     if (ev.target && ev.target.id === 'payGcashInlineBtn') {
       const gcashInline = document.getElementById('gcashPreviewInline');
       if (gcashInline) gcashInline.style.display = 'block';
+      return;
     }
+
     if (ev.target && ev.target.id === 'gcashDoneInlineBtn') {
       const cartTotal = document.getElementById('cartTotal');
       const payload = {
@@ -879,8 +878,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const inline = document.getElementById("paymentChoicesInline");
       if (inline) inline.style.display = "none";
       submitPickupForm(payload);
+      return;
     }
   });
+
+
 
   // Also wire GCash Done button if it exists (modal flow)
   const gcashDone = document.getElementById("gcashDoneBtn");
@@ -1932,6 +1934,10 @@ document.addEventListener("DOMContentLoaded", () => {
   updateCartCount();
   updateCartDisplay();
   showSection("home");
+
+  if (typeof filterDrinks === 'function') {
+    filterDrinks('cold');
+  }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
