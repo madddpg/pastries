@@ -1332,12 +1332,6 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </script>
     <script src="js/script.js"></script>
     <script src="js/receipt.js"></script>
-    </script>
-    <!-- main scripts with diagnostic onload/onerror -->
-    <script src="js/script.js" onload="console.info('js/script.js loaded')" onerror="console.error('Failed to load js/script.js')"></script>
-    <script src="js/receipt.js" onload="console.info('js/receipt.js loaded')" onerror="console.error('Failed to load js/receipt.js')"></script>
-
-
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const pickupTimeInput = document.getElementById("pickupTime");
