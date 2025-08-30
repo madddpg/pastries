@@ -1297,6 +1297,9 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         window.PHP_USER_LN = "<?php echo addslashes($_SESSION['user']['user_LN'] ?? ''); ?>";
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
         window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? addslashes($_SESSION['user']['profile_image']) : 'img/default-avatar.png'; ?>";
+        // expose numeric user id and fullname for client-side cart scoping / UI
++       window.PHP_USER_ID = <?php echo $isLoggedIn && isset($_SESSION['user']['id']) ? intval($_SESSION['user']['id']) : 'null'; ?>;
++       window.PHP_USER_FULLNAME = "<?php echo addslashes(trim(($_SESSION['user']['user_FN'] ?? '') . ' ' . ($_SESSION['user']['user_LN'] ?? ''))); ?>";
     </script>
     <script src="js/script.js"></script>
     <script src="js/receipt.js"></script>

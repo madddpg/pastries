@@ -432,6 +432,12 @@ document.addEventListener("click", (e) => {
 })
 // ...existing code...
 function addToCart(product_id, name, price, size) {
+  // Require login before any cart mutation
+  if (!getCartKey()) {
+    showLoginModal()
+    return
+  }
+
   if (typeof product_id === "object") {
     const itemObj = product_id
     const existing = cart.find(
@@ -461,11 +467,9 @@ function addToCart(product_id, name, price, size) {
   updateCartCount()
   updateCartDisplay()
 
-  // Safe UI feedback: avoid using undefined 'event'
   showNotification("Added to cart", "success")
 
   try {
-    // prefer the active element if it's the add button, else skip transient UI
     const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const button = active && (active.tagName === "BUTTON" || active.closest && active.closest("button")) ? (active.tagName === "BUTTON" ? active : active.closest("button")) : null
     if (button) {
@@ -481,7 +485,6 @@ function addToCart(product_id, name, price, size) {
     // ignore UI feedback failures
   }
 }
-
 
 function removeFromCart(product_id, size) {
   cart = cart.filter((item) => !(item.product_id === product_id && item.size === size))
@@ -507,18 +510,36 @@ function getTotalItems() {
 }
 
 function getCartKey() {
+  // Only persist carts for logged-in users.
   if (currentUser && currentUser.id) {
     return `cart_user_${currentUser.id}`
   }
-  return "cart_guest"
+  return null
+
 }
 
 function loadCart() {
   try {
     const key = getCartKey()
+    if (!key) {
+      // Guests must log in first — ensure any stray guest key is removed and keep in-memory cart empty
+      try {
+        localStorage.removeItem("cart_guest")
+      } catch (e) {
+        /* ignore */
+      }
+      cart = []
+      return
+    }
+
     const savedCart = localStorage.getItem(key)
     if (savedCart) {
-      cart = JSON.parse(savedCart)
+      try {
+        const parsed = JSON.parse(savedCart)
+        cart = Array.isArray(parsed) ? parsed : []
+      } catch {
+        cart = []
+      }
     } else {
       cart = []
     }
@@ -532,17 +553,32 @@ function sendOTP() {
   const otp = document.getElementById("otp")
 }
 function saveCart() {
-  const key = getCartKey()
-  localStorage.setItem(key, JSON.stringify(cart))
+  try {
+    const key = getCartKey()
+    if (!key) {
+      // Do not persist for guests
+      return
+    }
+    localStorage.setItem(key, JSON.stringify(cart))
+  } catch (e) {
+    console.error("saveCart error", e)
+  }
 }
 
 function updateCartCount() {
+  // If not logged in, show 0 and do not persist
   const totalItems = getTotalItems()
-  document.getElementById("cartCount").textContent = totalItems
-  const modalCartCount = document.getElementById("cartCountModal")
-  if (modalCartCount) {
-    modalCartCount.textContent = totalItems
+  const badgeEl = document.getElementById("cartCount")
+  if (!getCartKey()) {
+    if (badgeEl) badgeEl.textContent = 0
+    const modalCartCount = document.getElementById("cartCountModal")
+    if (modalCartCount) modalCartCount.textContent = 0
+    return
   }
+
+  if (badgeEl) badgeEl.textContent = totalItems
+  const modalCartCount = document.getElementById("cartCountModal")
+  if (modalCartCount) modalCartCount.textContent = totalItems
   saveCart()
 }
 // Update the updateCartDisplay function to use button styling
