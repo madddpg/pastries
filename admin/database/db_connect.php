@@ -218,7 +218,7 @@ class Database
                     ]
                 ];
             } else {
-                return ['success' => false, 'message' => 'Incorrect password for admin user.'];
+                return ['success' => false, 'message' => 'Incorrect password.'];
             }
         }
         // Check users table by user_email
@@ -241,7 +241,7 @@ class Database
                 return ['success' => false, 'message' => 'Incorrect password for regular user.'];
             }
         }
-        return ['success' => false, 'message' => 'User not found in both admin and regular user tables.'];
+        return ['success' => false, 'message' => 'User not found. Please try again.'];
     }
 
     public function loginAdmin($admin_email, $password)

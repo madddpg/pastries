@@ -1,7 +1,13 @@
+
 <?php
 header('Content-Type: application/json');
-require_once __DIR__ . '../database/db_connect.php';
-session_start();
+
+// ensure session started before role checks
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+// correct require path (was missing a slash)
+require_once __DIR__ . '/database/db_connect.php';
+
 if (!Database::isSuperAdmin()) {
     echo json_encode(['success' => false, 'message' => 'Access denied. Only super admin can add admins.']);
     exit;
