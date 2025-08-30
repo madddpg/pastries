@@ -59,8 +59,6 @@ try {
         $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
         $status = (isset($_POST['status']) && $_POST['status'] === 'active') ? 'active' : 'inactive';
         if ($id <= 0) throw new Exception('Invalid id');
-        $ok = $db->update_topping_status($ id = $id, $status); // fallback call
-        // use Database method directly if $db wrapper returns boolean
         $ok = $db->update_topping_status($id, $status);
         echo json_encode(['success' => (bool)$ok]);
         exit;
