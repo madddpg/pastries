@@ -37,42 +37,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
+if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
+        $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
+        if ($admin_id === null) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Admin not logged in.']);
+            exit;
+        }
 
-    // Edit Location
-    if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
         $id = intval($_POST['id']);
-        $name = $_POST['name'];
+        $name = trim($_POST['name']);
         $status = $_POST['status'];
+
+        if ($name === '' || strlen($name) > 191) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Invalid name']);
+            exit;
+        }
+
         $imagePath = null;
-
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = realpath(__DIR__ . '/../img') . '/';
-            $filename = uniqid() . '_' . basename($_FILES['image']['name']);
+            $allowed = ['jpg','jpeg','png','gif'];
+            $origName = basename($_FILES['image']['name']);
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            if (!in_array($ext, $allowed)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid image type']);
+                exit;
+            }
+            $uploadDir = realpath(__DIR__ . '/../img');
+            if ($uploadDir === false) $uploadDir = __DIR__ . '/../img';
+            $uploadDir = rtrim($uploadDir, '/\\') . '/';
+            $filename = uniqid() . '_' . preg_replace('/[^a-z0-9_\.-]/i','_', $origName);
             $targetFile = $uploadDir . $filename;
-
             if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
                 $imagePath = 'img/' . $filename;
             }
         }
 
         if ($imagePath) {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=? WHERE id=?");
-            $success = $stmt->execute([$name, $status, $imagePath, $id]);
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE id=?");
+            $success = $stmt->execute([$name, $status, $imagePath, $admin_id, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=? WHERE id=?");
-            $success = $stmt->execute([$name, $status, $id]);
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, admin_id=? WHERE id=?");
+            $success = $stmt->execute([$name, $status, $admin_id, $id]);
         }
 
         echo json_encode([
-            'success' => $success,
+            'success' => (bool)$success,
             'message' => $success ? 'Location updated successfully.' : 'Error: Could not update location.'
         ]);
         exit;
     }
 
-    // Delete Location
+    
     if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
         $id = intval($_POST['id']);
+
+        // require super-admin for hard delete
+        if (!Database::isSuperAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required to delete locations.']);
+            exit;
+        }
+
+        // check for references in candidate tables (only if they exist)
+        $refs = [];
+        try {
+            // products.location_id
+            $check = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'products'");
+            $check->execute();
+            if ((int)$check->fetchColumn() > 0) {
+                $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE location_id = ?");
+                $stmt->execute([$id]);
+                $cnt = (int)$stmt->fetchColumn();
+                if ($cnt > 0) $refs[] = "products ({$cnt})";
+            }
+        } catch (PDOException $e) {
+            // ignore info_schema failures
+        }
+
+        if (!empty($refs)) {
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Cannot delete: referenced in ' . implode(', ', $refs) . '. Use force_delete to dissociate references or mark affected items accordingly.'
+            ]);
+            exit;
+        }
+
+        // safe to delete
         $stmt = $pdo->prepare("DELETE FROM locations WHERE id=?");
         $success = $stmt->execute([$id]);
 
@@ -82,20 +136,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit;
     }
-    if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
-        $id = intval($_POST['id']);
-        $status = $_POST['status'];
-        $stmt = $pdo->prepare("UPDATE locations SET status=? WHERE id=?");
-        $success = $stmt->execute([$status, $id]);
 
-        echo json_encode([
-            'success' => $success,
-            'message' => $success ? 'Location status updated.' : 'Error: Could not update location status.'
-        ]);
+    // Force delete (super-admin): dissociate references then delete
+    if (isset($_POST['action']) && $_POST['action'] === 'force_delete' && isset($_POST['id'])) {
+        $id = intval($_POST['id']);
+
+        if (!Database::isSuperAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required to force delete locations.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            // best-effort: dissociate products by nulling location_id
+            try {
+                $u = $pdo->prepare("UPDATE products SET location_id = NULL WHERE location_id = ?");
+                $u->execute([$id]);
+            } catch (PDOException $e) {
+                // ignore if products table/column missing
+            }
+
+            $del = $pdo->prepare("DELETE FROM locations WHERE id = ?");
+            $del->execute([$id]);
+
+            if ($del->rowCount() > 0) {
+                $pdo->commit();
+                echo json_encode(['success' => true, 'message' => 'Force-deleted location and dissociated references (products updated).']);
+            } else {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Location not found']);
+            }
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
         exit;
     }
 }
-
 echo json_encode(['success' => false, 'message' => 'Invalid request.']);
 exit;
 ?>

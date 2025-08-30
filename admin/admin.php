@@ -1298,6 +1298,9 @@ function fetch_locations_pdo($con)
                 });
             });
 
+
+
+
             // Dashboard stats AJAX update
             function updateDashboardStats() {
                 fetch('AJAX/dashboard_stats.php')
@@ -1398,6 +1401,10 @@ function fetch_locations_pdo($con)
         });
     </script>
     <script src="js/main.js"></script>
+    <script>
+        // expose super-admin flag to admin UI JS (used to show force-delete)
+        window.IS_SUPER_ADMIN = <?php echo Database::isSuperAdmin() ? 'true' : 'false'; ?>;
+    </script>
 </body>
 
 </html>
