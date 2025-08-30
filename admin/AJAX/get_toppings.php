@@ -2,8 +2,7 @@
 header('Content-Type: application/json');
 session_start();
 
-// Basic server-side admin gate - adjust to your auth scheme if needed.
-// If you use a different session key for admin, replace this check.
+// Basic server-side admin gate
 if (empty($_SESSION['admin_id'])) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
@@ -65,7 +64,7 @@ try {
         exit;
     }
 
-    // Delete topping
+    // Delete topping — check transaction_toppings for references first
     if ($method === 'POST' && $action === 'delete') {
         $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
         if ($id <= 0) {
@@ -75,6 +74,20 @@ try {
         }
 
         try {
+            // Check references in transaction_toppings
+            $checkStmt = $con->prepare("SELECT COUNT(*) FROM transaction_toppings WHERE topping_id = ?");
+            $checkStmt->execute([$id]);
+            $count = (int)$checkStmt->fetchColumn();
+            if ($count > 0) {
+                http_response_code(409);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
+                ]);
+                exit;
+            }
+
+            // Safe to delete
             $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
             $ok = $stmt->execute([$id]);
 
@@ -85,13 +98,9 @@ try {
                 echo json_encode(['success' => false, 'message' => 'Topping not found or already deleted']);
             }
         } catch (PDOException $pdoEx) {
-            // foreign key / constraint violation often SQLSTATE 23000
             if ($pdoEx->getCode() === '23000') {
                 http_response_code(409);
-                echo json_encode([
-                    'success' => false,
-                    'message' => 'Cannot delete topping: it is referenced by other records. Mark it inactive instead.'
-                ]);
+                echo json_encode(['success' => false, 'message' => 'Cannot delete topping: constraint violation. Mark it inactive instead.']);
             } else {
                 http_response_code(500);
                 echo json_encode(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()]);
