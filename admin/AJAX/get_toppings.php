@@ -63,56 +63,6 @@ try {
         echo json_encode(['success' => (bool)$ok]);
         exit;
     }
-
-    // Delete topping — check transaction_toppings for references first
-    if ($method === 'POST' && $action === 'delete') {
-        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        if ($id <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid id']);
-            exit;
-        }
-
-        try {
-            // Check references in transaction_toppings
-            $checkStmt = $con->prepare("SELECT COUNT(*) FROM transaction_toppings WHERE topping_id = ?");
-            $checkStmt->execute([$id]);
-            $count = (int)$checkStmt->fetchColumn();
-            if ($count > 0) {
-                http_response_code(409);
-                echo json_encode([
-                    'success' => false,
-                    'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
-                ]);
-                exit;
-            }
-
-            // Safe to delete
-            $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
-            $ok = $stmt->execute([$id]);
-
-            if ($ok && $stmt->rowCount() > 0) {
-                echo json_encode(['success' => true, 'message' => 'Deleted']);
-            } else {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Topping not found or already deleted']);
-            }
-        } catch (PDOException $pdoEx) {
-            if ($pdoEx->getCode() === '23000') {
-                http_response_code(409);
-                echo json_encode(['success' => false, 'message' => 'Cannot delete topping: constraint violation. Mark it inactive instead.']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()]);
-            }
-        }
-        exit;
-    }
-
-    // Unsupported action
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Unsupported action']);
-    exit;
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

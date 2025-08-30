@@ -273,23 +273,40 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             return;
         }
-
-        if (target.matches('.btn-delete-topping')) {
-            const id = target.dataset.id;
-            if (!confirm('Delete this topping?')) return;
-            const body = new URLSearchParams();
-            body.append('action','delete');
-            body.append('id', id);
-            try {
-                const res = await fetch(API, { method: 'POST', body });
-                const data = await res.json();
-                if (data.success) fetchToppings();
-                else alert('Delete failed');
-            } catch (err) {
-                console.error('delete topping error', err);
+if (target.matches('.btn-delete-topping')) {
+    const id = target.dataset.id;
+    if (!confirm('Delete this topping?')) return;
+    const body = new URLSearchParams();
+    body.append('action','delete');
+    body.append('id', id);
+    try {
+        const res = await fetch(API, { method: 'POST', body });
+        const data = await res.json();
+        if (data.success) {
+            fetchToppings();
+        } else {
+            // If referenced, suggest marking inactive
+            if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
+                if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
+                    const body2 = new URLSearchParams();
+                    body2.append('action','toggle_status');
+                    body2.append('id', id);
+                    body2.append('status','inactive');
+                    const r2 = await fetch(API, { method: 'POST', body: body2 });
+                    const d2 = await r2.json();
+                    if (d2.success) fetchToppings();
+                    else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
+                }
+            } else {
+                alert('Delete failed: ' + (data.message || 'unknown'));
             }
-            return;
         }
+    } catch (err) {
+        console.error('delete topping error', err);
+        alert('Delete request failed');
+    }
+    return;
+}
     });
 
     if (form) {
