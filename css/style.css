@@ -449,6 +449,8 @@ img, svg, picture, video {
   transition: all 0.3s ease;
 }
 
+/*dasdasdasd*/
+
 .auth-switch a:hover {
   color: var(--secondary-purple);
   text-decoration: underline;
