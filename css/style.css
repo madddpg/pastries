@@ -3011,14 +3011,17 @@ label[for="acceptTerms"] { white-space: nowrap; }
 /* Main Footer - Fixed */
 
 .footer-content {
-  position: absolute; /* Position the text absolutely */
-  bottom: 0; /* Align the text to the bottom */
-  left: 50%; /* Center horizontally */
-  transform: translateX(-50%); /* Adjust for centering */
-  z-index: 1; /* Ensure it appears above any background elements */
+  /* keep center layout by default, avoid absolute overlap on small viewports */
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
   display: flex;
-  flex-direction: row; /* Stack h1, h2, h3 vertically */
-  align-items: flex-end; /* Center content horizontally */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding-top: 18px;
 }
 
 .footer-logo {
@@ -3027,13 +3030,17 @@ label[for="acceptTerms"] { white-space: nowrap; }
   align-items: center;
 }
 
+/* make the large brand text scale and wrap safely */
 .footer-slogan {
-  display: flex;
-  align-items: center;
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  padding: 8px 1rem;
+  gap: 12px;
   justify-content: center;
-  align-items: flex-end;
-  margin-bottom: 0px;
-  padding: 0px;
+  flex-wrap: wrap;
 }
 
 .footer-slogan h1 {
@@ -3058,11 +3065,17 @@ label[for="acceptTerms"] { white-space: nowrap; }
 }
 .footer-slogan h1,
 .footer-slogan h2,
-.footer-slogan h3 {
+.footer-slogan h3,
+.footer-brand-text h1 {
+  font-size: clamp(2.2rem, 8vw, 8rem);
+  line-height: 1;
+  white-space: normal;
   margin: 0;
   padding: 0;
-  line-height: 1;
+  word-break: break-word;
+  text-align: center;
 }
+
 
 
 .main-footer {
@@ -3129,7 +3142,10 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 .social-icons {
   display: flex;
-  gap: 25px; /* increased from 20px */
+  gap: clamp(8px, 3vw, 24px);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .social-icons a:hover {
@@ -3137,6 +3153,25 @@ label[for="acceptTerms"] { white-space: nowrap; }
   transform: scale(1.1); /* adds a subtle zoom on hover */
 }
 
+
+.social-icon,
+.footer-logo-icon {
+  width: clamp(40px, 7vw, 60px);
+  height: clamp(40px, 7vw, 60px);
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(14px, 3.2vw, 22px);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+/* Slight hover affordance while keeping accessible size */
+.social-icon:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
+}
 .footer-slogan {
   display: flex; /* Use flexbox for alignment */
   justify-content: center; /* Center horizontally */
@@ -3197,14 +3232,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
   text-align: center; /* Center text horizontally */
 }
 
-.footer-social,
-.footer-deliver {
-  display: flex; /* Use flexbox for alignment */
-  flex-direction: column; /* Stack text and icons vertically */
-  align-items: center; /* Center items horizontally */
-  text-align: center; /* Center text */
-  gap: 15px; /* Add spacing between the text and icons */
-}
+
 
 .footer-social h4,
 .footer-deliver h4 {
@@ -3222,7 +3250,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
   margin-left: 270px; /* Move both sections slightly to the right */
 }
 
-social-icons,
+.social-icons,
 .footer-logo-icon {
   display: flex; /* Ensure icons are properly aligned */
   justify-content: center; /* Center icons horizontally */
@@ -3329,6 +3357,47 @@ social-icons,
   letter-spacing: 0.1em;
   user-select: none;
   pointer-events: none;
+}
+
+
+/* Tighter footer padding on small screens */
+@media (max-width: 992px) {
+  .main-footer { padding: 48px 20px; }
+  .footer-content-grid { gap: 18px; }
+  .footer-brand, .footer-deliver, .footer-social { text-align: center; margin: 0 auto; }
+}
+
+/* Stack everything and center align on narrow phones */
+@media (max-width: 768px) {
+  .footer-content { padding: 18px 12px; }
+  .footer-content-grid { flex-direction: column; align-items: center; gap: 18px; }
+  .footer-slogan { gap: 8px; padding-bottom: 8px; }
+  .footer-slogan h1, .footer-slogan h2, .footer-slogan h3 { font-size: clamp(1.6rem, 9vw, 4rem); }
+  .social-icons { gap: 12px; }
+  .footer-brand, .footer-deliver, .footer-social { margin-left: 0; margin-right: 0; }
+}
+
+/* Extra small phones: slightly smaller icons and remove large margins */
+@media (max-width: 480px) {
+  .social-icon { width: clamp(36px, 12vw, 48px); height: clamp(36px, 12vw, 48px); font-size: 14px; }
+  .main-footer { padding: 30px 12px; border-radius: 20px; }
+  .footer-tagline { font-size: 1.1rem; }
+  .footer-slogan h1, .footer-slogan h2, .footer-slogan h3 { font-size: clamp(1.3rem, 10vw, 3rem); }
+}
+
+/* Avoid extremely-large left offsets inherited earlier (defensive) */
+.footer-slogan,
+.footer-content,
+.footer-content-grid,
+.footer-brand,
+.footer-deliver,
+.footer-social,
+.footer-logo,
+.footer-logo-icon {
+  max-width: 100%;
+  box-sizing: border-box;
+  left: auto !important;
+  transform: none !important;
 }
 
 /* Responsive Design */
