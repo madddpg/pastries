@@ -658,6 +658,91 @@ img, svg, picture, video {
   }
 }
 
+@media (max-width: 480px) {
+  /* Center product card image wells and their contents */
+  .product-item,
+  .pastries-section .product-item,
+  .product-list .product-item {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .product-image {
+    margin: 12px auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: calc(100% - 28px);
+    max-width: 420px;
+    box-sizing: border-box;
+  }
+
+  .product-image img {
+    margin: 0 auto !important;
+    display: block !important;
+    width: auto !important;
+    max-width: 90% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Product modal image centered */
+  .product-modal-image {
+    padding: 12px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto;
+  }
+  .product-modal-image img {
+    margin: 0 auto !important;
+    display: block !important;
+    max-width: 80% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Hero coffee image: center horizontally on narrow viewports */
+  .coffee-image {
+    left: 50% !important;
+    transform: translate(-50%, -78%) !important;
+    top: 78% !important;
+    width: 82vw !important;
+    height: auto !important;
+    max-width: 420px;
+  }
+  .coffee-image img {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
+/* keep consistent centering for slightly larger phones / small tablets */
+@media (max-width: 780px) and (min-width: 481px) {
+  .product-image,
+  .product-modal-image {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .product-image img,
+  .product-modal-image img {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+  }
+  .coffee-image {
+    left: 50%;
+    transform: translate(-50%, -75%);
+    width: min(75vw, 640px);
+  }
+}
 .hero-content {
   display: flex; /* Enable Flexbox */
   flex-direction: row; /* Arrange items in a row */
