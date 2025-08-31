@@ -40,14 +40,13 @@ body {
 }
 
 /* Section Management */
-.section-content {.nav-menu
+.section-content {
   display: none; 
 }
 
 .section-content.active {
   display: block; 
 }
-
 
 :root {
   --bp-xs: 360px;
@@ -57,7 +56,7 @@ body {
   --bp-xl: 1200px;
 }
 
-imimg, svg, picture, video {
+img, svg, picture, video {
   max-width: 100%;
   height: auto;
   display: block;
@@ -79,28 +78,17 @@ imimg, svg, picture, video {
 }
 
 
-/* Nav mobile menu improvements */
 .nav-menu.mobile-open {
   display: flex !important;
   flex-direction: column;
   gap: 8px;
-  background: #fff;
+  background: white;
   padding: 10px 14px;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.12);
   z-index: 3002;
   min-width: 160px;
   align-items: flex-start;
-}
-
-/* Make nav items full width on mobile */
-@media (max-width: 768px) {
-  .nav-menu.mobile-open .nav-item {
-    display: block;
-    width: 100%;
-    padding: 10px 6px;
-    border-radius: 8px;
-  }
 }
 
 /* Make sure nav items are full-width and tappable on mobile */
@@ -112,17 +100,6 @@ imimg, svg, picture, video {
     border-radius: 8px;
   }
 }
-
-/* Make nav items full width on mobile */
-@media (max-width: 768px) {
-  .nav-menu.mobile-open .nav-item {
-    display: block;
-    width: 100%;
-    padding: 10px 6px;
-    border-radius: 8px;
-  }
-}
-
 
 /* Header Styles */
 .header-content {
@@ -164,33 +141,6 @@ imimg, svg, picture, video {
   gap: 20px;
   justify-content: space-around;
   box-shadow: #282c2a84 0px 4px 20px;
-}
- 
-.hero-content h1 { font-size: clamp(2.4rem, 8vw, 6.5rem); }
-.hero-content h3 { font-size: clamp(1.8rem, 6vw, 5rem); }
-.hero-content2 h2 { font-size: clamp(1.8rem, 6.5vw, 5.5rem); }
-.about-hero-title, .products-hero-title, .locations-hero-title { font-size: clamp(2rem, 5.5vw, 4rem); }
-
-.footer-slogan {
-  position: relative;
-  bottom: 0;
-  width: 100%;
-  left: 0;
-  transform: none;
-  padding: 10px 1rem;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.footer-slogan h1, .footer-slogan h2, .footer-slogan h3 {
-  font-size: clamp(2.2rem, 10vw, 8rem);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.product-modal-title {
-  line-height: 1;
-  margin: 0;
 }
 
 .header-content.shrink .logo {
@@ -577,30 +527,27 @@ imimg, svg, picture, video {
 }
 
 
-/* Fluid typography and sane clamps for large headings */
+/* Fluid typography with sensible clamps */
 .hero-content h1,
 .hero-content h3,
 .hero-content2 h2,
 .about-hero-title,
 .products-hero-title,
 .locations-hero-title,
-.footer-slogan h1,
-.footer-slogan h2,
-.footer-slogan h3,
+.footer-slogan h1, .footer-slogan h2, .footer-slogan h3,
 .product-modal-title {
   line-height: 1;
   margin: 0;
 }
 
 
-
-/* Headings scale smoothly */
+/* Use clamp so headings scale smoothly */
 .hero-content h1 { font-size: clamp(2.4rem, 8vw, 6.5rem); }
 .hero-content h3 { font-size: clamp(1.8rem, 6vw, 5rem); }
 .hero-content2 h2 { font-size: clamp(1.8rem, 6.5vw, 5.5rem); }
 .about-hero-title, .products-hero-title, .locations-hero-title { font-size: clamp(2rem, 5.5vw, 4rem); }
 
-/* Footer slogan sane sizes and wrapping */
+/* Footer slogan: sane sizes and wrap */
 .footer-slogan {
   position: relative;
   bottom: 0;
@@ -630,14 +577,15 @@ imimg, svg, picture, video {
   word-break: keep-all;
 }
 
-/* Constrain hero and card heights to flex */
+/* Constrain hero and card heights to be flexible */
 .hero-section { min-height: clamp(50vh, 75vh, 100vh); }
-.card, .card-orange, .card-green, .card-orange2, .card-green2 { min-height: auto; height: auto; }
+.card, .card-orange, .card-green, .card-orange2, .card-green2 {
+  min-height: auto;
+  height: auto;
+}
 
-/* Make product grids truly responsive */
-.products-grid,
-.product-list,
-.pastries-section .product-list {
+/* Make product grids truly responsive and centered */
+.products-grid, .product-list, .pastries-section .product-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 18px;
@@ -648,7 +596,14 @@ imimg, svg, picture, video {
 }
 
 /* Ensure product-item does not rely on fixed widths */
-.products-drig
+.product-item {
+  width: 100%;
+  max-width: 380px;
+  margin: 0;
+  padding-left: 0;
+  box-sizing: border-box;
+}
+
 /* Modal safety: make product modal full-screen on very small devices */
 .product-modal {
   position: fixed;
@@ -1946,15 +1901,18 @@ label[for="acceptTerms"] { white-space: nowrap; }
   box-sizing: border-box;
 }
 
-/* Ensure product-item adapts */
 .product-item {
-  width: 100%;
-  max-width: 380px;
-  margin: 0;
-  padding-left: 0;
-  box-sizing: border-box;
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  width: 300px;
+  margin: 20px;
+  padding-left: 20px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
-
 
 .product-item:hover {
   transform: translateY(-10px);
@@ -2042,18 +2000,18 @@ label[for="acceptTerms"] { white-space: nowrap; }
   box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
 }
 
-/* Product modal: use fixed full screen on small devices and centered larger dialog on desktop */
+/* Product Detail Modal */
 .product-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 100vw;
-  overflow-y: auto;
-  padding: 16px;
   display: none;
-  align-items: flex-start;
-  justify-content: center;
+  position: absolute;
+  top: 550px;
+  left: 0;
+  width: 100%;
+  background-color: #e5e7eb;
+  z-index: 3000;
+  border-radius: 30px 30px 0 0;
+  box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.2);
+  /* Remove max-width, margin, fixed, overlay, align-items, justify-content */
 }
 
 
@@ -2198,13 +2156,23 @@ label[for="acceptTerms"] { white-space: nowrap; }
   .add-ons-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-.product-modal.active { display:flex; }}
+.product-modal.active {
+  display: block;
+}
 
 .product-modal-content {
-  width: 100%;
-  max-width: 1100px;
-  padding: clamp(12px, 4vw, 48px);
-  box-sizing: border-box;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 24px 24px;
+  position: relative;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+  flex-direction: unset;
+  gap: unset;
+  align-items: unset;
+  width: unset;
 }
 
 .product-modal-grid {
@@ -3502,64 +3470,3 @@ social-icons,
   font-weight: 500;
 }
 
-/* Coffee image responsive safety */
-@media (max-width: 900px) {
-  .coffee-image {
-    left: 50%;
-    transform: translate(-50%, -75%);
-    width: min(80vw, 680px);
-    height: auto;
-    top: 75%;
-  }
-  .coffee-image img { width: 100%; height: auto; }
-}
-
-/* Reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .rotating-text, .carousel-track, .testimonial:hover, .hero-section, .about-floating-bean, .products-floating-bean {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
-/* Tidy helpers for very small screens */
-@media (max-width: 480px) {
-  .header-content { padding: 8px 10px; width: 100%; }
-  .logo { font-size: 1rem; }
-  .nav-menu { gap: 6px; }
-  .profile-btn { padding: 6px 10px; font-size: 0.85rem; }
-  .hamburger-menu { font-size: 1.2rem; }
-  .hero-content h1 { font-size: clamp(2.2rem, 14vw, 3rem); }
-  .footer-slogan h1, .footer-slogan h2, .footer-slogan h3 { white-space: normal; }
-}
-
-/* Tablet / small desktop layout adjustments */
-@media (max-width: 780px) {
-  .hero-content { flex-direction: column; align-items: center; text-align: center; gap: 8px; }
-  .hero-content h1 { font-size: 3rem; }
-  .hero-content h3 { font-size: 2rem; }
-  .hero-content2 h2 { font-size: 3.2rem; }
-
-  .cards-grid, .cards-grid2 { grid-template-columns: 1fr; gap: 16px; }
-  .product-list { grid-template-columns: 1fr; gap: 14px; padding: 10px; }
-  .product-image { height: 180px; }
-  .product-modal { top: 0; left: 0; position: fixed; width: 100vw; height: 100vh; overflow-y: auto; border-radius: 0; }
-  .product-modal-image img { max-width: 180px; }
-  .cart-content { max-width: 95vw; padding: 18px; }
-  .cart-icon { width: 54px; height: 54px; right: 18px; bottom: 18px; }
-}
-
-/* Footer layout adjustments for medium and small screens */
-@media (max-width: 1024px) {
-  .footer-content-grid { grid-template-columns: 2fr 1fr 1fr; gap: 40px; }
-  .footer-brand-text h1 { font-size: 6rem; }
-}
-@media (max-width: 768px) {
-  .footer-content-grid { grid-template-columns: 1fr; gap: 18px; text-align: center; }
-  .footer-brand-text h1 { font-size: clamp(2.2rem, 12vw, 6rem); }
-  .main-footer { padding: 60px 0 30px; margin: 10px; }
-}
-@media (max-width: 480px) {
-  .footer-brand-text h1 { font-size: clamp(1.8rem, 12vw, 3rem); }
-  .social-icons { justify-content: center; }
-}
