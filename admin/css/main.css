@@ -41,6 +41,72 @@ body {
   box-shadow: 0 6px 18px rgba(16,185,129,0.03);
 }
 
+
+/* Make sidebar collapse to top navigation on small screens */
+@media (max-width: 992px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    border-radius: 0 0 12px 12px;
+    padding: 8px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .logo span { font-size: 18px; }
+  .nav-menu {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 6px;
+    margin-left: 0;
+  }
+  .nav-item { padding: 8px 10px; margin-left: 8px; white-space: nowrap; }
+  .page-content { padding: 16px; }
+}
+
+/* Tables: keep scroll on narrow devices and collapse rows into card view */
+.table-container { overflow-x: auto; }
+
+/* Make modals adapt full width on small screens */
+.modal-content, .product-modal-content {
+  width: 96%;
+  max-width: 960px;
+  padding: 16px;
+}
+
+/* Reduce large stat card fonts to fit mobile */
+.stat-card h3 { font-size: clamp(1.6rem, 6vw, 2.4rem); }
+
+/* Improve action menu behaviour on touch: expand full width if needed */
+.dropdown-menu {
+  min-width: 180px;
+  max-width: calc(100vw - 40px);
+  right: 12px;
+}
+
+/* Compact spacing for admin panels on small screens */
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+  .dashboard-grid { grid-template-columns: 1fr; gap: 12px; }
+  .stat-card { padding: 14px; }
+  .page-content { padding: 12px; }
+  .product-cell img, .name-cell img { width: 40px; height: 40px; }
+  .order-card { padding: 12px; }
+  .nav-item { font-size: 13px; padding: 8px; }
+  .sidebar { padding: 8px; border-radius: 0; }
+}
+
+/* Ensure admin charts and progress components scale */
+.chart-container, .csd-chart-placeholder { height: auto; min-height: 200px; }
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
 .products-table {
   width: 100%;
   border-collapse: collapse;
