@@ -3008,89 +3008,19 @@ label[for="acceptTerms"] { white-space: nowrap; }
   box-shadow: 0 2px 8px rgba(64, 83, 75, 0.08);
 }
 
-/* Main Footer - Fixed */
-
-.footer-content {
-  /* keep center layout by default, avoid absolute overlap on small viewports */
-  position: relative;
-  left: auto;
-  bottom: auto;
-  transform: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  padding-top: 18px;
-}
-
-.footer-logo {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* make the large brand text scale and wrap safely */
-.footer-slogan {
-  position: relative;
-  bottom: auto;
-  left: auto;
-  transform: none;
-  width: 100%;
-  padding: 8px 1rem;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.footer-slogan h1 {
-  font-weight: bold;
-  font-family: "CooperBlack", serif;
-  color: #f3ebd3;
-  font-size: 550px;
-}
-
-.footer-slogan h2 {
-  font-family: "CooperBlack", serif;
-  font-weight: bold;
-  color: #f3ebd3;
-  font-size: 500px;
-}
-
-.footer-slogan h3 {
-  font-family: Arial, Helvetica, sans-serif;
-  font-weight: bold;
-  color: #f3ebd3;
-  font-size: 400px;
-}
-.footer-slogan h1,
-.footer-slogan h2,
-.footer-slogan h3,
-.footer-brand-text h1 {
-  font-size: clamp(2.2rem, 8vw, 8rem);
-  line-height: 1;
-  white-space: normal;
-  margin: 0;
-  padding: 0;
-  word-break: break-word;
-  text-align: center;
-}
-
-
-
+   /*============================= */
 .main-footer {
-  position: relative; /* Ensure the footer is the positioning context */
+  position: relative;
   background-color: #152e22;
-  padding: 80px 0 60px;
-  margin: 20px;
+  padding: 48px 16px;
+  margin: 16px;
   border-radius: 40px;
   color: #fef7e0;
   font-family: 'Georgia', serif;
   display: flex;
   justify-content: center;
-  height: 500px; /* Ensure enough height for alignment */
+  height: auto; /* auto height for responsiveness */
 }
-
 
 .footer-container {
   max-width: 1200px;
@@ -3098,176 +3028,76 @@ label[for="acceptTerms"] { white-space: nowrap; }
   width: 100%;
 }
 
+/* =============================
+   FOOTER GRID LAYOUT
+   ============================= */
 .footer-content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 40px;
-  margin-bottom: 60px;
-  align-items: center;
-}
-
-.footer-logo-icon i {
-  font-size: 50px;
-  margin-bottom: 15px;
-}
-
-.footer-slogan-text {
-  font-size: 24px;
-  line-height: 1.3;
-  font-weight: bold;
-}
-
-.footer-contact .contact-item {
-  margin-top: 10px;
   display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+
+.footer-brand,
+.footer-deliver,
+.footer-social {
+  flex: 1 1 260px;
+  min-width: 200px;
+  margin: 0;
+  text-align: center;
+}
+
+.footer-brand-text {
+  position: relative;
+  text-align: center;
+}
+
+.footer-brand-text h1 {
+  font-family: "CooperBlack", serif;
+  font-size: clamp(2.5rem, 8vw, 8rem);
+  font-weight: 900;
+  color: rgba(243, 235, 211, 0.15);
+  margin: 0;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* =============================
+   FOOTER SLOGAN
+   ============================= */
+.footer-slogan {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 10px;
-}
-
-.footer-social h4 {
-  font-size: 16px;
-  letter-spacing: 1.5px;
-  margin-bottom: 15px;
-}
-
-.social-icons a {
-  background: #fef7e0;
-  color: #152e22;
-  padding: 16px; /* increased from 12px */
-  border-radius: 50%;
-  font-size: 22px; /* increased from 18px */
+  width: 100%;
+  margin: 18px auto 0;
+  padding: 0 12px;
+  position: static;
   text-align: center;
-  transition: background 0.3s;
-}
-
-.social-icons {
-  display: flex;
-  gap: clamp(8px, 3vw, 24px);
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.social-icons a:hover {
-  background: #867343;
-  transform: scale(1.1); /* adds a subtle zoom on hover */
-}
-
-
-.social-icon,
-.footer-logo-icon {
-  width: clamp(40px, 7vw, 60px);
-  height: clamp(40px, 7vw, 60px);
-  min-width: 40px;
-  min-height: 40px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(14px, 3.2vw, 22px);
-  transition: transform .18s ease, box-shadow .18s ease;
-}
-/* Slight hover affordance while keeping accessible size */
-.social-icon:hover {
-  transform: translateY(-4px) scale(1.03);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
-}
-.footer-slogan {
-  display: flex; /* Use flexbox for alignment */
-  justify-content: center; /* Center horizontally */
-  align-items: flex-end; /* Align items to the bottom */
-  gap: 15px; /* Add spacing between h1, h2, and h3 */
-  flex-wrap: wrap; /* Allow wrapping if needed */
-  position: absolute; /* Position the slogan absolutely */
-  bottom: 0; /* Align it to the bottom of the footer */
-  width: 100%; /* Ensure it spans the full width */
-  left: 50%; /* Center the slogan horizontally */
-  transform: translateX(-50%); /* Adjust for centering */
-}
-
-.footer-slogan h1 {
-  font-weight: bold;
-  font-family: "CooperBlack", serif;
-  color: #f3ebd3;
-  font-size: 150px; /* Increased size */
-}
-
-.footer-slogan h2 {
-  font-family: "CooperBlack", serif;
-  font-weight: bold;
-  color: #f3ebd3;
-  font-size: 130px; /* Increased size */
-}
-
-.footer-slogan h3 {
-  font-family: Arial, Helvetica, sans-serif;
-  font-weight: bold;
-  color: #f3ebd3;
-  font-size: 90px; /* Increased size */
 }
 
 .footer-slogan h1,
 .footer-slogan h2,
 .footer-slogan h3 {
-  margin: 0; /* Remove default margin */
-  padding: 0; /* Remove default padding */
-  line-height: 1; /* Ensure consistent line height */
-  font-family: "CooperBlack", serif; /* Apply CooperBlack font */
+  font-family: "CooperBlack", serif;
+  font-weight: bold;
+  color: #f3ebd3;
+  font-size: clamp(1.6rem, 6vw, 6.5rem);
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  word-break: break-word;
 }
 
-
-/* Footer Brand Section */
-.footer-content-grid {
-  display: flex; /* Use flexbox for alignment */
-  flex-direction: row; /* Arrange items horizontally */
-  align-items: center; /* Align items vertically */
-  justify-content: space-between; /* Distribute items evenly */
-  gap: 25px; /* Add spacing between elements */
-}
-
-.footer-slogan-text,
-.footer-deliver,
-.footer-social {
-  flex: 1; /* Ensure equal width for all elements */
-  text-align: center; /* Center text horizontally */
-}
-
-
-
-.footer-social h4,
-.footer-deliver h4 {
-  margin: 0; /* Remove default margin */
-  line-height: 1.2; /* Ensure consistent line height */
-}
-
-.footer-social,
-.footer-deliver {
-  display: flex; /* Use flexbox for alignment */
-  flex-direction: column; /* Stack text and icons vertically */
-  align-items: center; /* Center items horizontally */
-  text-align: center; /* Center text */
-  gap: 10px; /* Add spacing between the text and icons */
-  margin-left: 270px; /* Move both sections slightly to the right */
-}
-
-.social-icons,
-.footer-logo-icon {
-  display: flex; /* Ensure icons are properly aligned */
-  justify-content: center; /* Center icons horizontally */
-}
-
-.footer-logo-icon {
-  width: 60px;
-  height: 60px;
-  background: #f3ebd3;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #2d4a3a;
-  font-size: 24px;
-}
-
+/* =============================
+   FOOTER CONTENT
+   ============================= */
 .footer-tagline {
   font-size: 1.8rem;
   font-weight: 700;
@@ -3295,16 +3125,33 @@ label[for="acceptTerms"] { white-space: nowrap; }
   color: #f3ebd3;
 }
 
-/* Footer Social Section */
-.footer-social h4 {
-  color: #f3ebd3;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 25px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+/* =============================
+   FOOTER LOGO + ICON
+   ============================= */
+.footer-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+.footer-logo-icon {
+  width: clamp(36px, 8vw, 56px);
+  height: clamp(36px, 8vw, 56px);
+  min-width: 36px;
+  min-height: 36px;
+  background: #f3ebd3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2d4a3a;
+  font-size: clamp(14px, 3vw, 20px);
+}
+
+/* =============================
+   FOOTER SOCIAL
+   ============================= */
+.footer-social h4,
 .footer-deliver h4 {
   color: #f3ebd3;
   font-size: 1.1rem;
@@ -3316,14 +3163,17 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 .social-icons {
   display: flex;
-  gap: 15px;
- 
+  gap: clamp(8px, 3vw, 20px);
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-
 .social-icon {
-  width: 55px;
-  height: 55px;
+  width: clamp(36px, 8vw, 56px);
+  height: clamp(36px, 8vw, 56px);
+  min-width: 36px;
+  min-height: 36px;
   background: #f3ebd3;
   border-radius: 50%;
   display: flex;
@@ -3331,85 +3181,22 @@ label[for="acceptTerms"] { white-space: nowrap; }
   justify-content: center;
   color: #2d4a3a;
   text-decoration: none;
-  font-size: 18px;
+  font-size: clamp(14px, 3vw, 20px);
   transition: all 0.3s ease;
 }
 
 .social-icon:hover {
   background: #554f44;
-  transform: translateY(-3px);
+  transform: translateY(-3px) scale(1.03);
   box-shadow: 0 8px 20px rgba(243, 235, 211, 0.3);
 }
 
-/* Large Brand Text */
-.footer-brand-text {
-  position: relative;
-  text-align: center;
-}
-
-.footer-brand-text h1 {
-  font-family: "CooperBlack", serif;
-  font-size: 8rem;
-  font-weight: 900;
-  color: rgba(243, 235, 211, 0.15);
-  margin: 0;
-  line-height: 1;
-  letter-spacing: 0.1em;
-  user-select: none;
-  pointer-events: none;
-}
-
-
-/* Tighter footer padding on small screens */
-@media (max-width: 992px) {
-  .main-footer { padding: 48px 20px; }
-  .footer-content-grid { gap: 18px; }
-  .footer-brand, .footer-deliver, .footer-social { text-align: center; margin: 0 auto; }
-}
-
-/* Stack everything and center align on narrow phones */
-@media (max-width: 768px) {
-  .footer-content { padding: 18px 12px; }
-  .footer-content-grid { flex-direction: column; align-items: center; gap: 18px; }
-  .footer-slogan { gap: 8px; padding-bottom: 8px; }
-  .footer-slogan h1, .footer-slogan h2, .footer-slogan h3 { font-size: clamp(1.6rem, 9vw, 4rem); }
-  .social-icons { gap: 12px; }
-  .footer-brand, .footer-deliver, .footer-social { margin-left: 0; margin-right: 0; }
-}
-
-/* Extra small phones: slightly smaller icons and remove large margins */
-@media (max-width: 480px) {
-  .social-icon { width: clamp(36px, 12vw, 48px); height: clamp(36px, 12vw, 48px); font-size: 14px; }
-  .main-footer { padding: 30px 12px; border-radius: 20px; }
-  .footer-tagline { font-size: 1.1rem; }
-  .footer-slogan h1, .footer-slogan h2, .footer-slogan h3 { font-size: clamp(1.3rem, 10vw, 3rem); }
-}
-
-/* Avoid extremely-large left offsets inherited earlier (defensive) */
-.footer-slogan,
-.footer-content,
-.footer-content-grid,
-.footer-brand,
-.footer-deliver,
-.footer-social,
-.footer-logo,
-.footer-logo-icon {
-  max-width: 100%;
-  box-sizing: border-box;
-  left: auto !important;
-  transform: none !important;
-}
-
-/* Responsive Design */
+/* =============================
+   RESPONSIVE DESIGN
+   ============================= */
 @media (max-width: 1024px) {
   .footer-content-grid {
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 40px;
-  }
-
-  .footer-social {
-    grid-column: span 3;
-    text-align: center;
+    justify-content: center;
   }
 
   .footer-brand-text h1 {
@@ -3423,26 +3210,33 @@ label[for="acceptTerms"] { white-space: nowrap; }
   }
 
   .footer-content-grid {
-    grid-template-columns: 1fr;
-    gap: 40px;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
+    gap: 18px;
   }
 
-  .footer-brand {
-    align-items: center;
-  }
-
-  .footer-contact {
-    align-items: center;
+  .footer-brand,
+  .footer-deliver,
+  .footer-social {
+    flex: 1 1 100%;
+    min-width: 100%;
+    padding: 0 6px;
   }
 
   .footer-brand-text h1 {
     font-size: 4rem;
   }
 
+  .footer-slogan h1,
+  .footer-slogan h2,
+  .footer-slogan h3 {
+    font-size: clamp(1.2rem, 8vw, 3rem);
+  }
+
   .main-footer {
     margin: 10px;
-    padding: 60px 0 30px;
+    padding: 40px 0 30px;
   }
 }
 
@@ -3452,11 +3246,19 @@ label[for="acceptTerms"] { white-space: nowrap; }
   }
 
   .footer-tagline {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
   }
 
-  .social-icons {
-    justify-content: center;
+  .social-icon {
+    width: clamp(32px, 12vw, 44px);
+    height: clamp(32px, 12vw, 44px);
+    font-size: 14px;
+  }
+
+  .footer-slogan h1,
+  .footer-slogan h2,
+  .footer-slogan h3 {
+    font-size: clamp(1rem, 10vw, 2.5rem);
   }
 }
 /* Locations Section Styles */
