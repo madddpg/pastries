@@ -529,18 +529,6 @@ img, svg, picture, video {
 }
 
 
-/* Fluid typography with sensible clamps */
-.hero-content h1,
-.hero-content h3,
-.hero-content2 h2,
-.about-hero-title,
-.products-hero-title,
-.locations-hero-title,
-.footer-slogan h1, .footer-slogan h2, .footer-slogan h3,
-.product-modal-title {
-  line-height: 1;
-  margin: 0;
-}
 
 
 /* Use clamp so headings scale smoothly */
