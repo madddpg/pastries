@@ -906,6 +906,84 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+
+
+(function () {
+  const hamb = document.querySelector('.hamburger-menu');
+  const nav = document.querySelector('.nav-menu');
+
+  if (!hamb || !nav) return;
+
+  // Toggle nav open/close
+  hamb.addEventListener('click', function (e) {
+    e.stopPropagation();
+    const isOpen = nav.classList.toggle('open');
+    hamb.classList.toggle('open', isOpen);
+    hamb.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    // For accessibility, move focus into nav when opened
+    if (isOpen) {
+      const firstLink = nav.querySelector('.nav-item');
+      if (firstLink && typeof firstLink.focus === 'function') firstLink.focus();
+    }
+  });
+
+  // Close nav when a nav-item is clicked and navigate to section
+  nav.addEventListener('click', function (e) {
+    const item = e.target.closest('.nav-item');
+    if (!item) return;
+    e.preventDefault && e.preventDefault();
+
+    // determine section name similarly to other handlers
+    const sectionKey = (item.dataset && item.dataset.section) ? item.dataset.section.trim() : (item.textContent || '').trim().toLowerCase();
+    const map = {
+      home: 'home',
+      about: 'about',
+      shop: 'products',
+      menu: 'products',
+      products: 'products',
+      locations: 'locations',
+      promos: 'promos',
+      contact: 'contact'
+    };
+    const target = map[sectionKey] || sectionKey;
+
+    if (typeof showSection === 'function') showSection(target);
+    else {
+      const el = document.getElementById(target);
+      if (el) {
+        document.querySelectorAll('.section-content').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+        el.style.display = 'block';
+        el.classList.add('active');
+        window.scrollTo(0, 0);
+      }
+    }
+
+    // close the mobile menu after navigation
+    nav.classList.remove('open');
+    hamb.classList.remove('open');
+    hamb.setAttribute('aria-expanded', 'false');
+  });
+
+  // Close nav when clicking outside
+  document.addEventListener('click', function (e) {
+    if (!nav.classList.contains('open')) return;
+    if (e.target === nav || nav.contains(e.target) || e.target === hamb || hamb.contains(e.target)) return;
+    nav.classList.remove('open');
+    hamb.classList.remove('open');
+    hamb.setAttribute('aria-expanded', 'false');
+  });
+
+  // Close nav with Escape key
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && nav.classList.contains('open')) {
+      nav.classList.remove('open');
+      hamb.classList.remove('open');
+      hamb.setAttribute('aria-expanded', 'false');
+      hamb.focus();
+    }
+  });
+})();
+
 function showReferenceModal(ref) {
   // Remove old modal if present
   let existing = document.getElementById('orderReferenceModal');
