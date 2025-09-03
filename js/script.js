@@ -2776,4 +2776,86 @@ function handleEditProfile(event) {
 }
 
 
+// ...existing code...
+(function () {
+  // canonical implementations (final authority) — prevents accidental overwrites
+  function _canonicalHandlePaymentChoice(method) {
+    const paymentModal = document.getElementById("paymentMethodModal");
+    if (!paymentModal) return;
+    paymentModal.dataset.paymentMethod = method;
 
+    if (method === "cash") {
+      // close UI and submit as cash
+      try { closePaymentModal(); } catch (e) { /*ignore*/ }
+      const payload = {
+        pickup_name: paymentModal.dataset.pickupName || '',
+        pickup_location: paymentModal.dataset.pickupLocation || '',
+        pickup_time: paymentModal.dataset.pickupTime || '',
+        special_instructions: paymentModal.dataset.specialInstructions || '',
+        payment_method: "cash"
+      };
+      submitPickupForm(payload);
+      return;
+    }
+
+    if (method === "gcash") {
+      const gcashPreview = document.getElementById("gcashPreview");
+      if (gcashPreview) gcashPreview.style.display = "block";
+      // focus done button if available
+      const done = document.getElementById("gcashDoneBtn");
+      if (done && typeof done.focus === "function") done.focus();
+    }
+  }
+
+  function _canonicalSelectSize(size) {
+    selectedSize = size;
+
+    // update UI highlight (match by text, data-size or data-label)
+    document.querySelectorAll(".size-btn").forEach((btn) => {
+      const txt = btn.textContent.trim();
+      const ds = btn.dataset.size || btn.dataset.label || "";
+      btn.classList.toggle("active", txt === size || ds === size);
+    });
+
+    // Update price text based on size and recalc totals
+    if (currentProduct) {
+      if (currentProduct.dataType === "pastries" && Array.isArray(currentProduct.variants)) {
+        const chosen = currentProduct.variants.find((v) => v.label === size) || currentProduct.variants[0];
+        currentProduct.price = chosen.price;
+        const priceEl = document.getElementById("modalProductPrice");
+        if (priceEl) priceEl.textContent = `Php ${chosen.price} (${chosen.label})`;
+      } else if (size === "Grande") {
+        currentProduct.price = currentProduct.grandePrice ?? currentProduct.price;
+        const priceEl = document.getElementById("modalProductPrice");
+        if (priceEl) priceEl.textContent = `Php ${currentProduct.grandePrice ?? currentProduct.price} (Grande)`;
+      } else {
+        currentProduct.price = currentProduct.supremePrice ?? currentProduct.price;
+        const priceEl = document.getElementById("modalProductPrice");
+        if (priceEl) priceEl.textContent = `Php ${currentProduct.supremePrice ?? currentProduct.price} (Supreme)`;
+      }
+    }
+
+    if (typeof recalcModalTotal === "function") recalcModalTotal();
+  }
+
+ try {
+    Object.defineProperty(window, "handlePaymentChoice", {
+      value: _canonicalHandlePaymentChoice,
+      writable: false,
+      configurable: false
+    });
+  } catch (e) {
+    // fallback: assign if defineProperty failed
+    window.handlePaymentChoice = _canonicalHandlePaymentChoice;
+  }
+
+  try {
+    Object.defineProperty(window, "selectSize", {
+      value: _canonicalSelectSize,
+      writable: false,
+      configurable: false
+    });
+  } catch (e) {
+    window.selectSize = _canonicalSelectSize;
+  }
+})();

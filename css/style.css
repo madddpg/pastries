@@ -48,12 +48,11 @@ body {
   display: block; 
 }
 
-:root {
-  --bp-xs: 360px;
-  --bp-sm: 480px;
-  --bp-md: 780px;
-  --bp-lg: 992px;
-  --bp-xl: 1200px;
+:root{
+  --bp-phone: 414px;   /* typical largest phone (iPhone 12/13/14) */
+  --bp-tablet: 768px;  /* tablet portrait (iPad) */
+  --bp-laptop: 1024px; /* small laptop */
+  --bp-desktop: 1280px;/* large desktop */
 }
 
 img, svg, picture, video {
@@ -187,6 +186,148 @@ img, svg, picture, video {
   cursor: pointer;
   color: var(--dark-text);
 }
+
+/* ===========================
+   STANDARDIZED MEDIA QUERIES
+   =========================== */
+
+/* Small phones (<= 414px)
+   - Consolidated from: max-width: 480px and similar */
+@media (max-width: var(--bp-phone)) {
+  /* From @media (max-width: 480px) */
+  .header-content {
+    padding: 8px 10px;
+    width: 100%;
+  }
+  .logo { font-size: 1rem; }
+  .nav-menu { gap: 6px; }
+  .profile-btn { padding: 6px 10px; font-size: 0.85rem; }
+  .hamburger-menu { font-size: 1.2rem; }
+  .hero-content h1 { font-size: clamp(2.2rem, 14vw, 3rem); }
+
+  /* From @media (max-width: 480px) - Product card adjustments */
+  .product-item,
+  .pastries-section .product-item,
+  .product-list .product-item {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* From @media (max-width: 480px) - Product image tweaks */
+  .product-image {
+    margin: 12px auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: calc(100% - 28px);
+    max-width: 420px;
+    box-sizing: border-box;
+  }
+  .product-image img {
+    margin: 0 auto !important;
+    display: block !important;
+    width: auto !important;
+    max-width: 90% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Product modal image */
+  .product-modal-image {
+    padding: 12px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 0 auto;
+  }
+  .product-modal-image img {
+    margin: 0 auto !important;
+    display: block !important;
+    max-width: 80% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+
+  /* Hero coffee image */
+  .coffee-image {
+    left: 50% !important;
+    transform: translate(-50%, -78%) !important;
+    top: 78% !important;
+    width: 82vw !important;
+    height: auto !important;
+    max-width: 420px;
+  }
+  .coffee-image img {
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
+
+/* Tablets: 415px - 767px
+   - Consolidated from: max-width: 780px and min-width: 481px */
+@media (min-width: calc(var(--bp-phone) + 1px)) and (max-width: calc(var(--bp-tablet) - 1px)) {
+  /* From @media (max-width: 780px) and (min-width: 481px) */
+  .product-image,
+  .product-modal-image {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .product-image img,
+  .product-modal-image img {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+  }
+  .coffee-image {
+    left: 50%;
+    transform: translate(-50%, -75%);
+    width: min(75vw, 640px);
+  }
+}
+
+/* Small laptops: 768px - 1023px
+   - Consolidated from: max-width: 992px */
+@media (min-width: var(--bp-tablet)) and (max-width: calc(var(--bp-laptop) - 1px)) {
+  /* From @media (max-width: 992px) */
+  .header-content { width: 94%; padding: 10px 16px; }
+  .hero-section { min-height: 80vh; }
+  .hero-content { gap: 12px; }
+  .hero-content h1 { font-size: 4.5rem; }
+  .hero-content h3 { font-size: 3rem; }
+  .coffee-image { width: 70vw; transform: translate(-50%, -70%); }
+  .product-modal-grid { grid-template-columns: 1fr; gap: 32px; }
+  .product-modal-image img { max-width: 260px; }
+  .product-item { width: 280px; margin: 12px; }
+  .product-image { height: 200px; }
+  .impact-stories { padding: 40px 0; }
+}
+
+/* Medium desktops: 1024px - 1279px
+   - Consolidated from: max-width: 1200px */
+@media (min-width: var(--bp-laptop)) and (max-width: calc(var(--bp-desktop) - 1px)) {
+  /* From @media (max-width: 1200px) */
+  .hero-content h1 { font-size: 6rem; }
+  .hero-content h3 { font-size: 4.5rem; }
+  .coffee-image { width: 60vw; height: auto; transform: translate(-50%, -70%); }
+  .products-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .product-image { height: 220px; }
+  .footer-brand-text h1 { font-size: 6rem; }
+}
+
+/* Large desktops: 1280px+
+   - No original media queries; reserved for future wide-screen tweaks */
+@media (min-width: var(--bp-desktop)) {
+  /* Add large desktop-specific styles here if needed */
+}
+
 
 @media (max-width: 768px) {
   .hamburger-menu {
