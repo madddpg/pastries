@@ -180,18 +180,7 @@ function selectSize(size) {
 
 
 
-// ...existing code...
-document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProduct);
-});
-function handleViewProduct(event) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  // proceed to open product modal
-  openProductModal(event.target.dataset.productId);
-}
+
 
 // Add sugar-selection helper to support inline onclick or programmatic calls
 function selectSugar(level) {
