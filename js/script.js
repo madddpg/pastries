@@ -779,20 +779,19 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-
 (function () {
   const hamb = document.querySelector('.hamburger-menu');
   const nav = document.querySelector('.nav-menu');
 
   if (!hamb || !nav) return;
 
-  // Toggle nav open/close
+  // Toggle nav open/close (use 'mobile-open' to match CSS)
   hamb.addEventListener('click', function (e) {
     e.stopPropagation();
-    const isOpen = nav.classList.toggle('open');
-    hamb.classList.toggle('open', isOpen);
+    const isOpen = nav.classList.toggle('mobile-open'); // <-- changed
+    hamb.classList.toggle('open', isOpen); // keep this for button styling
     hamb.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-    // For accessibility, move focus into nav when opened
+    // move focus into nav when opened for accessibility
     if (isOpen) {
       const firstLink = nav.querySelector('.nav-item');
       if (firstLink && typeof firstLink.focus === 'function') firstLink.focus();
@@ -805,7 +804,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!item) return;
     e.preventDefault && e.preventDefault();
 
-    // determine section name similarly to other handlers
     const sectionKey = (item.dataset && item.dataset.section) ? item.dataset.section.trim() : (item.textContent || '').trim().toLowerCase();
     const map = {
       home: 'home',
@@ -831,24 +829,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // close the mobile menu after navigation
-    nav.classList.remove('open');
+    nav.classList.remove('mobile-open'); // <-- changed
     hamb.classList.remove('open');
     hamb.setAttribute('aria-expanded', 'false');
   });
 
   // Close nav when clicking outside
   document.addEventListener('click', function (e) {
-    if (!nav.classList.contains('open')) return;
+    if (!nav.classList.contains('mobile-open')) return; // <-- changed
     if (e.target === nav || nav.contains(e.target) || e.target === hamb || hamb.contains(e.target)) return;
-    nav.classList.remove('open');
+    nav.classList.remove('mobile-open'); // <-- changed
     hamb.classList.remove('open');
     hamb.setAttribute('aria-expanded', 'false');
   });
 
   // Close nav with Escape key
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && nav.classList.contains('open')) {
-      nav.classList.remove('open');
+    if (e.key === 'Escape' && nav.classList.contains('mobile-open')) { // <-- changed
+      nav.classList.remove('mobile-open'); // <-- changed
       hamb.classList.remove('open');
       hamb.setAttribute('aria-expanded', 'false');
       hamb.focus();
