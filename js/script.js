@@ -181,55 +181,17 @@ function selectSize(size) {
 
 
 // ...existing code...
-
-// Ensure view-button handler resets module-level toppings and uses data-size attributes
-document.addEventListener('click', function (e) {
-  const viewBtn = e.target.closest('.view-btn');
-  if (viewBtn) {
-    const id = viewBtn.dataset.id;
-    const name = viewBtn.dataset.name || '';
-    const price = parseFloat(viewBtn.dataset.price || 0);
-    const desc = viewBtn.dataset.desc || '';
-    const img = viewBtn.dataset.image || 'img/placeholder.svg';
-
-    // populate modal
-    document.getElementById('modalProductName').textContent = name;
-    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
-    document.getElementById('modalProductDescription').textContent = desc;
-    const imgEl = document.getElementById('modalProductImage');
-    if (imgEl) imgEl.src = img;
-
-    // reset selections (use module variable, not window.*)
-    selectedSize = 'Grande';
-    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-    const s = document.querySelector('.size-btn[data-size="Grande"]');
-    if (s) s.classList.add('active');
-
-    modalSelectedToppings = {}; // reset toppings state
-    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
-
-    // reset sugar selection to default
-    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
-    const defaultSugar = document.querySelector('.sugar-btn[data-sugar="Less Sweet"]') || document.querySelector('.sugar-btn');
-    if (defaultSugar) defaultSugar.classList.add('active');
-
-    // set total
-    const totalAmountEl = document.getElementById('modalTotalAmount');
-    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
-
-    // show modal
-    const modal = document.getElementById('productModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-
+document.querySelectorAll('.view-btn').forEach(button => {
+  button.addEventListener('click', handleViewProduct);
+});
+function handleViewProduct(event) {
+  if (!isLoggedIn) {
+    showLoginModal();
     return;
   }
-
-  // ...existing delegated handlers (size, sugar, add-on) follow below ...
-});
+  // proceed to open product modal
+  openProductModal(event.target.dataset.productId);
+}
 
 // Add sugar-selection helper to support inline onclick or programmatic calls
 function selectSugar(level) {
