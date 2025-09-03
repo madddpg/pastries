@@ -89,64 +89,17 @@ function recalcModalTotal() {
 
 // ...existing code...
 
-// REPLACED: when opening modal via delegated view-btn handler - use module-level toppings and recalc
-document.addEventListener('click', function (e) {
-  const viewBtn = e.target.closest('.view-btn');
-  if (viewBtn) {
-    const id = viewBtn.dataset.id;
-    const name = viewBtn.dataset.name || '';
-    const price = parseFloat(viewBtn.dataset.price || 0);
-    const desc = viewBtn.dataset.desc || '';
-    const img = viewBtn.dataset.image || 'img/placeholder.svg';
-
-    // populate modal
-    document.getElementById('modalProductName').textContent = name;
-    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
-    document.getElementById('modalProductDescription').textContent = desc;
-    const imgEl = document.getElementById('modalProductImage');
-    if (imgEl) imgEl.src = img;
-
-    // reset selections
-    selectedSize = 'Grande';
-    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-    const s = document.querySelector('.size-btn[data-size="Grande"]');
-    if (s) s.classList.add('active');
-
-    // use module-level toppings object (not window.*)
-    modalSelectedToppings = {};
-    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
-
-    // reset sugar selection to default
-    document.querySelectorAll('.sugar-btn').forEach(b => b.classList.remove('active'));
-    const defaultSugar = document.querySelector('.sugar-btn[data-sugar="Less Sweet"]') || document.querySelector('.sugar-btn');
-    if (defaultSugar) defaultSugar.classList.add('active');
-
-    // compute and display totals properly
-    // ensure currentProduct.price is set so recalcModalTotal computes base correctly
-    if (!currentProduct) currentProduct = { id, name, price };
-    // if currentProduct doesn't have grande/supreme, ensure price is available
-    if (typeof currentProduct.grandePrice === 'undefined' && typeof currentProduct.price !== 'undefined') {
-      currentProduct.grandePrice = currentProduct.price;
-      currentProduct.supremePrice = currentProduct.price;
-    }
-
-    recalcModalTotal();
-
-    // show modal
-    const modal = document.getElementById('productModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-
+document.querySelectorAll('.view-btn').forEach(button => {
+  button.addEventListener('click', handleViewProduct);
+});
+function handleViewProduct(event) {
+  if (!isLoggedIn) {
+    showLoginModal();
     return;
   }
-
-  // existing delegated handlers for size / sugar / add-on buttons (keep your previous code)
-});
-
-// Navigation
+  // proceed to open product modal
+  openProductModal(event.target.dataset.productId);
+}
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
@@ -188,49 +141,17 @@ function openProductModal(id, name, price, description, image) {
 }
 // ...existing code...
 
-// Open modal when .view-btn clicked (delegated)
-document.addEventListener('click', function (e) {
-  const viewBtn = e.target.closest('.view-btn');
-  if (viewBtn) {
-    const id = viewBtn.dataset.id;
-    const name = viewBtn.dataset.name || '';
-    const price = parseFloat(viewBtn.dataset.price || 0);
-    const desc = viewBtn.dataset.desc || '';
-    const img = viewBtn.dataset.image || 'img/placeholder.svg';
-
-    // populate modal
-    document.getElementById('modalProductName').textContent = name;
-    document.getElementById('modalProductPrice').textContent = 'Php ' + (price || 0).toFixed(2);
-    document.getElementById('modalProductDescription').textContent = desc;
-    const imgEl = document.getElementById('modalProductImage');
-    if (imgEl) imgEl.src = img;
-
-    // reset selections
-    selectedSize = 'Grande';
-    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-    const s = document.querySelector('.size-btn[data-size="Grande"]');
-    if (s) s.classList.add('active');
-
-    window.modalSelectedToppings = {};
-    document.querySelectorAll('.add-on-btn').forEach(b => b.classList.remove('active'));
-
-    // set total
-    const totalAmountEl = document.getElementById('modalTotalAmount');
-    if (totalAmountEl) totalAmountEl.textContent = price.toFixed(2);
-
-    // show modal
-    const modal = document.getElementById('productModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      modal.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-
+document.querySelectorAll('.view-btn').forEach(button => {
+  button.addEventListener('click', handleViewProduct);
+});
+function handleViewProduct(event) {
+  if (!isLoggedIn) {
+    showLoginModal();
     return;
   }
-
-  // existing delegated handlers for size / sugar / add-on buttons (keep your previous code)
-});
+  // proceed to open product modal
+  openProductModal(event.target.dataset.productId);
+}
 
 // Close modal helper
 function closeProductModal() {
@@ -413,9 +334,9 @@ document.addEventListener('click', function (e) {
     if (window.recalcModalTotal) window.recalcModalTotal();
     else {
       // fallback simple total update if recalcModalTotal not defined
-      const base = parseFloat((document.getElementById('modalProductPrice')?.textContent || '0').replace(/[^0-9.]/g, '')) || 0;
+      const base = parseFloat((document.getElementById('modalProductPrice')?.textContent||'0').replace(/[^0-9.]/g,'')) || 0;
       let addons = 0;
-      Object.values(modalSelectedToppings || {}).forEach(t => addons += (t.price || 0));
+      Object.values(modalSelectedToppings || {}).forEach(t=> addons += (t.price||0));
       document.getElementById('modalTotalAmount').textContent = (base + addons).toFixed(2);
     }
     return;
@@ -571,7 +492,7 @@ function updateCartDisplay() {
       `
     )
     .join("");
-
+    
   // Update total calculation
   const total = cart.reduce((sum, item) => {
     const base = Number(item.basePrice || item.price || 0);
@@ -832,7 +753,7 @@ function submitPickupForm(payload) {
 
 document.addEventListener("DOMContentLoaded", function () {
   // Checkout buttons (cart total area)
-  document.body.addEventListener('click', function (ev) {
+    document.body.addEventListener('click', function (ev) {
     const checkoutBtn = ev.target.closest && ev.target.closest('.checkout-btn');
     if (checkoutBtn) {
       ev.preventDefault && ev.preventDefault();
@@ -2083,7 +2004,7 @@ async function loadActiveToppings() {
     // render as pill buttons (matches your modal UI)
     container.innerHTML = data.toppings.map(t => {
       const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const key = (t.key || t.id || safeName.toLowerCase().replace(/\s+/g, '-'));
+      const key = (t.key || t.id || safeName.toLowerCase().replace(/\s+/g,'-'));
       const price = Number(t.price || 0).toFixed(2);
       return `<button type="button" class="add-on-btn" data-key="${key}" data-price="${price}">
                 <span>${safeName}</span>
@@ -2287,7 +2208,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
     modalSelectedToppings = {};
     document.querySelectorAll('.add-on-btn').forEach(btn => {
-      btn.classList.remove('active');
+        btn.classList.remove('active');
     });
 
     const toppingsContainer = document.getElementById('toppingsList');
@@ -2342,7 +2263,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
   }
 
 
-} function selectSize(size) {
+}function selectSize(size) {
   selectedSize = size;
 
   // update UI highlight (match by text, data-size or data-label)
@@ -2372,7 +2293,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
   // recalc total so modalTotal updates immediately when size changes
   if (typeof recalcModalTotal === 'function') recalcModalTotal();
-} function handleCheckout() {
+}function handleCheckout() {
   const deliveryOptions = document.getElementById("deliveryOptions");
 
   // If delivery/pickup form is not visible yet — show it first
@@ -2838,7 +2759,7 @@ function handleEditProfile(event) {
     if (typeof recalcModalTotal === "function") recalcModalTotal();
   }
 
-  try {
+ try {
     Object.defineProperty(window, "handlePaymentChoice", {
       value: _canonicalHandlePaymentChoice,
       writable: false,
