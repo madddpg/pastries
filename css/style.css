@@ -339,6 +339,7 @@ img, svg, picture, video {
   width: 44px !important;
   height: 44px !important;
   border-radius: 8px !important;
+  border-color: #047857 !important;
   font-size: 28px !important;
   line-height: 1 !important;
   display: flex !important;
