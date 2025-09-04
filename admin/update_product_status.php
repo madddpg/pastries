@@ -7,14 +7,23 @@ $pdo = $db->opencon();
 
 try {
     if (isset($_POST['id'], $_POST['status'])) {
-        $id = $_POST['id'];
+        $id = trim($_POST['id']); // trim spaces just in case
         $status = $_POST['status'] === 'active' ? 'active' : 'inactive';
 
         $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
 
-        // Get number of affected rows
         $rows = $stmt->rowCount();
+
+        if ($rows === 0) {
+            // No rows updated, check if product exists
+            $check = $pdo->prepare("SELECT COUNT(*) FROM products WHERE id = ?");
+            $check->execute([$id]);
+            if ($check->fetchColumn() > 0) {
+                // Product exists, status was already the same
+                $rows = 1;
+            }
+        }
 
         echo json_encode([
             'success' => true,
