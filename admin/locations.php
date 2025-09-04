@@ -31,50 +31,86 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $stmt = $pdo->prepare("INSERT INTO locations (name, status, image, admin_id) VALUES (?, ?, ?, ?)");
         if ($stmt->execute([$name, $status, $imagePath, $admin_id])) {
-            echo json_encode(['success' => true, 'message' => 'Location added successfully.']);
+            echo json_encode([
+                'success'    => true,
+                'title'      => 'Location Added',
+                'message'    => 'Success — a new Cups & Cuddles location is now brewing! ☕🏠',
+                'toast_type' => 'success'
+            ]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Error: Could not add location.']);
+            http_response_code(500);
+            echo json_encode([
+                'success'    => false,
+                'title'      => 'Oops — beans spilled',
+                'message'    => 'Could not add location. The beans got spilled — please try again or contact support. ☕💧',
+                'toast_type' => 'error'
+            ]);
         }
         exit;
     }
 
 
-     if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Admin not logged in.']);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Not Signed In',
+                'message' => 'You need to be signed in as a Barista Boss to manage locations. ☕🔑'
+            ]);
             exit;
         }
 
         $id = intval($_POST['id']);
         $status = $_POST['status'];
         $allowed = ['open', 'closed'];
+
         if ($id <= 0 || !in_array($status, $allowed)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Bad Request',
+                'message' => 'Invalid parameters for updating location status. Please try again. ☕⚠️'
+            ]);
             exit;
         }
 
-     try {
+
+        try {
             // remove updated_at (column doesn't exist in your table)
             $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE id = ?");
             $ok = $stmt->execute([$status, $admin_id, $id]);
 
             if ($ok && $stmt->rowCount() > 0) {
-                echo json_encode(['success' => true, 'message' => 'Status updated.']);
+                echo json_encode([
+                    'success' => true,
+                    'title'   => 'Status Updated',
+                    'message' => 'Location status updated successfully. Doors have been adjusted. ☕🔔',
+                    'toast_type' => 'success'
+                ]);
             } else {
-                // If execute succeeded but no row matched, return helpful message
-                echo json_encode(['success' => false, 'message' => 'No location updated (not found or same status).']);
+                echo json_encode([
+                    'success' => false,
+                    'title'   => 'No Changes',
+                    'message' => 'No location updated (not found or same status). Nothing to brew. ☕'
+                ]);
             }
         } catch (PDOException $e) {
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Database Error',
+                'message' => 'Could not update status — the beans got stuck: ' . $e->getMessage(),
+                'toast_type' => 'error'
+            ]);
         }
         exit;
     }
-    
-if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
+
+
+
+    if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
@@ -86,33 +122,39 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         $name = trim($_POST['name']);
         $status = $_POST['status'];
 
-        if ($name === '' || strlen($name) > 191) {
+      if ($name === '' || strlen($name) > 191) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid name']);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Invalid Name',
+                'message' => 'Location name must be provided and be under 191 characters. Keep it short and cozy. ☕✏️'
+            ]);
             exit;
         }
-
         $imagePath = null;
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $allowed = ['jpg','jpeg','png','gif'];
+            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
             $origName = basename($_FILES['image']['name']);
             $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
             if (!in_array($ext, $allowed)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => 'Invalid image type']);
+                echo json_encode([
+                    'success' => false,
+                    'title'   => 'Invalid Image',
+                    'message' => 'Invalid image type. Please upload JPG, PNG or GIF so the shop looks its best. ☕🖼️'
+                ]);
                 exit;
             }
             $uploadDir = realpath(__DIR__ . '/../img');
             if ($uploadDir === false) $uploadDir = __DIR__ . '/../img';
             $uploadDir = rtrim($uploadDir, '/\\') . '/';
-            $filename = uniqid() . '_' . preg_replace('/[^a-z0-9_\.-]/i','_', $origName);
+            $filename = uniqid() . '_' . preg_replace('/[^a-z0-9_\.-]/i', '_', $origName);
             $targetFile = $uploadDir . $filename;
             if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
                 $imagePath = 'img/' . $filename;
             }
         }
-
-        if ($imagePath) {
+ if ($imagePath) {
             $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE id=?");
             $success = $stmt->execute([$name, $status, $imagePath, $admin_id, $id]);
         } else {
@@ -122,19 +164,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
 
         echo json_encode([
             'success' => (bool)$success,
-            'message' => $success ? 'Location updated successfully.' : 'Error: Could not update location.'
+            'title'   => $success ? 'Location Updated' : 'Update Failed',
+            'message' => $success ? 'Location updated — changes percolated successfully! ☕✅' : 'Could not update location. The beans got restless. ☕💧',
+            'toast_type' => $success ? 'success' : 'error'
         ]);
         exit;
     }
 
-
     if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
         $id = intval($_POST['id']);
 
-        // require super-admin for hard delete
-        if (!Database::isSuperAdmin()) {
+      if (!Database::isSuperAdmin()) {
             http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required to delete locations.']);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Forbidden',
+                'message' => 'Only the Owner or (super-admin) can delete locations. ☕🔒'
+            ]);
             exit;
         }
 
@@ -154,22 +200,24 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
             // ignore info_schema failures
         }
 
-        if (!empty($refs)) {
+    if (!empty($refs)) {
             http_response_code(409);
             echo json_encode([
                 'success' => false,
-                'message' => 'Cannot delete: referenced in ' . implode(', ', $refs) . '. Use force_delete to dissociate references or mark affected items accordingly.'
+                'title'   => 'Referenced',
+                'message' => 'Cannot delete: referenced in ' . implode(', ', $refs) . '. Dissociate affected items or use force_delete. ☕🔗'
             ]);
             exit;
         }
-
         // safe to delete
         $stmt = $pdo->prepare("DELETE FROM locations WHERE id=?");
         $success = $stmt->execute([$id]);
 
-        echo json_encode([
+       echo json_encode([
             'success' => $success,
-            'message' => $success ? 'Location deleted successfully.' : 'Error: Could not delete location.'
+            'title'   => $success ? 'Location Deleted' : 'Delete Failed',
+            'message' => $success ? 'Location deleted successfully — that corner has been cleared. ☕🧹' : 'Error: Could not delete location. The beans got stuck. ☕💧',
+            'toast_type' => $success ? 'success' : 'error'
         ]);
         exit;
     }
@@ -198,22 +246,39 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
             $del = $pdo->prepare("DELETE FROM locations WHERE id = ?");
             $del->execute([$id]);
 
-            if ($del->rowCount() > 0) {
+           if ($del->rowCount() > 0) {
                 $pdo->commit();
-                echo json_encode(['success' => true, 'message' => 'Force-deleted location and dissociated references (products updated).']);
+                echo json_encode([
+                    'success' => true,
+                    'title'   => 'Force Delete Complete',
+                    'message' => 'Force-deleted location and dissociated references — beans relocated. ☕🚚',
+                    'toast_type' => 'success'
+                ]);
             } else {
                 $pdo->rollBack();
                 http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Location not found']);
+                echo json_encode([
+                    'success' => false,
+                    'title'   => 'Not Found',
+                    'message' => 'Location not found. Nothing brewed here. ☕❌'
+                ]);
             }
-        } catch (PDOException $e) {
+            } catch (PDOException $e) {
             $pdo->rollBack();
             http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+            echo json_encode([
+                'success' => false,
+                'title'   => 'Database Error',
+                'message' => 'Could not complete force delete — database error: ' . $e->getMessage(),
+                'toast_type' => 'error'
+            ]);
         }
         exit;
     }
 }
-echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+echo json_encode([
+    'success' => false,
+    'title'   => 'Invalid Request',
+    'message' => 'Invalid request. Nothing brewed — check your input and try again. ☕'
+]);
 exit;
-?>
