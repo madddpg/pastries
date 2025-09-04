@@ -56,10 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        try {
-            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ?, updated_at = NOW() WHERE id = ?");
+     try {
+            // remove updated_at (column doesn't exist in your table)
+            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE id = ?");
             $ok = $stmt->execute([$status, $admin_id, $id]);
-            echo json_encode(['success' => (bool)$ok]);
+
+            if ($ok && $stmt->rowCount() > 0) {
+                echo json_encode(['success' => true, 'message' => 'Status updated.']);
+            } else {
+                // If execute succeeded but no row matched, return helpful message
+                echo json_encode(['success' => false, 'message' => 'No location updated (not found or same status).']);
+            }
         } catch (PDOException $e) {
             http_response_code(500);
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
