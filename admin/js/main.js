@@ -307,7 +307,47 @@ if (target.matches('.btn-delete-topping')) {
     }
     return;
 }
+
+
+
+if (target.matches('.btn-toggle-product')) {
+        e.preventDefault();
+        console.log('[admin] product toggle clicked', target.dataset);
+        const id = target.dataset.id;
+        const current = target.dataset.status === 'active' ? 'active' : 'inactive';
+        const next = current === 'active' ? 'inactive' : 'active';
+        const body = new URLSearchParams();
+        body.append('id', id); // server accepts 'id' or 'product_id'
+        body.append('status', next);
+        try {
+            const res = await fetch('/update_product_status.php', { method: 'POST', body });
+            const data = await res.json();
+            console.log('[admin] update_product_status response', data);
+            if (data.success && data.rows > 0) {
+                // update UI quickly without full reload
+                target.dataset.status = next;
+                target.textContent = next === 'active' ? 'Set Inactive' : 'Set Active';
+                const badge = target.closest('tr')?.querySelector('.status-badge');
+                if (badge) {
+                    badge.classList.toggle('active', next === 'active');
+                    badge.classList.toggle('inactive', next !== 'active');
+                    badge.textContent = next === 'active' ? 'Active' : 'Inactive';
+                }
+            } else {
+                alert('Update failed: ' + (data.message || 'no details'));
+            }
+        } catch (err) {
+            console.error('[admin] toggle product error', err);
+            alert('Request failed');
+        }
+        return;
+    }
+    
     });
+
+
+
+    
 
     if (form) {
         form.addEventListener('submit', async function(e){
