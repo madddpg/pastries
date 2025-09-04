@@ -30,28 +30,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stmt = $pdo->prepare("INSERT INTO locations (name, status, image, admin_id) VALUES (?, ?, ?, ?)");
-        $stmt = $pdo->prepare("INSERT INTO locations (name, status, image, admin_id) VALUES (?, ?, ?, ?)");
         if ($stmt->execute([$name, $status, $imagePath, $admin_id])) {
-            echo json_encode([
-                'success' => true,
-                'title' => 'Location Added',
-                'message' => 'Success — a new Cups & Cuddles location is now brewing! ☕🏠',
-                'toast_type' => 'success' // use in frontend to style the notification
-            ]);
+            echo json_encode(['success' => true, 'message' => 'Location added successfully.']);
         } else {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'title' => 'Oops — beans spilled',
-                'message' => 'Could not add location. Please try again or contact support. ☕💧',
-                'toast_type' => 'error'
-            ]);
+            echo json_encode(['success' => false, 'message' => 'Error: Could not add location.']);
         }
         exit;
     }
 
 
-    if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
+     if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
@@ -68,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        try {
+     try {
             // remove updated_at (column doesn't exist in your table)
             $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE id = ?");
             $ok = $stmt->execute([$status, $admin_id, $id]);
@@ -85,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-
-    if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
+    
+if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
@@ -106,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $imagePath = null;
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $allowed = ['jpg', 'jpeg', 'png', 'gif'];
+            $allowed = ['jpg','jpeg','png','gif'];
             $origName = basename($_FILES['image']['name']);
             $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
             if (!in_array($ext, $allowed)) {
@@ -117,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $uploadDir = realpath(__DIR__ . '/../img');
             if ($uploadDir === false) $uploadDir = __DIR__ . '/../img';
             $uploadDir = rtrim($uploadDir, '/\\') . '/';
-            $filename = uniqid() . '_' . preg_replace('/[^a-z0-9_\.-]/i', '_', $origName);
+            $filename = uniqid() . '_' . preg_replace('/[^a-z0-9_\.-]/i','_', $origName);
             $targetFile = $uploadDir . $filename;
             if (move_uploaded_file($_FILES['image']['tmp_name'], $targetFile)) {
                 $imagePath = 'img/' . $filename;
@@ -228,3 +216,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 echo json_encode(['success' => false, 'message' => 'Invalid request.']);
 exit;
+?>
