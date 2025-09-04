@@ -1279,11 +1279,10 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            // Toggle Location Status (works for regular admins and super-admins)
-            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
+           document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
+                    e.stopImmediatePropagation(); // <- ensure no other handler runs
                     var row = btn.closest('tr');
                     if (!row) return;
                     var id = row.getAttribute('data-location-id');
@@ -1298,10 +1297,9 @@ function fetch_locations_pdo($con)
                         },
                         body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
                     })
-                    .then(res => res.json())
+                    .then(res => res.json().catch(() => ({ success: false, message: 'Invalid JSON from server' })))
                     .then(data => {
                         if (data.success) {
-                            // update attribute and visible badge/button text without reloading
                             row.setAttribute('data-location-status', newStatus);
                             var badge = row.querySelector('.status-badge');
                             if (badge) {
@@ -1309,9 +1307,7 @@ function fetch_locations_pdo($con)
                                 badge.classList.toggle('active', newStatus === 'open');
                                 badge.classList.toggle('inactive', newStatus !== 'open');
                             }
-                            // update the menu button text to reflect next action
                             btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
-                            // close dropdown if open
                             var dropdown = btn.closest('.dropdown-menu');
                             if (dropdown) dropdown.style.display = 'none';
                         } else {
