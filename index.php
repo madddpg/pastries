@@ -1041,9 +1041,10 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         $db = new Database();
         $pdo = $db->opencon();
         $locations = [];
-        $stmt = $pdo->prepare("SELECT * FROM locations ORDER BY id ASC");
-        $stmt->execute();
-        $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Only show locations that are open to the public (case-insensitive)
+        $stmt = $pdo->prepare("SELECT * FROM locations WHERE LOWER(status) = 'open' ORDER BY id ASC");
+         $stmt->execute();
+         $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         ?>
 
         <?php foreach ($locations as $loc): ?>
