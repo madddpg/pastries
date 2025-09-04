@@ -472,47 +472,6 @@ if (target.matches('.btn-delete-topping')) {
     }, 3000);
   }
 
-   document.body.addEventListener('click', function (e) {
-    const btn = e.target.closest('.toggle-status-btn');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    const row = btn.closest('tr');
-    if (!row) return;
-    const productId = row.getAttribute('data-product-id');
-    const currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    if (!productId) return;
-
-    fetch('update_product_status.php', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-      body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
-    })
-    .then(res => res.json().catch(() => ({ success: false, message: 'Invalid JSON' })))
-    .then(data => {
-      if (data.success) {
-        row.setAttribute('data-product-status', newStatus);
-        const badge = row.querySelector('.status-badge');
-        if (badge) {
-          badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-          badge.classList.toggle('active', newStatus === 'active');
-          badge.classList.toggle('inactive', newStatus !== 'active');
-        }
-        btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
-        const dropdown = btn.closest('.dropdown-menu');
-        if (dropdown) dropdown.style.display = 'none';
-      } else {
-        alert(data.message || 'Failed to update product status.');
-      }
-    })
-    .catch(err => {
-      console.error('update product status error', err);
-      alert('Request failed. Check network or server.');
-    });
-  });
-  
   // Order details modal
   function showOrderDetails(orderId) {
     fetch(`order_detail.php?id=${encodeURIComponent(orderId)}`)
