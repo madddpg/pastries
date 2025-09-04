@@ -898,15 +898,17 @@ function fetch_locations_pdo($con)
             });
 
             // Product management functionality
-            // Toggle product status via AJAX
+            // Toggle product status via AJAX          
             document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     var row = btn.closest('tr');
+                    if (!row) return;
                     var productId = row.getAttribute('data-product-id');
-                    var currentStatus = row.getAttribute('data-product-status');
+                    var currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
                     var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                    if (!productId) return;
 
                     fetch('update_product_status.php', {
                         method: 'POST',
@@ -914,8 +916,33 @@ function fetch_locations_pdo($con)
                             'Content-Type': 'application/x-www-form-urlencoded'
                         },
                         body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
-                    }).then(() => {
-                        location.reload();
+                    })
+                    .then(res => {
+                        // try parse JSON, fallback to text
+                        return res.json().catch(() => ({ success: true }));
+                    })
+                    .then(data => {
+                        if (data && data.success !== false) {
+                            // update data attribute
+                            row.setAttribute('data-product-status', newStatus);
+                            // update visible badge
+                            var badge = row.querySelector('.status-badge');
+                            if (badge) {
+                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                badge.classList.toggle('active', newStatus === 'active');
+                                badge.classList.toggle('inactive', newStatus !== 'active');
+                            }
+                            // update action button label
+                            btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
+                            // optionally close dropdown
+                            var dropdown = btn.closest('.dropdown-menu');
+                            if (dropdown) dropdown.style.display = 'none';
+                        } else {
+                            alert(data.message || 'Failed to update product status.');
+                        }
+                    })
+                    .catch(() => {
+                        alert('Request failed. Check network or server.');
                     });
                 });
             });
@@ -1296,7 +1323,7 @@ function fetch_locations_pdo($con)
                     });
                 });
             });
-            
+
             // Add Admin functionality
             var addAdminForm = document.getElementById('addAdminForm');
             var addAdminResult = document.getElementById('addAdminResult');
