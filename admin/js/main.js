@@ -320,7 +320,7 @@ if (target.matches('.btn-toggle-product')) {
         body.append('id', id); // server accepts 'id' or 'product_id'
         body.append('status', next);
         try {
-            const res = await fetch('/update_product_status.php', { method: 'POST', body });
+            const res = await fetch('update_product_status.php', { method: 'POST', body });
             const data = await res.json();
             console.log('[admin] update_product_status response', data);
             if (data.success && data.rows > 0) {
@@ -342,7 +342,7 @@ if (target.matches('.btn-toggle-product')) {
         }
         return;
     }
-    
+
     });
 
 
