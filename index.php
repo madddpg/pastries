@@ -9,6 +9,11 @@ $db = new Database();
 $pdo = $db->opencon();
 $productStatuses = [];
 $allProducts = [];
+ // Only show locations that are open to the public
+       $stmt = $pdo->prepare("SELECT * FROM locations WHERE status = 'open' ORDER BY id ASC");
+        $stmt->execute();
+        $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
 $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
 $stmt->execute();
 $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
