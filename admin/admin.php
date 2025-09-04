@@ -898,55 +898,50 @@ function fetch_locations_pdo($con)
             });
 
             // Product management functionality
-            // Toggle product status via AJAX          
-            document.querySelectorAll('.toggle-status-btn').forEach(function(btn) {
+             document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     var row = btn.closest('tr');
                     if (!row) return;
-                    var productId = row.getAttribute('data-product-id');
-                    var currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
-                    var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                    if (!productId) return;
+                    var id = row.getAttribute('data-location-id');
+                    var currentStatus = (row.getAttribute('data-location-status') || '').toLowerCase();
+                    var newStatus = currentStatus === 'open' ? 'closed' : 'open';
+                    if (!id) return;
 
-                    fetch('update_product_status.php', {
+                    fetch('locations.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded'
                         },
-                        body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
+                        body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
                     })
-                    .then(res => {
-                        // try parse JSON, fallback to text
-                        return res.json().catch(() => ({ success: true }));
-                    })
+                    .then(res => res.json())
                     .then(data => {
-                        if (data && data.success !== false) {
-                            // update data attribute
-                            row.setAttribute('data-product-status', newStatus);
-                            // update visible badge
+                        if (data.success) {
+                            // update attribute and visible badge/button text without reloading
+                            row.setAttribute('data-location-status', newStatus);
                             var badge = row.querySelector('.status-badge');
                             if (badge) {
                                 badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                badge.classList.toggle('active', newStatus === 'active');
-                                badge.classList.toggle('inactive', newStatus !== 'active');
+                                badge.classList.toggle('active', newStatus === 'open');
+                                badge.classList.toggle('inactive', newStatus !== 'open');
                             }
-                            // update action button label
-                            btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
-                            // optionally close dropdown
+                            // update the menu button text to reflect next action
+                            btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
+                            // close dropdown if open
                             var dropdown = btn.closest('.dropdown-menu');
                             if (dropdown) dropdown.style.display = 'none';
                         } else {
-                            alert(data.message || 'Failed to update product status.');
+                            alert(data.message || 'Failed to update status');
                         }
                     })
                     .catch(() => {
-                        alert('Request failed. Check network or server.');
+                        alert('Request failed');
                     });
                 });
             });
-
+            
             // Edit product modal logic
             const editModal = document.getElementById('editProductModal');
             const editForm = document.getElementById('editProductForm');
