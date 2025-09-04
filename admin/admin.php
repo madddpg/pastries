@@ -377,30 +377,16 @@ function fetch_locations_pdo($con)
                                 </div>
                                 <div class="order-actions">
                                     <?php if ($order['status'] == 'pending'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="preparing">
-                                            <button type="submit" class="btn-accept">Accept</button>
-                                        </form>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <button type="submit" class="btn-reject">Reject</button>
-                                        </form>
+                                        <button type="button" class="btn-accept" data-id="<?= htmlspecialchars($order['transac_id'], ENT_QUOTES) ?>">Accept</button>
+                                        <button type="button" class="btn-reject" data-id="<?= htmlspecialchars($order['transac_id'], ENT_QUOTES) ?>">Reject</button>
                                     <?php elseif ($order['status'] == 'preparing'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="ready">
-                                            <button type="submit" class="btn-ready">Mark as Ready</button>
-                                        </form>
+                                        <button type="button" class="btn-ready" data-id="<?= htmlspecialchars($order['transac_id'], ENT_QUOTES) ?>">Mark as Ready</button>
                                     <?php elseif ($order['status'] == 'ready'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="picked up">
-                                            <button type="submit" class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
-                                        </form>
+                                        <button type="button" class="btn-complete" data-id="<?= htmlspecialchars($order['transac_id'], ENT_QUOTES) ?>" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
                                     <?php elseif ($order['status'] == 'picked up'): ?>
                                         <span class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Picked Up</span>
+                                    <?php else: ?>
+                                        <span><?= htmlspecialchars(ucfirst($order['status'])) ?></span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -911,39 +897,41 @@ function fetch_locations_pdo($con)
                     if (!productId) return;
 
                     fetch('update_product_status.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
-                    })
-                    .then(res => {
-                        // try parse JSON, fallback to text
-                        return res.json().catch(() => ({ success: true }));
-                    })
-                    .then(data => {
-                        if (data && data.success !== false) {
-                            // update data attribute
-                            row.setAttribute('data-product-status', newStatus);
-                            // update visible badge
-                            var badge = row.querySelector('.status-badge');
-                            if (badge) {
-                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                badge.classList.toggle('active', newStatus === 'active');
-                                badge.classList.toggle('inactive', newStatus !== 'active');
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'id=' + encodeURIComponent(productId) + '&status=' + encodeURIComponent(newStatus)
+                        })
+                        .then(res => {
+                            // try parse JSON, fallback to text
+                            return res.json().catch(() => ({
+                                success: true
+                            }));
+                        })
+                        .then(data => {
+                            if (data && data.success !== false) {
+                                // update data attribute
+                                row.setAttribute('data-product-status', newStatus);
+                                // update visible badge
+                                var badge = row.querySelector('.status-badge');
+                                if (badge) {
+                                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                    badge.classList.toggle('active', newStatus === 'active');
+                                    badge.classList.toggle('inactive', newStatus !== 'active');
+                                }
+                                // update action button label
+                                btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
+                                // optionally close dropdown
+                                var dropdown = btn.closest('.dropdown-menu');
+                                if (dropdown) dropdown.style.display = 'none';
+                            } else {
+                                alert(data.message || 'Failed to update product status.');
                             }
-                            // update action button label
-                            btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
-                            // optionally close dropdown
-                            var dropdown = btn.closest('.dropdown-menu');
-                            if (dropdown) dropdown.style.display = 'none';
-                        } else {
-                            alert(data.message || 'Failed to update product status.');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Request failed. Check network or server.');
-                    });
+                        })
+                        .catch(() => {
+                            alert('Request failed. Check network or server.');
+                        });
                 });
             });
 
@@ -1279,7 +1267,7 @@ function fetch_locations_pdo($con)
                 });
             }
 
-           document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
+            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopImmediatePropagation(); // <- ensure no other handler runs
@@ -1291,32 +1279,35 @@ function fetch_locations_pdo($con)
                     if (!id) return;
 
                     fetch('locations.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
-                    })
-                    .then(res => res.json().catch(() => ({ success: false, message: 'Invalid JSON from server' })))
-                    .then(data => {
-                        if (data.success) {
-                            row.setAttribute('data-location-status', newStatus);
-                            var badge = row.querySelector('.status-badge');
-                            if (badge) {
-                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                badge.classList.toggle('active', newStatus === 'open');
-                                badge.classList.toggle('inactive', newStatus !== 'open');
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                        })
+                        .then(res => res.json().catch(() => ({
+                            success: false,
+                            message: 'Invalid JSON from server'
+                        })))
+                        .then(data => {
+                            if (data.success) {
+                                row.setAttribute('data-location-status', newStatus);
+                                var badge = row.querySelector('.status-badge');
+                                if (badge) {
+                                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                    badge.classList.toggle('active', newStatus === 'open');
+                                    badge.classList.toggle('inactive', newStatus !== 'open');
+                                }
+                                btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
+                                var dropdown = btn.closest('.dropdown-menu');
+                                if (dropdown) dropdown.style.display = 'none';
+                            } else {
+                                alert(data.message || 'Failed to update status');
                             }
-                            btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
-                            var dropdown = btn.closest('.dropdown-menu');
-                            if (dropdown) dropdown.style.display = 'none';
-                        } else {
-                            alert(data.message || 'Failed to update status');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Request failed');
-                    });
+                        })
+                        .catch(() => {
+                            alert('Request failed');
+                        });
                 });
             });
 
