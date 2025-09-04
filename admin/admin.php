@@ -1222,7 +1222,6 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            /// Delete Location (attach handlers only for super-admins)
             if (window.IS_SUPER_ADMIN) {
                 document.querySelectorAll('.delete-location-btn').forEach(function(btn) {
                     btn.addEventListener('click', function(e) {
@@ -1253,6 +1252,51 @@ function fetch_locations_pdo($con)
                 });
             }
 
+            // Toggle Location Status (works for regular admins and super-admins)
+            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var row = btn.closest('tr');
+                    if (!row) return;
+                    var id = row.getAttribute('data-location-id');
+                    var currentStatus = (row.getAttribute('data-location-status') || '').toLowerCase();
+                    var newStatus = currentStatus === 'open' ? 'closed' : 'open';
+                    if (!id) return;
+
+                    fetch('locations.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            // update attribute and visible badge/button text without reloading
+                            row.setAttribute('data-location-status', newStatus);
+                            var badge = row.querySelector('.status-badge');
+                            if (badge) {
+                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                badge.classList.toggle('active', newStatus === 'open');
+                                badge.classList.toggle('inactive', newStatus !== 'open');
+                            }
+                            // update the menu button text to reflect next action
+                            btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
+                            // close dropdown if open
+                            var dropdown = btn.closest('.dropdown-menu');
+                            if (dropdown) dropdown.style.display = 'none';
+                        } else {
+                            alert(data.message || 'Failed to update status');
+                        }
+                    })
+                    .catch(() => {
+                        alert('Request failed');
+                    });
+                });
+            });
+            
             // Add Admin functionality
             var addAdminForm = document.getElementById('addAdminForm');
             var addAdminResult = document.getElementById('addAdminResult');
