@@ -730,16 +730,17 @@ function fetch_locations_pdo($con)
                                                             style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #374151; cursor: pointer;">
                                                             Edit
                                                         </button>
-
-                                                        <button type="button" class="menu-item delete-location-btn"
-                                                            style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #ef4444; cursor: pointer;">
-                                                            Delete
-                                                        </button>
-
+                                                        <?php if (Database::isSuperAdmin()): ?>
+                                                            <button type="button" class="menu-item delete-location-btn"
+                                                                style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #ef4444; cursor: pointer;">
+                                                                Delete
+                                                            </button>
+                                                        <?php endif; ?>
                                                         <button type="button" class="menu-item toggle-location-status-btn"
                                                             style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer;">
                                                             Set <?= $loc['status'] === 'open' ? 'Closed' : 'Open' ?>
                                                         </button>
+
                                                     </div>
                                                 </div>
                                             </td>
@@ -1221,46 +1222,36 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            // Delete Location
-            document.querySelectorAll('.delete-location-btn').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (!confirm('Are you sure you want to delete this location?')) return;
-                    var row = btn.closest('tr');
-                    var id = row.getAttribute('data-location-id');
-                    fetch('locations.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: 'action=delete&id=' + encodeURIComponent(id)
-                        })
-                        .then(res => res.text())
-                        .then(() => location.reload());
+            /// Delete Location (attach handlers only for super-admins)
+            if (window.IS_SUPER_ADMIN) {
+                document.querySelectorAll('.delete-location-btn').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!confirm('Are you sure you want to delete this location?')) return;
+                        var row = btn.closest('tr');
+                        var id = row.getAttribute('data-location-id');
+                        fetch('locations.php', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'action=delete&id=' + encodeURIComponent(id)
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    location.reload();
+                                } else {
+                                    alert(data.message || 'Delete failed');
+                                }
+                            })
+                            .catch(() => {
+                                alert('Delete request failed');
+                            });
+                    });
                 });
-            });
-
-            // Toggle Location Status
-            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    var row = btn.closest('tr');
-                    var id = row.getAttribute('data-location-id');
-                    var currentStatus = row.getAttribute('data-location-status');
-                    var newStatus = currentStatus === 'open' ? 'closed' : 'open';
-                    fetch('locations.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
-                        })
-                        .then(res => res.text())
-                        .then(() => location.reload());
-                });
-            });
+            }
 
             // Add Admin functionality
             var addAdminForm = document.getElementById('addAdminForm');
