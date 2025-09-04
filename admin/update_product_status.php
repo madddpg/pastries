@@ -9,13 +9,28 @@ try {
     if (isset($_POST['id'], $_POST['status'])) {
         $id = $_POST['id'];
         $status = $_POST['status'] === 'active' ? 'active' : 'inactive';
+
         $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
-        echo json_encode(['success' => true]);
+
+        // Get number of affected rows
+        $rows = $stmt->rowCount();
+
+        echo json_encode([
+            'success' => true,
+            'rows' => $rows
+        ]);
         exit();
     }
-    echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid request.'
+    ]);
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database error: ' . $e->getMessage()
+    ]);
 }
 exit();
