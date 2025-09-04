@@ -7,7 +7,7 @@ $pdo = $db->opencon();
 
 try {
     if (isset($_POST['id'], $_POST['status'])) {
-        $id = (int)$_POST['id'];
+        $id = $_POST['id'];
         $status = $_POST['status'] === 'active' ? 'active' : 'inactive';
         $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
         $stmt->execute([$status, $id]);
