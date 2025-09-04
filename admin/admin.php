@@ -470,7 +470,7 @@ function fetch_locations_pdo($con)
                                                         Edit
                                                     </button>
 
-                                                    <button type="button" class="menu-item toggle-status-btn"
+                                                    <button type="button" class="btn-toggle-product"
                                                         style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer; white-space: nowrap;">
                                                         Set <?= $product['status'] === 'active' ? 'Inactive' : 'Active' ?>
                                                     </button>
