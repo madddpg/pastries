@@ -1331,71 +1331,168 @@ background: #406760;
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
-/* ...existing code... */
 
-/* Pastries section container centered */
+/* ===== Replace pastries section styles with focused, dedicated pastry card design ===== */
 .pastries-section {
   max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Center the pastries grid */
-.pastries-section .product-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
-  justify-content: center;
-  gap: 24px;
+  margin: 0 auto 48px;
   padding: 0 12px;
 }
 
-/* Card shell to match drink cards */
+/* center grid, two-up on desktop, single column on narrow screens */
+.pastries-section .product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 28px;
+  justify-items: center;
+  align-items: start;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* card */
 .pastries-section .product-item {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: visible;
+  box-shadow: 0 18px 40px rgba(23, 38, 33, 0.08);
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.06);
-  overflow: hidden;
-  transition: transform .2s ease, box-shadow .2s ease;
+  transition: transform .18s ease, box-shadow .18s ease;
+  border: 1px solid rgba(18, 40, 34, 0.04);
 }
+
+/* hover lift */
 .pastries-section .product-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+  transform: translateY(-8px);
+  box-shadow: 0 30px 60px rgba(18, 40, 34, 0.12);
 }
 
-/* Image well – same look as drink cards */
+/* image well: prominent dark-green panel with large inset image centered */
 .pastries-section .product-image {
-  margin: 24px;                 /* same inner spacing as drink cards */
-  border-radius: 12px;
-  background: #2d4a3a;          /* dark green well */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 4 / 3;          /* same proportions as drink cards */
-  overflow: hidden;
+  background: linear-gradient(180deg, #203f33 0%, #274e41 100%);
+  border-radius: 14px;
+  margin: 20px;
+  padding: 22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height: 160px;
+  box-shadow: inset 0 6px 18px rgba(0,0,0,0.18);
 }
 
-/* Center image visually like the cup cards */
+/* pastry image should be contained and visible */
 .pastries-section .product-image img {
-  max-width: 90%;
-  max-height: 90%;
-  object-fit: contain;          /* keep full pastry visible */
-  display: block;
+  max-width: 86%;
+  max-height: 120px;
+  object-fit: contain;
+  border-radius: 8px;
+  display:block;
+  filter: saturate(1.02) contrast(1.02);
 }
 
-/* Text/content spacing */
-.pastries-section .product-info { padding: 0 18px 18px; }
-.pastries-section .badge.bg-success { background-color: #2d4a3a !important; }
-.pastries-section .view-btn {
-  background:#0f2a22;
-  color:#f3ebd3;
-  border:0;
-  border-radius:999px;
-  padding:10px 18px;
-  font-weight:700;
+/* content area */
+.pastries-section .product-info {
+  padding: 12px 22px 22px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
-/* ...existing code... */
+
+/* title strong and roomy */
+.pastries-section .product-info h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f2a22;
+  margin: 0;
+}
+
+/* badge small pill on top-left */
+.pastries-section .product-info .badge {
+  display:inline-block;
+  background: #e6f3ea;
+  color: #064e3b;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-weight:700;
+  font-size:0.78rem;
+  width: fit-content;
+}
+
+/* description lighter */
+.pastries-section .product-info p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  min-height: 44px;
+}
+
+/* footer row: left=price (if any), right=view button */
+.pastries-section .product-footer {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding: 0 22px 20px;
+  margin-top:auto;
+}
+
+/* view button: pill, dark green to match image well */
+.pastries-section .view-btn {
+  background: linear-gradient(135deg,#163829,#23433a);
+  color: #f3ebd3;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 28px rgba(17,50,42,0.12);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.pastries-section .view-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 36px rgba(17,50,42,0.14);
+}
+
+/* ensure badges inside .badge.bg-success keep color */
+.pastries-section .badge.bg-success {
+  background: #e6f3ea !important;
+  color: #064e3b !important;
+  box-shadow: none;
+}
+
+/* responsive spacing on small screens */
+@media (max-width: 780px) {
+  .pastries-section .product-list {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 8px;
+  }
+  .pastries-section .product-image {
+    margin: 16px;
+    padding: 18px;
+    min-height: 140px;
+  }
+  .pastries-section .product-image img {
+    max-height: 140px;
+  }
+  .pastries-section .product-item { max-width: 100%; border-radius: 14px; }
+  .pastries-section .product-info { padding: 12px 16px 18px; }
+  .pastries-section .product-footer { padding: 0 16px 16px; }
+}
+
+/* small visual utility: ensure pastries cards align visually with products grid */
+.pastries-section .product-item .product-image,
+.pastries-section .product-item .product-info {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+
 .about-floating-badge {
   position: absolute;
   bottom: -1rem; /* Adjust position as needed */
