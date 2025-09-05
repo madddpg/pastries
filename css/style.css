@@ -1394,13 +1394,13 @@ background: #406760;
   justify-content: center;
   min-height: 170px;
   box-shadow: inset 0 6px 18px rgba(0,0,0,0.12);
-  width: 80%;
+  width: 100%;
   box-sizing: border-box;
 }
 
 /* pastry image should be contained and visible */
 .pastries-section .product-image img {
-  max-width: 72%;      /* larger image inside the well */
+  max-width: 50%;      /* larger image inside the well */
   max-height: 140px;
   object-fit: contain;
   border-radius: 8px;
