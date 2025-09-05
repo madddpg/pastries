@@ -1353,7 +1353,7 @@ background: #406760;
 /* card */
 .pastries-section .product-item {
   width: 80%;
-  max-width: 420px;
+  max-width: 300px;
   background: #ffffff;
   border-radius: 18px;
   overflow: visible;
