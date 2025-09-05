@@ -77,23 +77,15 @@ try {
         exit;
     }
 
-    if ($method === 'POST' && $action === 'delete') {
-        // Only super-admin can hard-delete
-        if (!Database::isSuperAdmin()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required to delete toppings']);
-            exit;
+        if ($method === 'POST' && $action === 'delete') {
+        // Only super-admin can hard-delete references; regular admins may delete only when no refs exist
+        if (!isset($_POST['id']) || intval($_POST['id']) <= 0) {
+            send_json(['success' => false, 'message' => 'Invalid id'], 400);
         }
-
-        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        if ($id <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid id']);
-            exit;
-        }
+        $id = intval($_POST['id']);
 
         try {
-            // If transaction_toppings exists, check for references
+            // Check whether transaction_toppings table exists and whether this topping is referenced
             $checkExists = $con->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'transaction_toppings'");
             $checkExists->execute();
             $hasTransactionToppings = (int)$checkExists->fetchColumn() > 0;
@@ -102,46 +94,74 @@ try {
                 $checkStmt = $con->prepare("SELECT COUNT(*) FROM transaction_toppings WHERE topping_id = ?");
                 $checkStmt->execute([$id]);
                 $count = (int)$checkStmt->fetchColumn();
+
                 if ($count > 0) {
-                    http_response_code(409);
-                    echo json_encode([
-                        'success' => false,
-                        'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
-                    ]);
-                    exit;
+                    if (!Database::isSuperAdmin()) {
+                        // regular admins cannot remove referenced toppings
+                        send_json([
+                            'success' => false,
+                            'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
+                        ], 409);
+                    }
+                    // super-admins fallthrough to remove references and then delete
                 }
             }
 
-            // Safe to delete
-            $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
-            $ok = $stmt->execute([$id]);
+            // If we reach here: either no references, or current user is super-admin and we should remove refs then delete
+            if (Database::isSuperAdmin() && $hasTransactionToppings) {
+                // remove references in a transaction-safe manner, then delete topping
+                $con->beginTransaction();
+                try {
+                    $delRefs = $con->prepare("DELETE FROM transaction_toppings WHERE topping_id = ?");
+                    $delRefs->execute([$id]);
+                } catch (PDOException $ignored) {
+                    // ignore if table/column missing or other non-fatal
+                }
 
-            if ($ok && $stmt->rowCount() > 0) {
-                echo json_encode(['success' => true, 'message' => 'Deleted']);
+                $del = $con->prepare("DELETE FROM toppings WHERE id = ?");
+                $del->execute([$id]);
+
+                if ($del->rowCount() > 0) {
+                    $con->commit();
+                    send_json(['success' => true, 'message' => 'Deleted (references removed)']);
+                } else {
+                    $con->rollBack();
+                    send_json(['success' => false, 'message' => 'Topping not found'], 404);
+                }
             } else {
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Topping not found or already deleted']);
+                // No references or not super-admin (and no references), perform normal delete
+                $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
+                $ok = $stmt->execute([$id]);
+
+                if ($ok && $stmt->rowCount() > 0) {
+                    send_json(['success' => true, 'message' => 'Deleted']);
+                } else {
+                    send_json(['success' => false, 'message' => 'Topping not found or already deleted'], 404);
+                }
             }
         } catch (PDOException $pdoEx) {
             if ($pdoEx->getCode() === '23000') {
-                http_response_code(409);
-                echo json_encode(['success' => false, 'message' => 'Cannot delete topping: constraint violation. Mark it inactive instead.']);
+                send_json(['success' => false, 'message' => 'Cannot delete topping: constraint violation. Mark it inactive instead.'], 409);
             } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()]);
+                send_json(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()], 500);
             }
         }
         exit;
     }
 
+    // Removed: force_delete action branch (no longer supported)
+    // Unsupported action
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Unsupported action']);
+    exit;
+} catch (Exception $e) {
+    http_response_code(500);
+    send_json(['success' => false, 'message' => $e->getMessage()], 500);
+    exit;
+}
 
-    // Force-delete (destructive) — super-admin only, removes references then topping
-    if ($method === 'POST' && $action === 'force_delete') {
-        if (!Database::isSuperAdmin()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required for force delete']);
-            exit;
-        }
+
+   
 
         $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
         if ($id <= 0) {
