@@ -39,13 +39,13 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 
 <?php if (!Database::isSuperAdmin()): ?>
-   <style>
-      .topping-force-delete,
-      .topping-force-delete-btn,
-      .btn-force-delete {
-        display: none !important;
-        visibility: hidden !important;
-      }
+    <style>
+        .topping-force-delete,
+        .topping-force-delete-btn,
+        .btn-force-delete {
+            display: none !important;
+            visibility: hidden !important;
+        }
     </style>
 <?php endif; ?>
 
@@ -294,18 +294,32 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="fade-left"></div>
             <div class="fade-right"></div>
 
+
             <div class="carousel-track">
                 <?php
                 if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
-                        $img = htmlspecialchars($promo['image']);
-                        $title = htmlspecialchars($promo['title']);
-                        echo '<div class="testimonial"><div class="testimonial-header"><img src="' . $img . '" alt="' . ($title ?: 'Promo') . '" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+                        $imgRaw = trim($promo['image'] ?? '');
+                        // normalize to web path and filesystem path
+                        $webPath = '/' . ltrim($imgRaw, '/'); // absolute URL path
+                        $fsPath = __DIR__ . '/' . ltrim(parse_url($imgRaw, PHP_URL_PATH), '/');
+
+                        // skip missing files so carousel doesn't render broken images
+                        if (!file_exists($fsPath)) {
+                            // optional: log missing file for debugging
+                            // error_log("Promo image missing: $fsPath");
+                            continue;
+                        }
+
+                        $title = htmlspecialchars($promo['title'] ?? 'Promo');
+                        $ver = @filemtime($fsPath) ?: time();
+                        echo '<div class="testimonial"><div class="testimonial-header">';
+                        echo '<img src="' . htmlspecialchars($webPath . '?v=' . $ver) . '" alt="' . $title . '" class="testimonial-img" onclick="openTestimonialModal(this)">';
+                        echo '</div></div>';
                     }
                 } else {
-                    // fallback: existing static images if no promos found
-                    echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
-                    // add other static fallbacks as needed...
+                    // fallback static images...
+                    echo '<div class="testimonial"><div class="testimonial-header"><img src="/img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
                 }
                 ?>
             </div>
