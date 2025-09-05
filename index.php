@@ -39,25 +39,13 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 
 <?php if (!Database::isSuperAdmin()): ?>
-    <style>
-        /* Hide toppings delete controls for non-super-admin users (covers server & JS rendered buttons) */
-        .topping-delete,
-        .topping-force-delete,
-        .btn-delete-topping,
-        button.topping-delete,
-        button.topping-force-delete {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Extra safety: hide any plain "Delete" button text inside toppings action cell */
-        #toppingsTable td button {
-            color: inherit;
-        }
-
-        #toppingsTable td button:where(:not(.btn-edit-topping):not(.toggle-topping-status)):where(:not(.btn-delete-topping)) {
-            display: none !important;
-        }
+   <style>
+      .topping-force-delete,
+      .topping-force-delete-btn,
+      .btn-force-delete {
+        display: none !important;
+        visibility: hidden !important;
+      }
     </style>
 <?php endif; ?>
 
