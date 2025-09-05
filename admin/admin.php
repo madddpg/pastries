@@ -470,7 +470,11 @@ function fetch_locations_pdo($con)
                                                         Edit
                                                     </button>
 
-                                                    <button type="button" class="btn-toggle-product"
+                                                    <button
+                                                        type="button"
+                                                        class="btn-toggle-product"
+                                                        data-id="<?= htmlspecialchars($product['id']) ?>"
+                                                        data-status="<?= htmlspecialchars($product['status']) ?>"
                                                         style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer; white-space: nowrap;">
                                                         Set <?= $product['status'] === 'active' ? 'Inactive' : 'Active' ?>
                                                     </button>
@@ -898,7 +902,7 @@ function fetch_locations_pdo($con)
             });
 
             // Product management functionality
-             document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
+            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -910,38 +914,38 @@ function fetch_locations_pdo($con)
                     if (!id) return;
 
                     fetch('locations.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            // update attribute and visible badge/button text without reloading
-                            row.setAttribute('data-location-status', newStatus);
-                            var badge = row.querySelector('.status-badge');
-                            if (badge) {
-                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                badge.classList.toggle('active', newStatus === 'open');
-                                badge.classList.toggle('inactive', newStatus !== 'open');
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                // update attribute and visible badge/button text without reloading
+                                row.setAttribute('data-location-status', newStatus);
+                                var badge = row.querySelector('.status-badge');
+                                if (badge) {
+                                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                    badge.classList.toggle('active', newStatus === 'open');
+                                    badge.classList.toggle('inactive', newStatus !== 'open');
+                                }
+                                // update the menu button text to reflect next action
+                                btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
+                                // close dropdown if open
+                                var dropdown = btn.closest('.dropdown-menu');
+                                if (dropdown) dropdown.style.display = 'none';
+                            } else {
+                                alert(data.message || 'Failed to update status');
                             }
-                            // update the menu button text to reflect next action
-                            btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
-                            // close dropdown if open
-                            var dropdown = btn.closest('.dropdown-menu');
-                            if (dropdown) dropdown.style.display = 'none';
-                        } else {
-                            alert(data.message || 'Failed to update status');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Request failed');
-                    });
+                        })
+                        .catch(() => {
+                            alert('Request failed');
+                        });
                 });
             });
-            
+
             // Edit product modal logic
             const editModal = document.getElementById('editProductModal');
             const editForm = document.getElementById('editProductForm');
@@ -1274,7 +1278,7 @@ function fetch_locations_pdo($con)
                 });
             }
 
-           document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
+            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopImmediatePropagation(); // <- ensure no other handler runs
@@ -1286,32 +1290,35 @@ function fetch_locations_pdo($con)
                     if (!id) return;
 
                     fetch('locations.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
-                    })
-                    .then(res => res.json().catch(() => ({ success: false, message: 'Invalid JSON from server' })))
-                    .then(data => {
-                        if (data.success) {
-                            row.setAttribute('data-location-status', newStatus);
-                            var badge = row.querySelector('.status-badge');
-                            if (badge) {
-                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                badge.classList.toggle('active', newStatus === 'open');
-                                badge.classList.toggle('inactive', newStatus !== 'open');
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                        })
+                        .then(res => res.json().catch(() => ({
+                            success: false,
+                            message: 'Invalid JSON from server'
+                        })))
+                        .then(data => {
+                            if (data.success) {
+                                row.setAttribute('data-location-status', newStatus);
+                                var badge = row.querySelector('.status-badge');
+                                if (badge) {
+                                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                    badge.classList.toggle('active', newStatus === 'open');
+                                    badge.classList.toggle('inactive', newStatus !== 'open');
+                                }
+                                btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
+                                var dropdown = btn.closest('.dropdown-menu');
+                                if (dropdown) dropdown.style.display = 'none';
+                            } else {
+                                alert(data.message || 'Failed to update status');
                             }
-                            btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
-                            var dropdown = btn.closest('.dropdown-menu');
-                            if (dropdown) dropdown.style.display = 'none';
-                        } else {
-                            alert(data.message || 'Failed to update status');
-                        }
-                    })
-                    .catch(() => {
-                        alert('Request failed');
-                    });
+                        })
+                        .catch(() => {
+                            alert('Request failed');
+                        });
                 });
             });
 
