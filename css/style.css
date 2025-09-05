@@ -1302,6 +1302,7 @@ background: #406760;
   z-index: 1;
 }
 
+/* ===== Pastries: original single-column centered card design ===== */
 .pastries-section {
   max-width: 360px;
   margin: 32px auto;
@@ -1382,6 +1383,7 @@ background: #406760;
 
 /* badge */
 .pastries-section .product-info .badge {
+  width: auto;
   display: inline-block;
   background: #e6f3ea;
   color: #064e3b;
@@ -1399,7 +1401,7 @@ background: #406760;
   line-height: 1.45;
 }
 
-/* footer: center the View button like the reference */
+/* footer: center the View button */
 .pastries-section .product-footer {
   display: flex;
   justify-content: center;
@@ -1425,7 +1427,6 @@ background: #406760;
   .pastries-section { max-width: 320px; margin: 20px auto; }
   .pastries-section .product-image .img-wrap { width: 140px; height: 140px; }
 }
-
 
 .about-floating-badge {
   position: absolute;
