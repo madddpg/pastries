@@ -17,17 +17,25 @@ $con = $db->opencon();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? 'list';
 
+
+function send_json($data, $code = 200) {
+    // drop any buffered non-json output
+    if (ob_get_length()) ob_clean();
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+
 try {
     // List all toppings for admin table
     if ($method === 'GET' && $action === 'list') {
         $toppings = $db->fetch_toppings_pdo();
-        echo json_encode([
+        send_json([
             'success' => true,
             'toppings' => $toppings,
             'is_super' => Database::isSuperAdmin() ? true : false
         ]);
-
-
     }
 
     // Return only active toppings for public site (product modal)
@@ -177,6 +185,6 @@ try {
     exit;
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+     send_json(['success' => false, 'message' => $e->getMessage()], 500);
     exit;
 }
