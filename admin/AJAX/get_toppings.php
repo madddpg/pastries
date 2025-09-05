@@ -17,9 +17,7 @@ $con = $db->opencon();
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? 'list';
 
-
 function send_json($data, $code = 200) {
-    // drop any buffered non-json output
     if (ob_get_length()) ob_clean();
     http_response_code($code);
     header('Content-Type: application/json');
@@ -28,65 +26,71 @@ function send_json($data, $code = 200) {
 }
 
 try {
-    // List all toppings for admin table
+    // List toppings
     if ($method === 'GET' && $action === 'list') {
         $toppings = $db->fetch_toppings_pdo();
         send_json([
             'success' => true,
             'toppings' => $toppings,
-            'is_super' => Database::isSuperAdmin() ? true : false
+            'is_super' => Database::isSuperAdmin()
         ]);
     }
 
-    // Return only active toppings for public site (product modal)
+    // Active toppings (public site)
     if ($method === 'GET' && $action === 'active') {
         $toppings = $db->fetch_active_toppings();
-        echo json_encode(['success' => true, 'toppings' => $toppings]);
-        exit;
+        send_json(['success' => true, 'toppings' => $toppings]);
     }
 
     // Create topping
     if ($method === 'POST' && $action === 'add') {
         $name = trim($_POST['name'] ?? '');
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
-        $status = (isset($_POST['status']) && ($_POST['status'] === 'inactive' || $_POST['status'] === '0')) ? 'inactive' : 'active';
-        if ($name === '') throw new Exception('Name required');
+        $status = (isset($_POST['status']) && ($_POST['status'] === 'inactive' || $_POST['status'] === '0'))
+            ? 'inactive' : 'active';
+
+        if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
+
         $id = $db->add_topping($name, $price, $status);
-        echo json_encode(['success' => true, 'id' => $id]);
-        exit;
+        send_json(['success' => true, 'id' => $id]);
     }
 
     // Update topping
     if ($method === 'POST' && $action === 'update') {
-        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
-        if ($id <= 0 || $name === '') throw new Exception('Invalid data');
+
+        if ($id <= 0 || $name === '') send_json(['success' => false, 'message' => 'Invalid data'], 400);
+
         $ok = $db->update_topping($id, $name, $price);
-        echo json_encode(['success' => (bool)$ok]);
-        exit;
+        send_json(['success' => (bool)$ok]);
     }
 
-    // Toggle status (soft-delete)
+    // Toggle status
     if ($method === 'POST' && $action === 'toggle_status') {
-        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        $status = (isset($_POST['status']) && $_POST['status'] === 'active') ? 'active' : 'inactive';
-        if ($id <= 0) throw new Exception('Invalid id');
+        $id = intval($_POST['id'] ?? 0);
+        $status = ($_POST['status'] ?? '') === 'active' ? 'active' : 'inactive';
+
+        if ($id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
+
         $ok = $db->update_topping_status($id, $status);
-        echo json_encode(['success' => (bool)$ok]);
-        exit;
+        send_json(['success' => (bool)$ok]);
     }
 
-        if ($method === 'POST' && $action === 'delete') {
-        // Only super-admin can hard-delete references; regular admins may delete only when no refs exist
+    // Delete topping
+    if ($method === 'POST' && $action === 'delete') {
         if (!isset($_POST['id']) || intval($_POST['id']) <= 0) {
             send_json(['success' => false, 'message' => 'Invalid id'], 400);
         }
         $id = intval($_POST['id']);
 
         try {
-            // Check whether transaction_toppings table exists and whether this topping is referenced
-            $checkExists = $con->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'transaction_toppings'");
+            // Check for references
+            $checkExists = $con->prepare(
+                "SELECT COUNT(*) FROM information_schema.tables 
+                 WHERE table_schema = DATABASE() AND table_name = 'transaction_toppings'"
+            );
             $checkExists->execute();
             $hasTransactionToppings = (int)$checkExists->fetchColumn() > 0;
 
@@ -95,28 +99,21 @@ try {
                 $checkStmt->execute([$id]);
                 $count = (int)$checkStmt->fetchColumn();
 
-                if ($count > 0) {
-                    if (!Database::isSuperAdmin()) {
-                        // regular admins cannot remove referenced toppings
-                        send_json([
-                            'success' => false,
-                            'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
-                        ], 409);
-                    }
-                    // super-admins fallthrough to remove references and then delete
+                if ($count > 0 && !Database::isSuperAdmin()) {
+                    send_json([
+                        'success' => false,
+                        'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
+                    ], 409);
                 }
             }
 
-            // If we reach here: either no references, or current user is super-admin and we should remove refs then delete
+            // Super-admin may delete refs too
             if (Database::isSuperAdmin() && $hasTransactionToppings) {
-                // remove references in a transaction-safe manner, then delete topping
                 $con->beginTransaction();
                 try {
                     $delRefs = $con->prepare("DELETE FROM transaction_toppings WHERE topping_id = ?");
                     $delRefs->execute([$id]);
-                } catch (PDOException $ignored) {
-                    // ignore if table/column missing or other non-fatal
-                }
+                } catch (PDOException $ignored) {}
 
                 $del = $con->prepare("DELETE FROM toppings WHERE id = ?");
                 $del->execute([$id]);
@@ -129,7 +126,6 @@ try {
                     send_json(['success' => false, 'message' => 'Topping not found'], 404);
                 }
             } else {
-                // No references or not super-admin (and no references), perform normal delete
                 $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
                 $ok = $stmt->execute([$id]);
 
@@ -146,65 +142,11 @@ try {
                 send_json(['success' => false, 'message' => 'Database error: ' . $pdoEx->getMessage()], 500);
             }
         }
-        exit;
     }
 
-    // Removed: force_delete action branch (no longer supported)
-    // Unsupported action
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Unsupported action']);
-    exit;
+    // If nothing matched
+    send_json(['success' => false, 'message' => 'Unsupported action'], 400);
+
 } catch (Exception $e) {
-    http_response_code(500);
     send_json(['success' => false, 'message' => $e->getMessage()], 500);
-    exit;
-}
-
-
-   
-
-        $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-        if ($id <= 0) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Invalid id']);
-            exit;
-        }
-
-        try {
-            $con->beginTransaction();
-            // delete references first (transaction_toppings)
-            try {
-                $delRefs = $con->prepare("DELETE FROM transaction_toppings WHERE topping_id = ?");
-                $delRefs->execute([$id]);
-            } catch (PDOException $ignored) {
-                // if table/column missing, ignore
-            }
-
-            $del = $con->prepare("DELETE FROM toppings WHERE id = ?");
-            $del->execute([$id]);
-
-            if ($del->rowCount() > 0) {
-                $con->commit();
-                echo json_encode(['success' => true, 'message' => 'Force-deleted topping and its references']);
-            } else {
-                $con->rollBack();
-                http_response_code(404);
-                echo json_encode(['success' => false, 'message' => 'Topping not found']);
-            }
-        } catch (PDOException $e) {
-            $con->rollBack();
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-        }
-        exit;
-    }
-
-    // Unsupported action
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Unsupported action']);
-    exit;
-} catch (Exception $e) {
-    http_response_code(500);
-     send_json(['success' => false, 'message' => $e->getMessage()], 500);
-    exit;
 }
