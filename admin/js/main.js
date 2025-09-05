@@ -542,7 +542,6 @@ if (target.matches('.btn-toggle-product')) {
         actionBtns.push(`<button class="toggle-topping-status" data-id="${t.id}" data-status="${statusLabel}" style="margin-right:8px;">Set ${statusLabel === 'active' ? 'Inactive' : 'Active'}</button>`);
         if (isSuper) {
           actionBtns.push(`<button class="topping-delete" data-id="${t.id}" style="color:#ef4444;margin-right:8px;">Delete</button>`);
-          actionBtns.push(`<button class="topping-force-delete" data-id="${t.id}" style="color:#b91c1c;">Force Delete</button>`);
         }
         const tr = document.createElement('tr');
         tr.innerHTML = `
