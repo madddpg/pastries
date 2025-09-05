@@ -659,6 +659,33 @@ if (target.matches('.btn-toggle-product')) {
 })();
 
 
+(function enforceToppingDeleteVisibility(){
+  const tbody = document.querySelector('#toppingsTable tbody');
+  // Use server flag if available; default to false (hide) for safety
+  const isSuper = !!window.IS_SUPER_ADMIN;
+
+  if (!tbody) return;
+
+  function clean() {
+    if (isSuper) return; // allow deletes for super admins
+    // remove known-class buttons
+    tbody.querySelectorAll('.topping-delete, .topping-force-delete').forEach(el => el.remove());
+    // fallback: remove plain "Delete" buttons in action column only
+    tbody.querySelectorAll('td').forEach(td => {
+      td.querySelectorAll('button').forEach(btn => {
+        if (btn.textContent && btn.textContent.trim().toLowerCase() === 'delete') btn.remove();
+      });
+    });
+  }
+
+  // initial pass
+  clean();
+
+  // watch for future inserted rows (AJAX / re-renders)
+  const mo = new MutationObserver(clean);
+  mo.observe(tbody, { childList: true, subtree: true });
+})();
+
   // Order details modal
   function showOrderDetails(orderId) {
     fetch(`order_detail.php?id=${encodeURIComponent(orderId)}`)
