@@ -21,8 +21,13 @@ try {
     // List all toppings for admin table
     if ($method === 'GET' && $action === 'list') {
         $toppings = $db->fetch_toppings_pdo();
-        echo json_encode(['success' => true, 'toppings' => $toppings]);
-        exit;
+        echo json_encode([
+            'success' => true,
+            'toppings' => $toppings,
+            'is_super' => Database::isSuperAdmin() ? true : false
+        ]);
+
+
     }
 
     // Return only active toppings for public site (product modal)

@@ -1001,6 +1001,20 @@ function fetch_locations_pdo($con)
             var newCategoryInput = document.getElementById('newCategoryInput');
             var categoryError = document.getElementById('categoryError');
 
+
+            function applyToppingsDeleteVisibility(responseJson) {
+                const isSuper = (responseJson && typeof responseJson.is_super !== 'undefined') ?
+                    responseJson.is_super :
+                    (window.IS_SUPER_ADMIN === true);
+
+                if (!isSuper) {
+                    // remove any hard-delete buttons (give them class "topping-delete" in server-rendered HTML)
+                    document.querySelectorAll('.topping-delete').forEach(el => el.remove());
+                    // extra: hide any "force delete" actions
+                    document.querySelectorAll('.topping-force-delete').forEach(el => el.remove());
+                }
+            }
+
             function loadCategories() {
                 fetch('categories.php')
                     .then(res => res.json())
