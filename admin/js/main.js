@@ -158,8 +158,8 @@ async function fetchToppings() {
             const status = (t.status === 'active') ? 'active' : 'inactive';
             const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
             const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
+            // only normal delete for super admins (no force delete)
             const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
-            const forceBtn = isSuper ? `<button class="topping-force-delete" data-id="${t.id}" style="margin-left:8px;color:#b91c1c;">Force Delete</button>` : '';
 
             return `
                 <tr data-id="${t.id}" data-status="${status}">
@@ -171,7 +171,6 @@ async function fetchToppings() {
                         ${editBtn}
                         ${toggleBtn}
                         ${deleteBtn}
-                        ${forceBtn}
                     </td>
                 </tr>
             `;
@@ -666,7 +665,7 @@ if (target.matches('.btn-toggle-product')) {
     loadToppings();
   });
 
-})();   // ✅ closes the async IIFE
+})();   
 
 
 (function enforceToppingDeleteVisibility(){
