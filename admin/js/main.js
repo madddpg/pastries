@@ -512,6 +512,145 @@ if (target.matches('.btn-toggle-product')) {
     }, 3000);
   }
 
+
+  (async function () {
+  // helper
+  function esc(html) {
+    return String(html).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  async function loadToppings() {
+    try {
+      const res = await fetch('AJAX/get_toppings.php?action=list', { credentials: 'same-origin' });
+      const json = await res.json();
+      const tbody = document.querySelector('#toppingsTable tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const isSuper = !!json.is_super;
+      json.toppings.forEach(t => {
+        const statusLabel = t.status === 'active' ? 'active' : 'inactive';
+        const actionBtns = [];
+        actionBtns.push(`<button class="edit-topping-btn" data-id="${t.id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}" style="margin-right:8px;">Edit</button>`);
+        actionBtns.push(`<button class="toggle-topping-status" data-id="${t.id}" data-status="${statusLabel}" style="margin-right:8px;">Set ${statusLabel === 'active' ? 'Inactive' : 'Active'}</button>`);
+        if (isSuper) {
+          actionBtns.push(`<button class="topping-delete" data-id="${t.id}" style="color:#ef4444;margin-right:8px;">Delete</button>`);
+          actionBtns.push(`<button class="topping-force-delete" data-id="${t.id}" style="color:#b91c1c;">Force Delete</button>`);
+        }
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${t.id}</td>
+          <td>${esc(t.name)}</td>
+          <td style="text-align:right;">₱${parseFloat(t.price).toFixed(2)}</td>
+          <td style="text-align:center;"><span class="status-badge ${statusLabel}">${statusLabel}</span></td>
+          <td style="text-align:center;">${actionBtns.join('')}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error('Failed to load toppings', err);
+    }
+  }
+
+  // delegated handlers
+  document.addEventListener('click', async function (e) {
+    const btn = e.target;
+    // Edit
+    if (btn.matches('.edit-topping-btn')) {
+      e.preventDefault();
+      const id = btn.dataset.id;
+      document.getElementById('toppingId').value = id;
+      document.getElementById('toppingName').value = btn.dataset.name || '';
+      document.getElementById('toppingPrice').value = btn.dataset.price || '';
+      document.getElementById('addToppingModal').style.display = 'flex';
+      document.getElementById('addToppingTitle').textContent = 'Edit Topping';
+      return;
+    }
+
+    // Toggle status (soft delete)
+    if (btn.matches('.toggle-topping-status')) {
+      e.preventDefault();
+      const id = btn.dataset.id;
+      const current = btn.dataset.status === 'active' ? 'active' : 'inactive';
+      const next = current === 'active' ? 'inactive' : 'active';
+      try {
+        const form = new URLSearchParams();
+        form.append('action', 'toggle_status');
+        form.append('id', id);
+        form.append('status', next);
+        const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
+        const json = await res.json();
+        if (json.success) {
+          await loadToppings();
+        } else {
+          alert(json.message || 'Failed to update status');
+        }
+      } catch (err) {
+        alert('Request failed');
+      }
+      return;
+    }
+
+    // Soft / hard delete (only rendered when super)
+    if (btn.matches('.topping-delete') || btn.matches('.topping-force-delete')) {
+      e.preventDefault();
+      const id = btn.dataset.id;
+      const action = btn.matches('.topping-force-delete') ? 'force_delete' : 'delete';
+      if (!confirm('Are you sure? This action cannot be undone.')) return;
+      try {
+        const form = new URLSearchParams();
+        form.append('action', action);
+        form.append('id', id);
+        const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
+        const json = await res.json();
+        if (json.success) {
+          await loadToppings();
+        } else {
+          alert(json.message || 'Delete failed');
+        }
+      } catch (err) {
+        alert('Request failed');
+      }
+      return;
+    }
+  });
+
+  // handle add/edit topping form submit (existing modal)
+  const toppingForm = document.getElementById('toppingForm');
+  if (toppingForm) {
+    toppingForm.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      const id = document.getElementById('toppingId').value || '';
+      const name = document.getElementById('toppingName').value.trim();
+      const price = document.getElementById('toppingPrice').value || '0';
+      if (!name) { alert('Name required'); return; }
+      try {
+        const form = new URLSearchParams();
+        form.append('name', name);
+        form.append('price', price);
+        form.append('action', id ? 'update' : 'add');
+        if (id) form.append('id', id);
+        const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
+        const json = await res.json();
+        if (json.success) {
+          document.getElementById('addToppingModal').style.display = 'none';
+          toppingForm.reset();
+          await loadToppings();
+        } else {
+          document.getElementById('toppingFormResult').textContent = json.message || 'Failed';
+        }
+      } catch (err) {
+        document.getElementById('toppingFormResult').textContent = 'Request failed';
+      }
+    });
+  }
+
+  // initial load
+  document.addEventListener('DOMContentLoaded', function () {
+    loadToppings();
+  });
+})();
+
+
   // Order details modal
   function showOrderDetails(orderId) {
     fetch(`order_detail.php?id=${encodeURIComponent(orderId)}`)
