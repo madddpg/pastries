@@ -678,7 +678,6 @@ if (target.matches('.btn-toggle-product')) {
   function clean() {
     if (isSuper) return; // allow deletes for super admins
     // remove known-class buttons
-    tbody.querySelectorAll('.topping-delete, .topping-force-delete').forEach(el => el.remove());
     // fallback: remove plain "Delete" buttons in action column only
     tbody.querySelectorAll('td').forEach(td => {
       td.querySelectorAll('button').forEach(btn => {
