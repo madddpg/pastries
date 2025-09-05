@@ -522,10 +522,6 @@ if (target.matches('.btn-toggle-product')) {
 
 
   (async function () {
-  // helper
-  function esc(html) {
-    return String(html).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-  }
 
   async function loadToppings() {
     try {
@@ -561,6 +557,7 @@ if (target.matches('.btn-toggle-product')) {
   // delegated handlers
   document.addEventListener('click', async function (e) {
     const btn = e.target;
+
     // Edit
     if (btn.matches('.edit-topping-btn')) {
       e.preventDefault();
@@ -597,25 +594,38 @@ if (target.matches('.btn-toggle-product')) {
       return;
     }
 
-    // Soft / hard delete (only rendered when super)
-    if (btn.matches('.topping-delete') || btn.matches('.topping-force-delete')) {
+    // Delete
+    if (btn.matches('.topping-delete')) {
       e.preventDefault();
       const id = btn.dataset.id;
-      const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
-      if (!confirm('Are you sure? This action cannot be undone.')) return;
+      if (!confirm('Delete this topping?')) return;
+      const body = new URLSearchParams();
+      body.append('action','delete');
+      body.append('id', id);
       try {
-        const form = new URLSearchParams();
-        form.append('action', action);
-        form.append('id', id);
-        const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
-        const json = await res.json();
-        if (json.success) {
-          await loadToppings();
+        const res = await fetch(API, { method: 'POST', body });
+        const data = await res.json();
+        if (data.success) {
+          loadToppings();
         } else {
-          alert(json.message || 'Delete failed');
+          if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
+            if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
+              const body2 = new URLSearchParams();
+              body2.append('action','toggle_status');
+              body2.append('id', id);
+              body2.append('status','inactive');
+              const r2 = await fetch(API, { method: 'POST', body: body2 });
+              const d2 = await r2.json();
+              if (d2.success) loadToppings();
+              else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
+            }
+          } else {
+            alert('Delete failed: ' + (data.message || 'unknown'));
+          }
         }
       } catch (err) {
-        alert('Request failed');
+        console.error('delete topping error', err);
+        alert('Delete request failed');
       }
       return;
     }
@@ -655,7 +665,8 @@ if (target.matches('.btn-toggle-product')) {
   document.addEventListener('DOMContentLoaded', function () {
     loadToppings();
   });
-})();
+
+})();   // ✅ closes the async IIFE
 
 
 (function enforceToppingDeleteVisibility(){
@@ -776,3 +787,4 @@ if (target.matches('.btn-toggle-product')) {
   updateDashboardStats();
   setInterval(updateDashboardStats, 15000);
 });
+
