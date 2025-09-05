@@ -138,42 +138,50 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function fetchToppings() {
     try {
-        const res = await fetch(`${API}?action=list`);
-        const text = await res.text(); // get raw response to inspect HTML/errors
-        // show raw response in console when not valid JSON
-        try {
-            const data = JSON.parse(text);
-            if (!data.success) return;
-            const tbody = document.querySelector('#toppingsTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = data.toppings.map(t => `
-                <tr data-id="${t.id}" data-status="${t.status}">
+        const res = await fetch(`${API}?action=list`, { credentials: 'same-origin' });
+        const data = await res.json();
+        const tbody = document.querySelector('#toppingsTable tbody');
+        if (!tbody) return;
+
+        if (!data || !data.success) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Failed to load toppings</td></tr>';
+            return;
+        }
+
+        const isSuper = !!data.is_super;
+
+        function esc(html) {
+            return String(html || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+        }
+
+        tbody.innerHTML = data.toppings.map(t => {
+            const status = (t.status === 'active') ? 'active' : 'inactive';
+            const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
+            const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
+            const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
+            const forceBtn = isSuper ? `<button class="topping-force-delete" data-id="${t.id}" style="margin-left:8px;color:#b91c1c;">Force Delete</button>` : '';
+
+            return `
+                <tr data-id="${t.id}" data-status="${status}">
                     <td style="width:60px;">${t.id}</td>
-                    <td>${t.name}</td>
+                    <td>${esc(t.name)}</td>
                     <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
-                    <td style="text-align:center;">
-                        <span class="status-badge ${t.status === 'active' ? 'active' : 'inactive'}">${t.status === 'active' ? 'Active' : 'Inactive'}</span>
-                    </td>
+                    <td style="text-align:center;"><span class="status-badge ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
                     <td style="text-align:center;white-space:nowrap;">
-                        <button class="btn-edit-topping btn-edit-topping-sm" data-id="${t.id}">Edit</button>
-                        <button class="btn-toggle-topping btn-toggle-topping-sm" data-id="${t.id}" data-status="${t.status}">${t.status === 'active' ? 'Set Inactive' : 'Set Active'}</button>
-                        <button class="btn-delete-topping btn-delete-topping-sm" data-id="${t.id}">Delete</button>
+                        ${editBtn}
+                        ${toggleBtn}
+                        ${deleteBtn}
+                        ${forceBtn}
                     </td>
                 </tr>
-            `).join('');
-        } catch (parseErr) {
-            console.error('fetchToppings: response is not JSON — raw response below:');
-            console.log(text);
-            console.error('JSON parse error:', parseErr);
-            // optionally show a small UI hint
-            const tbody = document.querySelector('#toppingsTable tbody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console/network for response</td></tr>';
-        }
+            `;
+        }).join('');
     } catch (err) {
         console.error('fetchToppings error', err);
+        const tbody = document.querySelector('#toppingsTable tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console</td></tr>';
     }
 }
-
 
 async function loadActiveToppings() {
   try {
