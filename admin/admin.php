@@ -1010,8 +1010,6 @@ function fetch_locations_pdo($con)
                 if (!isSuper) {
                     // remove any hard-delete buttons (give them class "topping-delete" in server-rendered HTML)
                     document.querySelectorAll('.topping-delete').forEach(el => el.remove());
-                    // extra: hide any "force delete" actions
-                    document.querySelectorAll('.topping-force-delete').forEach(el => el.remove());
                 }
             }
 

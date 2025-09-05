@@ -27,40 +27,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
 <head>
 
-    <script>
-        // Minimal safe fallback for showSection to prevent ReferenceError from inline onclicks.
-        // This will be overridden by js/script.js when it loads.
-        if (typeof window.showSection !== 'function') {
-            window.showSection = function(sectionName) {
-                try {
-                    document.querySelectorAll('.section-content').forEach(function(s) {
-                        s.style.display = 'none';
-                        s.classList.remove('active');
-                    });
-                    var target = document.getElementById(sectionName);
-                    if (target) {
-                        target.style.display = 'block';
-                        target.classList.add('active');
-                        window.scrollTo(0, 0);
-                    }
-                    // best-effort nav highlight
-                    try {
-                        document.querySelectorAll('.nav-item').forEach(function(n) {
-                            n.classList.remove('active');
-                        });
-                        var match = Array.from(document.querySelectorAll('.nav-item')).find(function(n) {
-                            return (n.dataset && n.dataset.section && n.dataset.section === sectionName) ||
-                                (n.textContent || '').toLowerCase().trim() === sectionName.toLowerCase().trim();
-                        });
-                        if (match) match.classList.add('active');
-                    } catch (e) {}
-                } catch (e) {
-                    try {
-                        console && console.warn && console.warn('fallback showSection error', e);
-                    } catch (e) {}
-                }
-            };
-        }
+
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -70,6 +37,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./css/style.css">
 </head>
+
 <?php if (!Database::isSuperAdmin()): ?>
     <style>
         /* Hide toppings delete controls for non-super-admin users (covers server & JS rendered buttons) */

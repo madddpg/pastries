@@ -602,7 +602,7 @@ if (target.matches('.btn-toggle-product')) {
     if (btn.matches('.topping-delete') || btn.matches('.topping-force-delete')) {
       e.preventDefault();
       const id = btn.dataset.id;
-      const action = btn.matches('.topping-force-delete') ? 'force_delete' : 'delete';
+      const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
       if (!confirm('Are you sure? This action cannot be undone.')) return;
       try {
         const form = new URLSearchParams();

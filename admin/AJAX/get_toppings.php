@@ -77,7 +77,6 @@ try {
         exit;
     }
 
-    // Hard delete (super-admin only) — checks references first
     if ($method === 'POST' && $action === 'delete') {
         // Only super-admin can hard-delete
         if (!Database::isSuperAdmin()) {
@@ -107,7 +106,7 @@ try {
                     http_response_code(409);
                     echo json_encode([
                         'success' => false,
-                        'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead or use force_delete (super-admin)."
+                        'message' => "Cannot delete: topping is referenced in transaction_toppings ({$count} record(s)). Mark it inactive instead."
                     ]);
                     exit;
                 }
@@ -134,6 +133,7 @@ try {
         }
         exit;
     }
+
 
     // Force-delete (destructive) — super-admin only, removes references then topping
     if ($method === 'POST' && $action === 'force_delete') {
