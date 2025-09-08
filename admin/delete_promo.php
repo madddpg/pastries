@@ -36,8 +36,7 @@ try {
     if ($del->rowCount() > 0) {
         // remove image file (best-effort)
         if (!empty($row['image'])) {
-         // build filesystem path from stored web path (handles "/img/..." or "img/...")
-            $fsPath = __DIR__ . '/' . ltrim(parse_url($row['image'], PHP_URL_PATH), '/');
+            $fsPath = __DIR__ . '/../' . ltrim(parse_url($row['image'], PHP_URL_PATH), '/');
             if (file_exists($fsPath)) @unlink($fsPath);
         }
         echo json_encode(['success' => true, 'message' => 'Promo deleted']);

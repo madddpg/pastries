@@ -299,11 +299,13 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php
                 if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
-                        $imgRaw = trim($promo['image'] ?? '');
-                        // normalize to web path and filesystem path
-                        $webPath = '/' . ltrim($imgRaw, '/'); // absolute URL path
-                        $fsPath = __DIR__ . '/' . ltrim(parse_url($imgRaw, PHP_URL_PATH), '/');
 
+
+                        $imgRaw = trim($promo['image'] ?? '');
+                        $path = parse_url($imgRaw, PHP_URL_PATH) ?: $imgRaw;
+                        $path = ltrim($path, '/');
+                        $webPath = $path;
+                        $fsPath = __DIR__ . '/' . $path;
                         // skip missing files so carousel doesn't render broken images
                         if (!file_exists($fsPath)) {
                             // optional: log missing file for debugging
