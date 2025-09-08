@@ -100,7 +100,7 @@ if (!move_uploaded_file($_FILES['promoImage']['tmp_name'], $targetPath)) {
 @chmod($targetPath, 0644);
 
 // store DB path relative to webroot
-$imagePath = 'img/promos/' . $basename;
+$imagePath = '/cupscuddles/img/promos/' . $basename;
 $title_db = !empty($title) ? $title : null;
 
 try {

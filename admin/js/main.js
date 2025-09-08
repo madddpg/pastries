@@ -670,23 +670,6 @@ if (target.matches('.btn-toggle-product')) {
 
 console.info('[admin] main.js loaded');
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.info('[admin] DOMContentLoaded fired');
-
-  // Immediately remove any leftover "force delete" buttons and watch for future rows
-  function removeForceButtons() {
-    document.querySelectorAll('.topping-force-delete, .topping-force-delete-btn, .btn-force-delete').forEach(el => el.remove());
-    // also remove plain buttons whose text is "Force Delete"
-    document.querySelectorAll('#toppingsTable button').forEach(btn => {
-      if (btn.textContent && btn.textContent.trim().toLowerCase() === 'force delete') btn.remove();
-    });
-  }
-  removeForceButtons();
-  const toppingsTbody = document.querySelector('#toppingsTable tbody');
-  if (toppingsTbody) {
-    new MutationObserver(removeForceButtons).observe(toppingsTbody, { childList: true, subtree: true });
-  }
-})();
 
 (function enforceToppingDeleteVisibility(){
   const tbody = document.querySelector('#toppingsTable tbody');
