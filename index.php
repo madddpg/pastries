@@ -299,19 +299,30 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php
                 if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
-
-
                         $imgRaw = trim($promo['image'] ?? '');
+                        // allow several candidate paths: stored path, promos folder + basename, img/ + basename
                         $path = parse_url($imgRaw, PHP_URL_PATH) ?: $imgRaw;
                         $path = ltrim($path, '/');
-                        $webPath = $path;
-                        $fsPath = __DIR__ . '/' . $path;
-                        // skip missing files so carousel doesn't render broken images
-                        if (!file_exists($fsPath)) {
-                            // optional: log missing file for debugging
-                            // error_log("Promo image missing: $fsPath");
-                            continue;
+                        $candidates = [
+                            $path,
+                            'img/promos/' . $path,
+                            '/img/promos/' . $path,
+                            'img/' . $path,
+                        ];
+
+                        $fsPath = '';
+                        $webPath = '';
+                        foreach ($candidates as $cand) {
+                            $candClean = ltrim($cand, '/');
+                            $tryFs = __DIR__ . '/' . $candClean;
+                            if (file_exists($tryFs)) {
+                                $fsPath = $tryFs;
+                                $webPath = $candClean;
+                                break;
+                            }
                         }
+                        // skip if still missing
+                        if (!$fsPath) continue;
 
                         $title = htmlspecialchars($promo['title'] ?? 'Promo');
                         $ver = @filemtime($fsPath) ?: time();
@@ -321,7 +332,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     }
                 } else {
                     // fallback static images...
-                    echo '<div class="testimonial"><div class="testimonial-header"><img src="/img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
+                    echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
                 }
                 ?>
             </div>
