@@ -117,14 +117,7 @@ function fetch_locations_pdo($con)
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 </head>
 
-<main class="main-content">
-    <?php if ($flash): ?>
-        <div style="margin:12px 18px;">
-            <div style="padding:10px 14px;border-radius:6px;background:<?php echo $flash['type']==='success' ? '#e6ffed' : '#ffecec'; ?>;color:<?php echo $flash['type']==='success' ? '#0b6a2f' : '#8a1f1f'; ?>;border:1px solid rgba(0,0,0,0.05);">
-                <?php echo htmlspecialchars($flash['message']); ?>
-            </div>
-        </div>
-    <?php endif; ?>
+
 
 <body>
     <div class="dashboard">
