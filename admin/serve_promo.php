@@ -1,6 +1,4 @@
 <?php
-// Serve promo image from DB (or fallback to filesystem)
-// Usage: /admin/serve_promo.php?id=14
 if (!isset($_GET['id']) || !($id = intval($_GET['id'])) ) {
     http_response_code(400);
     exit;

@@ -16,7 +16,7 @@ foreach ($allProducts as $row) {
     $productStatuses[$row['id']] = $row['status'];
 }
 
-$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY created_at DESC");
+$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY id ASC");
 $promoStmt->execute();
 $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -297,7 +297,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="carousel-track">
                 <?php
-              if (!empty($activePromos)) {
+                if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
                         $id = intval($promo['id']);
                         // use created_at as cache-buster when available
