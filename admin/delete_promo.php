@@ -58,7 +58,7 @@ try {
             }
         }
 
-        $msg = 'Promo deleted';
+        
         if ($ajax) {
             echo json_encode(['success' => true, 'message' => $msg, 'redirect' => 'admin.php']);
             exit;
