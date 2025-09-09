@@ -778,7 +778,17 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+async function setPromoActive(id, value) {
+  const body = new URLSearchParams();
+  body.append('id', id);
+  if (typeof value !== 'undefined') body.append('active', value ? '1' : '0'); // set explicitly
+  const res = await fetch('admin/AJAX/toggle_promo.php', { method: 'POST', body });
+  const data = await res.json();
+  return data;
+}
 
+// example usage: set inactive
+setPromoActive(14, 0).then(d => console.log(d));
 (function () {
   const hamb = document.querySelector('.hamburger-menu');
   const nav = document.querySelector('.nav-menu');
