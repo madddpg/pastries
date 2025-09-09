@@ -69,8 +69,6 @@ try {
     $u = $con->prepare("UPDATE promos SET active = ? WHERE id = ?");
     $u->execute([$new, $id]);
 
-    $message = $new ? 'Promo activated' : 'Promo set inactive';
-
     if ($ajax) {
         echo json_encode(['success' => true, 'id' => $id, 'active' => $new, 'message' => $message, 'redirect' => 'admin.php']);
         exit;
