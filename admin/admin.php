@@ -670,6 +670,8 @@ function fetch_locations_pdo($con)
                             } else {
                                 foreach ($promos as $pr) {
                                     $img = htmlspecialchars($pr['image']);
+
+                                    echo $img;
                                     $title = htmlspecialchars($pr['title']);
                                     $active = $pr['active'] ? 'Active' : 'Inactive';
 
