@@ -42,19 +42,23 @@ try {
         send_json(['success' => true, 'toppings' => $toppings]);
     }
 
-    // Create topping
-    if ($method === 'POST' && $action === 'add') {
-        $name = trim($_POST['name'] ?? '');
-        $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
-        $status = (isset($_POST['status']) && ($_POST['status'] === 'inactive' || $_POST['status'] === '0'))
-            ? 'inactive' : 'active';
+   if ($method === 'POST' && $action === 'add') {
+    $name = trim($_POST['name'] ?? '');
+    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
+    $status = (isset($_POST['status']) && ($_POST['status'] === 'inactive' || $_POST['status'] === '0'))
+        ? 'inactive' : 'active';
 
-        if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
+    if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
 
-        $id = $db->add_topping($name, $price, $status);
-        send_json(['success' => true, 'id' => $id]);
-    }
+    $id = $db->add_topping($name, $price, $status);
 
+    // fetch the just-added topping for immediate UI rendering
+    $stmt = $con->prepare("SELECT id, name, price, status FROM toppings WHERE id = ?");
+    $stmt->execute([$id]);
+    $newTopping = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    send_json(['success' => true, 'topping' => $newTopping]);
+}
     // Update topping
     if ($method === 'POST' && $action === 'update') {
         $id = intval($_POST['id'] ?? 0);

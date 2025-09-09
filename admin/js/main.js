@@ -189,13 +189,16 @@ async function loadActiveToppings() {
     if (!data.success || !Array.isArray(data.toppings)) return;
     const container = document.getElementById('toppingsList');
     if (!container) return;
-    // render each topping as checkbox; use topping id as data-id and price as data-price
+    // render each topping as checkbox
     container.innerHTML = data.toppings.map(t => {
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `<label style="display:block;margin-bottom:6px;"><input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> ${safeName} — ₱${Number(t.price).toFixed(2)}</label>`;
+      return `<label style="display:block;margin-bottom:6px;">
+        <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}">
+        ${safeName} — ₱${Number(t.price).toFixed(2)}
+      </label>`;
     }).join('');
-    bindToppingCheckboxes(); // attach onchange handlers
-    recalcModalTotal(); // update displayed total
+    bindToppingCheckboxes();
+    recalcModalTotal();
   } catch (err) {
     console.error('loadActiveToppings error', err);
   }
@@ -203,10 +206,8 @@ async function loadActiveToppings() {
 
 function bindToppingCheckboxes() {
   document.querySelectorAll('.topping-checkbox').forEach(cb => {
-    // remove any previous listener to avoid duplicates
-    cb.onchange = null;
     cb.onchange = function () {
-      const key = cb.getAttribute('data-id') || cb.getAttribute('data-key') || cb.value;
+      const key = cb.getAttribute('data-id');
       const price = parseFloat(cb.getAttribute('data-price')) || 0;
       if (cb.checked) {
         modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
@@ -218,175 +219,178 @@ function bindToppingCheckboxes() {
   });
 }
 
-// Run once on page load so product modal toppings reflect DB status
 document.addEventListener('DOMContentLoaded', function () {
   loadActiveToppings();
 });
 
+fetchToppings();
 
-    // Run immediately (outer DOMContentLoaded already handled)
-    fetchToppings();
+const showBtn = document.getElementById('showAddToppingModalBtn');
+const addModal = document.getElementById('addToppingModal');
+const closeBtn = document.getElementById('closeAddToppingModal');
+const cancelBtn = document.getElementById('cancelToppingBtn');
+const form = document.getElementById('toppingForm');
+const resultEl = document.getElementById('toppingFormResult');
 
-    // UI handlers (no inner DOMContentLoaded wrapper)
-    const showBtn = document.getElementById('showAddToppingModalBtn');
-    const addModal = document.getElementById('addToppingModal');
-    const closeBtn = document.getElementById('closeAddToppingModal');
-    const cancelBtn = document.getElementById('cancelToppingBtn');
-    const form = document.getElementById('toppingForm');
-    const resultEl = document.getElementById('toppingFormResult');
+if (showBtn) {
+  showBtn.addEventListener('click', function(){
+    document.getElementById('addToppingTitle').textContent = 'Add Topping';
+    document.getElementById('toppingId').value = '';
+    document.getElementById('toppingName').value = '';
+    document.getElementById('toppingPrice').value = '';
+    if (addModal) addModal.style.display = 'flex';
+  });
+}
+if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
 
-    if (showBtn) {
-        showBtn.addEventListener('click', function(){
-            document.getElementById('addToppingTitle').textContent = 'Add Topping';
-            document.getElementById('toppingId').value = '';
-            document.getElementById('toppingName').value = '';
-            document.getElementById('toppingPrice').value = '';
-            if (addModal) addModal.style.display = 'flex';
-        });
+// delegated actions: edit / toggle / delete
+document.body.addEventListener('click', async function(e){
+  const target = e.target;
+
+  if (target.matches('.btn-edit-topping')) {
+    const id = target.dataset.id;
+    const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
+    if (!row) return;
+    document.getElementById('addToppingTitle').textContent = 'Edit Topping';
+    document.getElementById('toppingId').value = id;
+    document.getElementById('toppingName').value = row.children[1].textContent;
+    document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱','')) || 0;
+    if (addModal) addModal.style.display = 'flex';
+    return;
+  }
+
+  if (target.matches('.btn-toggle-topping')) {
+    const id = target.dataset.id;
+    const current = target.dataset.status === 'active' ? 1 : 0;
+    const next = current === 1 ? 0 : 1;
+    const body = new URLSearchParams();
+    body.append('action','toggle_status');
+    body.append('id', id);
+    body.append('status', next);
+    try {
+      const res = await fetch(API, { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) fetchToppings();
+    } catch (err) {
+      console.error('toggle topping error', err);
     }
-    if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
-    if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+    return;
+  }
 
-    // delegated actions: edit / toggle / delete
-    document.body.addEventListener('click', async function(e){
-        const target = e.target;
-
-        if (target.matches('.btn-edit-topping')) {
-            const id = target.dataset.id;
-            const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
-            if (!row) return;
-            document.getElementById('addToppingTitle').textContent = 'Edit Topping';
-            document.getElementById('toppingId').value = id;
-            document.getElementById('toppingName').value = row.children[1].textContent;
-            document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱','')) || 0;
-            if (addModal) addModal.style.display = 'flex';
-            return;
-        }
-
-        if (target.matches('.btn-toggle-topping')) {
-            const id = target.dataset.id;
-            const current = target.dataset.status === 'active' ? 'active' : 'inactive';
-            const next = current === 'active' ? 'inactive' : 'active';
-            const body = new URLSearchParams();
-            body.append('action','toggle_status');
-            body.append('id', id);
-            body.append('status', next);
-            try {
-                const res = await fetch(API, { method: 'POST', body });
-                const data = await res.json();
-                if (data.success) fetchToppings();
-            } catch (err) {
-                console.error('toggle topping error', err);
-            }
-            return;
-        }
-if (target.matches('.btn-delete-topping')) {
+  if (target.matches('.btn-delete-topping')) {
     const id = target.dataset.id;
     if (!confirm('Delete this topping?')) return;
     const body = new URLSearchParams();
     body.append('action','delete');
     body.append('id', id);
     try {
-        const res = await fetch(API, { method: 'POST', body });
-        const data = await res.json();
-        if (data.success) {
-            fetchToppings();
+      const res = await fetch(API, { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+        fetchToppings();
+      } else {
+        if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
+          if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
+            const body2 = new URLSearchParams();
+            body2.append('action','toggle_status');
+            body2.append('id', id);
+            body2.append('status','0'); // numeric inactive
+            const r2 = await fetch(API, { method: 'POST', body: body2 });
+            const d2 = await r2.json();
+            if (d2.success) fetchToppings();
+            else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
+          }
         } else {
-            // If referenced, suggest marking inactive
-            if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
-                if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
-                    const body2 = new URLSearchParams();
-                    body2.append('action','toggle_status');
-                    body2.append('id', id);
-                    body2.append('status','inactive');
-                    const r2 = await fetch(API, { method: 'POST', body: body2 });
-                    const d2 = await r2.json();
-                    if (d2.success) fetchToppings();
-                    else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
-                }
-            } else {
-                alert('Delete failed: ' + (data.message || 'unknown'));
-            }
+          alert('Delete failed: ' + (data.message || 'unknown'));
         }
+      }
     } catch (err) {
-        console.error('delete topping error', err);
-        alert('Delete request failed');
+      console.error('delete topping error', err);
+      alert('Delete request failed');
     }
     return;
-}
+  }
 
-
-
-if (target.matches('.btn-toggle-product')) {
-        e.preventDefault();
-        console.log('[admin] product toggle clicked', target.dataset);
-        const id = target.dataset.id;
-        const current = target.dataset.status === 'active' ? 'active' : 'inactive';
-        const next = current === 'active' ? 'inactive' : 'active';
-        const body = new URLSearchParams();
-        body.append('id', id); // server accepts 'id' or 'product_id'
-        body.append('status', next);
-        try {
-            const res = await fetch('update_product_status.php', { method: 'POST', body });
-            const data = await res.json();
-            console.log('[admin] update_product_status response', data);
-            if (data.success && data.rows > 0) {
-                // update UI quickly without full reload
-                target.dataset.status = next;
-                target.textContent = next === 'active' ? 'Set Inactive' : 'Set Active';
-                const badge = target.closest('tr')?.querySelector('.status-badge');
-                if (badge) {
-                    badge.classList.toggle('active', next === 'active');
-                    badge.classList.toggle('inactive', next !== 'active');
-                    badge.textContent = next === 'active' ? 'Active' : 'Inactive';
-                }
-            } else {
-                alert('Update failed: ' + (data.message || 'no details'));
-            }
-        } catch (err) {
-            console.error('[admin] toggle product error', err);
-            alert('Request failed');
+  if (target.matches('.btn-toggle-product')) {
+    e.preventDefault();
+    const id = target.dataset.id;
+    const current = target.dataset.status === 'active' ? 1 : 0;
+    const next = current === 1 ? 0 : 1;
+    const body = new URLSearchParams();
+    body.append('id', id);
+    body.append('status', next);
+    try {
+      const res = await fetch('update_product_status.php', { method: 'POST', body });
+      const data = await res.json();
+      if (data.success && data.rows > 0) {
+        target.dataset.status = next === 1 ? 'active' : 'inactive';
+        target.textContent = next === 1 ? 'Set Inactive' : 'Set Active';
+        const badge = target.closest('tr')?.querySelector('.status-badge');
+        if (badge) {
+          badge.classList.toggle('active', next === 1);
+          badge.classList.toggle('inactive', next !== 1);
+          badge.textContent = next === 1 ? 'Active' : 'Inactive';
         }
-        return;
+      } else {
+        alert('Update failed: ' + (data.message || 'no details'));
+      }
+    } catch (err) {
+      console.error('[admin] toggle product error', err);
+      alert('Request failed');
     }
+    return;
+  }
+});
 
-    });
-
-
-
-    
-
-    if (form) {
-        form.addEventListener('submit', async function(e){
-            e.preventDefault();
-            const id = document.getElementById('toppingId').value;
-            const name = document.getElementById('toppingName').value.trim();
-            const price = document.getElementById('toppingPrice').value;
-            if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
-            const body = new URLSearchParams();
-            body.append('name', name);
-            body.append('price', price);
-            if (!id) {
-                body.append('action','add');
-            } else {
-                body.append('action','update');
-                body.append('id', id);
-            }
-            try {
-                const res = await fetch(API, { method: 'POST', body });
-                const data = await res.json();
-                if (data.success) {
-                    if (addModal) addModal.style.display = 'none';
-                    fetchToppings();
-                } else {
-                    if (resultEl) resultEl.textContent = data.message || 'Failed';
-                }
-            } catch (err) {
-                console.error('save topping error', err);
-                if (resultEl) resultEl.textContent = 'Request failed';
-            }
-        });
+// save form
+if (form) {
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    const id = document.getElementById('toppingId').value;
+    const name = document.getElementById('toppingName').value.trim();
+    const price = document.getElementById('toppingPrice').value;
+    if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
+    const body = new URLSearchParams();
+    body.append('name', name);
+    body.append('price', price);
+    if (!id) {
+      body.append('action','add');
+    } else {
+      body.append('action','update');
+      body.append('id', id);
     }
+    try {
+      const res = await fetch(API, { method: 'POST', body });
+      const data = await res.json();
+      if (data.success) {
+    if (addModal) addModal.style.display = 'none';
+    fetchToppings(); // refresh admin table
+
+    // If topping is active, also update checkboxes without reload
+    if (data.topping && data.topping.status === 'active') {
+        const container = document.getElementById('toppingsList');
+        if (container) {
+            const t = data.topping;
+            const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const html = `<label style="display:block;margin-bottom:6px;">
+                <input type="checkbox" class="topping-checkbox" 
+                    data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> 
+                ${safeName} — ₱${Number(t.price).toFixed(2)}
+            </label>`;
+            container.insertAdjacentHTML('beforeend', html);
+            bindToppingCheckboxes(); // rebind new checkbox
+        }
+    }
+} else {
+        if (resultEl) resultEl.textContent = data.message || 'Failed';
+      }
+    } catch (err) {
+      console.error('save topping error', err);
+      if (resultEl) resultEl.textContent = 'Request failed';
+    }
+  });
+}
 })();
 
 
