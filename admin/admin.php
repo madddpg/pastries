@@ -676,7 +676,7 @@ function fetch_locations_pdo($con)
                                     $active = $pr['active'] ? 'Active' : 'Inactive';
 
                                     echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
-            <img src=\"{$img}\" style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
+            <img src=".$img." style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
             <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
             <div style='display:flex;gap:6px;'>
               <form method='post' action='delete_promo.php' style='margin:0;'>
