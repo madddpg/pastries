@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
         ],
     ];
-
+//ara
     // Gmail credentials
     $mail->Username = 'ahmadpaguta2005@gmail.com';
     $mail->Password = 'unwr kdad ejcd rysq';
