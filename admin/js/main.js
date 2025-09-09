@@ -630,35 +630,41 @@ if (target.matches('.btn-toggle-product')) {
     }
   });
 
-  // handle add/edit topping form submit (existing modal)
   const toppingForm = document.getElementById('toppingForm');
-  if (toppingForm) {
-    toppingForm.addEventListener('submit', async function (ev) {
-      ev.preventDefault();
-      const id = document.getElementById('toppingId').value || '';
-      const name = document.getElementById('toppingName').value.trim();
-      const price = document.getElementById('toppingPrice').value || '0';
-      if (!name) { alert('Name required'); return; }
-      try {
-        const form = new URLSearchParams();
-        form.append('name', name);
-        form.append('price', price);
-        form.append('action', id ? 'update' : 'add');
-        if (id) form.append('id', id);
-        const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
-        const json = await res.json();
-        if (json.success) {
-          document.getElementById('addToppingModal').style.display = 'none';
-          toppingForm.reset();
-          await loadToppings();
-        } else {
-          document.getElementById('toppingFormResult').textContent = json.message || 'Failed';
-        }
-      } catch (err) {
-        document.getElementById('toppingFormResult').textContent = 'Request failed';
+// guard to prevent double-binding (there's another handler earlier in this file)
+if (toppingForm && !toppingForm._bound_by_main_js) {
+  toppingForm._bound_by_main_js = true;
+  toppingForm.addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    const id = document.getElementById('toppingId').value || '';
+    const name = document.getElementById('toppingName').value.trim();
+    const price = document.getElementById('toppingPrice').value || '0';
+    if (!name) {
+      document.getElementById('toppingFormResult').textContent = 'Name required';
+      return;
+    }
+    try {
+      const form = new URLSearchParams();
+      form.append('name', name);
+      form.append('price', price);
+      form.append('action', id ? 'update' : 'add');
+      if (id) form.append('id', id);
+      const res = await fetch('AJAX/get_toppings.php', { method: 'POST', body: form });
+      const json = await res.json();
+      if (json.success) {
+        document.getElementById('addToppingModal').style.display = 'none';
+        toppingForm.reset();
+        // use the single, working loader
+        await fetchToppings();
+      } else {
+        document.getElementById('toppingFormResult').textContent = json.message || 'Failed';
       }
-    });
-  }
+    } catch (err) {
+      document.getElementById('toppingFormResult').textContent = 'Request failed';
+    }
+  });
+}
+
 
   // initial load
   document.addEventListener('DOMContentLoaded', function () {
