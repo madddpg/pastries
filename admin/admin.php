@@ -655,23 +655,22 @@ function fetch_locations_pdo($con)
                                     $img = htmlspecialchars($pr['image']);
                                     $title = htmlspecialchars($pr['title']);
                                     $active = $pr['active'] ? 'Active' : 'Inactive';
+
                                     echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
-                    <img src=\"{$img}\" style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
-                    <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
-                    <div style='display:flex;gap:6px;'>
-                      <form method='post' action='delete_promo.php' style='margin:0;'>
-                        <input type='hidden' name='id' value='{$pr['id']}'>
-                        <input type='hidden' name='action' value='delete'>
-                        <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
-                      </form>
-                      <form method='post' action='delete_promo.php' style='margin:0;'>
-                        <input type='hidden' name='id' value='{$pr['id']}'>
-                        <input type='hidden' name='action' value='toggle'>
-                        <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
-                        <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
-                      </form>
-                    </div>
-                  </div>";
+            <img src=\"{$img}\" style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
+            <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
+            <div style='display:flex;gap:6px;'>
+              <form method='post' action='delete_promo.php' style='margin:0;'>
+                <input type='hidden' name='id' value='{$pr['id']}'>
+                <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
+              </form>
+              <form method='post' action='update_promos.php' style='margin:0;'>
+                <input type='hidden' name='id' value='{$pr['id']}'>
+                <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
+                <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
+              </form>
+            </div>
+          </div>";
                                 }
                             }
                             ?>
