@@ -297,36 +297,12 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
             <div class="carousel-track">
                 <?php
-                if (!empty($activePromos)) {
+              if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
-                        $imgRaw = trim($promo['image'] ?? '');
-
-                        // If DB contains a full URL, use it directly
-                        if (preg_match('#^https?://#i', $imgRaw)) {
-                            $webPath = $imgRaw;
-                            $fsPath = null;
-                        } else {
-                            // Normalize and ensure a sensible default folder for bare filenames
-                            $imgCandidate = ltrim($imgRaw, '/');
-                            if ($imgCandidate === '') {
-                                $imgCandidate = 'img/placeholder_promo.png';
-                            } elseif (!preg_match('#^(img/|uploads/|promos/)#i', $imgCandidate)) {
-                                // most uploads store just the basename; assume img/promos/
-                                $imgCandidate = 'img/promos/' . $imgCandidate;
-                            }
-
-                            $webPath = $imgCandidate; // site-relative path (resolves under /cupscuddles/)
-                            $fsPath = __DIR__ . '/' . ltrim(parse_url($webPath, PHP_URL_PATH), '/');
-                        }
-
-                        // If file exists get mtime for cache busting; otherwise fallback to placeholder
-                        if (!empty($fsPath) && file_exists($fsPath)) {
-                            $ver = @filemtime($fsPath) ?: time();
-                            $src = $webPath . '?v=' . $ver;
-                        } else {
-                            // For external URLs or missing files use placeholder
-                            $src = (preg_match('#^https?://#i', $webPath) ? $webPath : 'img/placeholder_promo.png') . '?v=' . time();
-                        }
+                        $id = intval($promo['id']);
+                        // use created_at as cache-buster when available
+                        $ver = isset($promo['created_at']) ? (int) strtotime($promo['created_at']) : time();
+                        $src = 'admin/serve_promo.php?id=' . $id . '&v=' . $ver;
 
                         $title = htmlspecialchars($promo['title'] ?? 'Promo');
                         echo '<div class="testimonial"><div class="testimonial-header">';

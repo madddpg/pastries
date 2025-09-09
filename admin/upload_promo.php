@@ -95,9 +95,46 @@ if (!move_uploaded_file($_FILES['promoImage']['tmp_name'], $targetPath)) {
     }
     exit;
 }
-
-// set safe permissions
+// Set file permissions
 @chmod($targetPath, 0644);
+
+// read file bytes to store in DB
+$blob = file_get_contents($targetPath);
+$image_mime = $mime;
+
+// store DB path relative to webroot (keep for fallback/compat)
+$imagePath = 'img/promos/' . $basename;
+$title_db = !empty($title) ? $title : null;
+
+try {
+    // store blob + mime so front-end can serve directly from DB
+    $stmt = $con->prepare("INSERT INTO promos (title, image, image_mime, image_blob, active, created_at) VALUES (?, ?, ?, ?, 1, NOW())");
+    // bind LOB for safety
+    $stmt->bindParam(1, $title_db);
+    $stmt->bindParam(2, $imagePath);
+    $stmt->bindParam(3, $image_mime);
+    $stmt->bindParam(4, $blob, PDO::PARAM_LOB);
+    $stmt->execute();
+    $insertId = $con->lastInsertId();
+
+    if ($ajax) {
+        header('Content-Type: application/json', true, 201);
+        echo json_encode(['success' => true, 'id' => $insertId, 'image' => $imagePath, 'title' => $title_db]);
+    } else {
+        header('Location: admin.php?promo_success=1');
+    }
+    exit;
+} catch (PDOException $e) {
+    // cleanup file on error
+    if (file_exists($targetPath)) @unlink($targetPath);
+    if ($ajax) {
+        header('Content-Type: application/json', true, 500);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    } else {
+        header('Location: admin.php?promo_error=DBError');
+    }
+    exit;
+}
 
 // store DB path relative to webroot
 $imagePath = 'img/promos/' . $basename;
