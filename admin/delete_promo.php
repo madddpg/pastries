@@ -1,17 +1,44 @@
+
 <?php
 header('Content-Type: application/json');
-session_start();
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
-// ...existing code...
+
+// Require admin
+if (!Database::isAdmin() && !Database::isSuperAdmin()) {
+    $ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    if ($ajax) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    } else {
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Forbidden'];
+        header('Location: admin.php');
+    }
+    exit;
+}
 
 // determine AJAX
 $ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
+// only POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    if ($ajax) { http_response_code(405); echo json_encode(['success'=>false,'message'=>'Method not allowed']); }
+    else { header('Location: admin.php'); }
+    exit;
+}
+
+$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+if ($id <= 0) {
+    if ($ajax) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'Invalid id']); }
+    else { $_SESSION['flash'] = ['type'=>'error','message'=>'Invalid promo id']; header('Location: admin.php'); }
+    exit;
+}
+
 try {
-    // delete promo row and remove file if exists
-    $stmt = $con->prepare("SELECT image FROM promos WHERE id = ?");
+    // fetch image path info
+    $stmt = $con->prepare("SELECT image FROM promos WHERE id = ? LIMIT 1");
     $stmt->execute([$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -19,7 +46,18 @@ try {
     $del->execute([$id]);
 
     if ($del->rowCount() > 0) {
-        // ...existing file removal code...
+        // remove file if exists (safe)
+        if (!empty($row['image'])) {
+            $imgPath = parse_url($row['image'], PHP_URL_PATH) ?: $row['image'];
+            // remove accidental leading project folder name
+            $projectRoot = realpath(__DIR__ . '/../');
+            $candidate = $projectRoot . '/' . ltrim($imgPath, '/');
+            $real = realpath($candidate);
+            if ($real && strpos($real, $projectRoot) === 0 && is_file($real)) {
+                @unlink($real);
+            }
+        }
+
         $msg = 'Promo deleted';
         if ($ajax) {
             echo json_encode(['success' => true, 'message' => $msg, 'redirect' => 'admin.php']);
@@ -40,7 +78,6 @@ try {
             exit;
         }
     }
-
 } catch (PDOException $e) {
     if ($ajax) {
         http_response_code(500);
@@ -52,5 +89,4 @@ try {
         exit;
     }
 }
-exit;
 ?>
