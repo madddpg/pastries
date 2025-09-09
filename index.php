@@ -300,38 +300,40 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
                         $imgRaw = trim($promo['image'] ?? '');
-                        // allow several candidate paths: stored path, promos folder + basename, img/ + basename
-                        $path = parse_url($imgRaw, PHP_URL_PATH) ?: $imgRaw;
-                        $path = ltrim($path, '/');
-                        $candidates = [
-                            $path,
-                            'img/promos/' . $path,
-                            '/img/promos/' . $path,
-                            'img/' . $path,
-                        ];
 
-                        $fsPath = '';
-                        $webPath = '';
-                        foreach ($candidates as $cand) {
-                            $candClean = ltrim($cand, '/');
-                            $tryFs = __DIR__ . '/' . $candClean;
-                            if (file_exists($tryFs)) {
-                                $fsPath = $tryFs;
-                                $webPath = $candClean;
-                                break;
+                        // If DB contains a full URL, use it directly
+                        if (preg_match('#^https?://#i', $imgRaw)) {
+                            $webPath = $imgRaw;
+                            $fsPath = null;
+                        } else {
+                            // Normalize and ensure a sensible default folder for bare filenames
+                            $imgCandidate = ltrim($imgRaw, '/');
+                            if ($imgCandidate === '') {
+                                $imgCandidate = 'img/placeholder_promo.png';
+                            } elseif (!preg_match('#^(img/|uploads/|promos/)#i', $imgCandidate)) {
+                                // most uploads store just the basename; assume img/promos/
+                                $imgCandidate = 'img/promos/' . $imgCandidate;
                             }
+
+                            $webPath = $imgCandidate; // site-relative path (resolves under /cupscuddles/)
+                            $fsPath = __DIR__ . '/' . ltrim(parse_url($webPath, PHP_URL_PATH), '/');
                         }
-                        // skip if still missing
-                        if (!$fsPath) continue;
+
+                        // If file exists get mtime for cache busting; otherwise fallback to placeholder
+                        if (!empty($fsPath) && file_exists($fsPath)) {
+                            $ver = @filemtime($fsPath) ?: time();
+                            $src = $webPath . '?v=' . $ver;
+                        } else {
+                            // For external URLs or missing files use placeholder
+                            $src = (preg_match('#^https?://#i', $webPath) ? $webPath : 'img/placeholder_promo.png') . '?v=' . time();
+                        }
 
                         $title = htmlspecialchars($promo['title'] ?? 'Promo');
-                        $ver = @filemtime($fsPath) ?: time();
                         echo '<div class="testimonial"><div class="testimonial-header">';
-                        echo '<img src="' . htmlspecialchars($webPath . '?v=' . $ver) . '" alt="' . $title . '" class="testimonial-img" onclick="openTestimonialModal(this)">';
+                        echo '<img src="' . htmlspecialchars($src) . '" alt="' . $title . '" class="testimonial-img" onclick="openTestimonialModal(this)">';
                         echo '</div></div>';
                     }
                 } else {
-                    // fallback static images...
                     echo '<div class="testimonial"><div class="testimonial-header"><img src="img/promo1.jpg" alt="Promo 1" class="testimonial-img" onclick="openTestimonialModal(this)"></div></div>';
                 }
                 ?>

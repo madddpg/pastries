@@ -35,15 +35,31 @@ try {
     $del->execute([$id]);
     if ($del->rowCount() > 0) {
         // remove image file (best-effort)
-        if (!empty($row['image'])) {
-            $fsPath = __DIR__ . '/../' . ltrim(parse_url($row['image'], PHP_URL_PATH), '/');
-            if (file_exists($fsPath)) @unlink($fsPath);
-        }
-        echo json_encode(['success' => true, 'message' => 'Promo deleted']);
-    } else {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Promo not found']);
+   if (!empty($row['image'])) {
+    // Get path portion (handles full URLs and site-relative paths)
+    $imgPath = parse_url($row['image'], PHP_URL_PATH) ?: $row['image'];
+
+    // Remove an accidental leading project folder (e.g. "/cupscuddles/img/...")
+    $projectDirName = basename(__DIR__ . '/../');
+    $imgPath = preg_replace('#^/' . preg_quote($projectDirName, '#') . '#i', '', $imgPath);
+
+    // Candidate filesystem path under project root
+    $projectRoot = realpath(__DIR__ . '/../');
+    $candidate = $projectRoot . '/' . ltrim($imgPath, '/');
+    $real = realpath($candidate);
+
+    // Safety: only unlink if the resolved path exists and is under project root
+    if ($real && strpos($real, $projectRoot) === 0 && file_exists($real)) {
+        @unlink($real);
     }
+}
+
+echo json_encode(['success' => true, 'message' => 'Promo deleted']);
+} else {
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'Promo not found']);
+}
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
