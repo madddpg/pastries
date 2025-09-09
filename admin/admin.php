@@ -10,6 +10,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+
+$flash = null;
+if (!empty($_SESSION['flash'])) {
+    $flash = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+}
 // Ensure the Database helper is available so we can check admin role
 require_once __DIR__ . '/database/db_connect.php';
 
