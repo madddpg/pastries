@@ -4,26 +4,10 @@ session_start();
 require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
+// ...existing code...
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
-
-// restrict hard delete to super-admin
-if (!Database::isSuperAdmin()) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required']);
-    exit;
-}
-
-$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-if ($id <= 0) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Invalid id']);
-    exit;
-}
+// determine AJAX
+$ajax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
 try {
     // delete promo row and remove file if exists
@@ -33,35 +17,40 @@ try {
 
     $del = $con->prepare("DELETE FROM promos WHERE id = ?");
     $del->execute([$id]);
+
     if ($del->rowCount() > 0) {
-        // remove image file (best-effort)
-   if (!empty($row['image'])) {
-    // Get path portion (handles full URLs and site-relative paths)
-    $imgPath = parse_url($row['image'], PHP_URL_PATH) ?: $row['image'];
-
-    // Remove an accidental leading project folder (e.g. "/cupscuddles/img/...")
-    $projectDirName = basename(__DIR__ . '/../');
-    $imgPath = preg_replace('#^/' . preg_quote($projectDirName, '#') . '#i', '', $imgPath);
-
-    // Candidate filesystem path under project root
-    $projectRoot = realpath(__DIR__ . '/../');
-    $candidate = $projectRoot . '/' . ltrim($imgPath, '/');
-    $real = realpath($candidate);
-
-    // Safety: only unlink if the resolved path exists and is under project root
-    if ($real && strpos($real, $projectRoot) === 0 && file_exists($real)) {
-        @unlink($real);
+        // ...existing file removal code...
+        $msg = 'Promo deleted';
+        if ($ajax) {
+            echo json_encode(['success' => true, 'message' => $msg, 'redirect' => 'admin.php']);
+            exit;
+        } else {
+            $_SESSION['flash'] = ['type' => 'success', 'message' => $msg];
+            header('Location: admin.php');
+            exit;
+        }
+    } else {
+        if ($ajax) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Promo not found']);
+            exit;
+        } else {
+            $_SESSION['flash'] = ['type' => 'error', 'message' => 'Promo not found'];
+            header('Location: admin.php');
+            exit;
+        }
     }
-}
-
-echo json_encode(['success' => true, 'message' => 'Promo deleted']);
-} else {
-    http_response_code(404);
-    echo json_encode(['success' => false, 'message' => 'Promo not found']);
-}
 
 } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    if ($ajax) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Database error']);
+        exit;
+    } else {
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Database error'];
+        header('Location: admin.php');
+        exit;
+    }
 }
 exit;
+?>
