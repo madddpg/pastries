@@ -343,65 +343,12 @@ function fetch_locations_pdo($con)
                         <a href="?status=pending" class="tab<?= $live_status === 'pending' ? ' active' : '' ?>" data-status="pending">Pending</a>
                     </div>
 
-                    <div class="live-orders-grid">
+                        <div class="live-orders-grid">
                         <?php
-                        $liveOrders = $db->fetch_live_orders_pdo($live_status);
-                        foreach ($liveOrders as $order): ?>
-                            <div class="order-card <?= htmlspecialchars($order['status']) ?>">
-                                <div class="order-header">
-                                    <span class="order-id">
-                                        <strong>Reference Number:</strong> <?= htmlspecialchars($order['transac_id']) ?>
-                                    </span>
-                                    <span class="order-time"><?= htmlspecialchars($order['created_at']) ?></span>
-                                </div>
-                                <div class="customer-info">
-                                    <div>
-                                        <h4><?= htmlspecialchars($order['customer_name'] ?? 'Unknown') ?></h4>
-                                        <p>₱<?= htmlspecialchars($order['total_amount']) ?></p>
-                                        <!-- Add payment method display -->
-                                        <p><strong>Payment:</strong>
-                                            <span class="payment-badge <?= htmlspecialchars($order['payment_method']) ?>">
-                                                <?= ucfirst(htmlspecialchars($order['payment_method'] ?? 'cash')) ?>
-                                            </span>
-                                        </p>
-                                    </div>
-                                    <div class="pickup-info" style="margin: 10px 0;">
-                                        <?php if (!empty($order['pickup_time'])): ?>
-                                            <p><strong>Pickup Time:</strong> <?= date("g:i A", strtotime($order['pickup_time'])) ?></p>
-                                        <?php endif; ?>
-                                        <?php if (!empty($order['special_instructions'])): ?>
-                                            <p><strong>Note:</strong> <?= htmlspecialchars($order['special_instructions']) ?></p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <div class="order-items">
-                                    <ul class="mb-0">
-                                        <?php foreach ($order['items'] as $item): ?>
-                                            <li>
-                                                <?= htmlspecialchars($item['name']) ?>
-                                                (<?= htmlspecialchars($item['size']) ?>) &times; <?= (int)$item['quantity'] ?>
-                                                - ₱<?= number_format($item['price'], 2) ?>
-                                            </li>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                                <div class="order-actions">
-                                    <?php if ($order['status'] == 'pending'): ?>
-                                        <button type="button" class="btn-accept" data-id="<?= $order['transac_id'] ?>">Accept</button>
-                                        <button type="button" class="btn-reject" data-id="<?= $order['transac_id'] ?>">Reject</button>
-                                    <?php elseif ($order['status'] == 'preparing'): ?>
-                                        <button type="button" class="btn-ready" data-id="<?= $order['transac_id'] ?>">Mark as Ready</button>
-                                    <?php elseif ($order['status'] == 'ready'): ?>
-                                        <button type="button" class="btn-complete" data-id="<?= $order['transac_id'] ?>" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
-                                    <?php elseif ($order['status'] == 'picked up'): ?>
-                                        <span class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Picked Up</span>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                        <?php if (empty($liveOrders)): ?>
-                            <div style="padding:30px;text-align:center;color:#888;">No live orders.</div>
-                        <?php endif; ?>
+                        // Use the same data + template as AJAX to keep design identical
+                        $orders = fetch_live_orders_pdo($con, $live_status);
+                        require __DIR__ . '/AJAX/markup.php';
+                        ?>
                     </div>
                 </div>
 

@@ -1,8 +1,6 @@
+
 <?php
-require_once __DIR__ . '/../database/db_connect.php';
-
-header('Content-Type: text/html; charset=UTF-8');
-
+// ...existing code (require, headers)...
 $status = isset($_GET['status']) ? trim($_GET['status']) : '';
 $allowed = ['pending', 'preparing', 'ready'];
 $params = [];
@@ -16,8 +14,17 @@ try {
     $db = new Database();
     $con = $db->opencon();
 
-    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
-                   u.user_FN AS customer_name, p.pickup_time, p.special_instructions
+    $sql = "SELECT
+              t.transac_id,
+              t.reference_number,
+              t.user_id,
+              t.total_amount,
+              t.status,
+              t.created_at,
+              t.payment_method,
+              u.user_FN AS customer_name,
+              p.pickup_time,
+              p.special_instructions
             FROM transaction t
             LEFT JOIN users u ON t.user_id = u.user_id
             LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
@@ -27,21 +34,20 @@ try {
     $stmt->execute($params);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Fetch items per order if your design shows them
     if ($orders) {
-        $itemStmt = $con->prepare("SELECT ti.transaction_id, ti.quantity, ti.size, ti.price, p.name
-                                   FROM transaction_items ti
-                                   JOIN products p ON ti.product_id = p.id
-                                   WHERE ti.transaction_id = ?");
+        $itemStmt = $con->prepare(
+          "SELECT ti.transaction_id, ti.quantity, ti.size, ti.price, p.name
+           FROM transaction_items ti
+           JOIN products p ON ti.product_id = p.id
+           WHERE ti.transaction_id = ?"
+        );
         foreach ($orders as &$o) {
             $itemStmt->execute([(int)$o['transac_id']]);
             $o['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
     }
 
-    // Render using the exact same design as admin.php
     require __DIR__ . '/markup.php';
-
 } catch (Throwable $e) {
     http_response_code(500);
     echo '<div class="error-state">Failed to load orders.</div>';
