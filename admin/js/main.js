@@ -43,8 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Detect ?status=... and show Live Orders section
-  function getUrlParameter(name) {
+function getUrlParameter(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     const regex = new RegExp("[\\?&]" + name + "=([^&#]*)");
     const results = regex.exec(location.search);
@@ -52,8 +51,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (getUrlParameter("status") !== "" || window.location.search.indexOf("status=") !== -1) {
-    showSection("live-orders");
     const status = getUrlParameter("status");
+    showSection("live-orders");
     document.querySelectorAll("#live-orders-tabs .tab").forEach((tab) => {
       if ((tab.dataset.status || "") === status) tab.classList.add("active");
       else tab.classList.remove("active");
@@ -62,10 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (item.getAttribute("data-section") === "live-orders") item.classList.add("active");
       else item.classList.remove("active");
     });
+    // NEW: Load orders for the requested status without navigation
+    try { fetchOrders(status || ""); } catch (e) { /* fetchOrders defined later */ }
   } else {
     showSection("dashboard-overview");
   }
-
   // Tabs (for tab navigation, not sidebar)
   document.querySelectorAll(".tabs .tab").forEach((tab) => {
     tab.addEventListener("click", function (e) {
@@ -80,34 +80,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Live Orders Tabs: reload with ?status=...
+ // Live Orders Tabs: SPA behavior (no page reload)
   const liveOrdersTabs = document.querySelectorAll('#live-orders-tabs .tab');
   liveOrdersTabs.forEach(tab => {
+    // Use capture to prevent earlier handlers (from inline scripts) from firing
     tab.addEventListener('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Activate selected tab
       liveOrdersTabs.forEach(t => t.classList.remove('active'));
       this.classList.add('active');
-      const status = this.dataset.status;
-      window.location.search = status ? ('?status=' + encodeURIComponent(status)) : '';
-    });
-  });
 
-  // Action Buttons (dropdown menu)
-  document.querySelectorAll(".action-btn").forEach((btn) => {
-    btn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      document.querySelectorAll(".action-menu .dropdown-menu").forEach((menu) => {
-        menu.style.display = "none";
-      });
-      const menu = this.closest(".action-menu")?.querySelector(".dropdown-menu");
-      if (menu) menu.style.display = menu.style.display === "block" ? "none" : "block";
-    });
-  });
+      // Show section and load orders
+      const status = this.dataset.status || '';
+      showSection('live-orders');
+      try { fetchOrders(status); } catch (e) { /* fetchOrders defined later */ }
 
-  document.addEventListener('click', function() {
-    document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
-      menu.style.display = "none";
-    });
+      // Update URL without navigating
+      const newUrl = status ? ('?status=' + encodeURIComponent(status)) : '?status=';
+      history.replaceState(null, '', newUrl);
+    }, true); // capture phase
   });
 
   // Busy Mode Toggle (optional)
@@ -189,7 +183,6 @@ async function loadActiveToppings() {
     if (!data.success || !Array.isArray(data.toppings)) return;
     const container = document.getElementById('toppingsList');
     if (!container) return;
-    // render each topping as checkbox
     container.innerHTML = data.toppings.map(t => {
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<label style="display:block;margin-bottom:6px;">
@@ -722,14 +715,14 @@ console.info('[admin] main.js loaded');
       });
   }
 
-  // --- Live Orders AJAX ---
-  function fetchOrders(status = '') {
-    const listContainer = document.getElementById('live-orders-list');
+ function fetchOrders(status = '') {
+    const listContainer = document.querySelector('.live-orders-grid'); // match admin.php markup
     if (!listContainer) {
-      console.warn('[admin] #live-orders-list container not found in HTML');
+      console.warn('[admin] .live-orders-grid container not found in HTML');
       return;
     }
-    fetch('../api/get_orders.php?status=' + encodeURIComponent(status))
+    // Use your existing admin AJAX pattern (relative to admin.php)
+    fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status))
       .then(res => res.text())
       .then(html => {
         listContainer.innerHTML = html;
@@ -737,7 +730,6 @@ console.info('[admin] main.js loaded');
       })
       .catch(err => console.error('[admin] fetchOrders error', err));
   }
-
   function attachOrderActionHandlers() {
     document.querySelectorAll('.btn-accept').forEach(btn => {
       btn.onclick = () => updateOrderStatus(btn.dataset.id, 'preparing');
@@ -774,6 +766,10 @@ console.info('[admin] main.js loaded');
 
   // Initial hookup for live orders (only if container exists)
   if (document.getElementById('live-orders-list')) {
+    attachOrderActionHandlers();
+  }
+
+   if (document.querySelector('.live-orders-grid')) {
     attachOrderActionHandlers();
   }
 

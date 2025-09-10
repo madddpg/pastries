@@ -387,28 +387,12 @@ function fetch_locations_pdo($con)
                                 </div>
                                 <div class="order-actions">
                                     <?php if ($order['status'] == 'pending'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="preparing">
-                                            <button type="submit" class="btn-accept">Accept</button>
-                                        </form>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="cancelled">
-                                            <button type="submit" class="btn-reject">Reject</button>
-                                        </form>
+                                        <button type="button" class="btn-accept" data-id="<?= $order['transac_id'] ?>">Accept</button>
+                                        <button type="button" class="btn-reject" data-id="<?= $order['transac_id'] ?>">Reject</button>
                                     <?php elseif ($order['status'] == 'preparing'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="ready">
-                                            <button type="submit" class="btn-ready">Mark as Ready</button>
-                                        </form>
+                                        <button type="button" class="btn-ready" data-id="<?= $order['transac_id'] ?>">Mark as Ready</button>
                                     <?php elseif ($order['status'] == 'ready'): ?>
-                                        <form method="post" action="update_order_status.php" style="display:inline;">
-                                            <input type="hidden" name="id" value="<?= $order['transac_id'] ?>">
-                                            <input type="hidden" name="status" value="picked up">
-                                            <button type="submit" class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
-                                        </form>
+                                        <button type="button" class="btn-complete" data-id="<?= $order['transac_id'] ?>" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Mark as Picked Up</button>
                                     <?php elseif ($order['status'] == 'picked up'): ?>
                                         <span class="btn-complete" style="background:#4caf50; color:#fff; padding:8px 12px; border-radius:4px;">Picked Up</span>
                                     <?php endif; ?>
@@ -662,14 +646,14 @@ function fetch_locations_pdo($con)
                                 echo '<div>No promos yet.</div>';
                             } else {
                                 foreach ($promos as $pr) {
-                                    $img = "/". htmlspecialchars($pr['image']);
+                                    $img = "/" . htmlspecialchars($pr['image']);
 
-                                   
+
                                     $title = htmlspecialchars($pr['title']);
                                     $active = $pr['active'] ? 'Active' : 'Inactive';
 
                                     echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
-            <img src=".$img." style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
+            <img src=" . $img . " style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
             <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
             <div style='display:flex;gap:6px;'>
               <form method='post' action='delete_promo.php' style='margin:0;'>
@@ -989,13 +973,29 @@ function fetch_locations_pdo($con)
                 editForm.onsubmit = function(e) {
                     e.preventDefault();
                     const formData = new FormData(editForm);
+                    const id = formData.get('product_id');
+                    const newName = formData.get('new_name');
+                    const newPrice = parseFloat(formData.get('new_price') || '0').toFixed(2);
+                    const newCat = formData.get('new_category');
+
                     fetch('update_product.php', {
-                        method: 'POST',
-                        body: new URLSearchParams(formData)
-                    }).then(() => {
-                        editModal.style.display = 'none';
-                        location.reload();
-                    });
+                            method: 'POST',
+                            body: new URLSearchParams(formData)
+                        })
+                        .then(() => {
+                            // Update row in-place
+                            const row = document.querySelector(`tr[data-product-id="${id}"]`);
+                            if (row) {
+                                row.setAttribute('data-product-name', newName);
+                                row.setAttribute('data-product-price', newPrice);
+                                row.setAttribute('data-product-category', newCat);
+                                // cells: [Product(ID), Category, Price, Stock, Status, Sales, Action]
+                                const cells = row.querySelectorAll('td');
+                                if (cells[1]) cells[1].textContent = newCat;
+                                if (cells[2]) cells[2].textContent = '₱' + Number(newPrice).toFixed(2);
+                            }
+                            editModal.style.display = 'none';
+                        });
                 };
             }
 
@@ -1121,10 +1121,6 @@ function fetch_locations_pdo($con)
                 addProductForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     if (addProductResult) addProductResult.textContent = '';
-                    // Fix: ensure category is set to new value if new category was just added
-                    if (categorySelect.value === '__add_new__' && newCategoryInput.value.trim()) {
-                        categorySelect.value = newCategoryInput.value.trim();
-                    }
                     const formData = new FormData(addProductForm);
                     fetch('add_products.php', {
                             method: 'POST',
@@ -1134,11 +1130,9 @@ function fetch_locations_pdo($con)
                         .then(text => {
                             if (addProductResult) addProductResult.textContent = text;
                             if (text.toLowerCase().includes('success')) {
-                                setTimeout(() => {
-                                    addProductModal.style.display = 'none';
-                                    addProductForm.reset();
-                                    location.reload();
-                                }, 1200);
+                                addProductModal.style.display = 'none';
+                                addProductForm.reset();
+                                // TODO: optionally append the new product row here without reload
                             }
                         })
                         .catch(() => {
@@ -1181,31 +1175,24 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            if (addLocationForm) {
-                addLocationForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    if (addLocationResult) addLocationResult.textContent = '';
-                    const formData = new FormData(addLocationForm);
-                    fetch('locations.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(res => res.text())
-                        .then(text => {
-                            if (addLocationResult) addLocationResult.textContent = text;
-                            if (text.toLowerCase().includes('success')) {
-                                setTimeout(() => {
+         if (addLocationForm) {
+                    addLocationForm.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        if (addLocationResult) addLocationResult.textContent = '';
+                        const formData = new FormData(addLocationForm);
+                        fetch('locations.php', { method: 'POST', body: formData })
+                            .then(res => res.text())
+                            .then(text => {
+                                if (addLocationResult) addLocationResult.textContent = text;
+                                if (text.toLowerCase().includes('success')) {
                                     addLocationModal.style.display = 'none';
                                     addLocationForm.reset();
-                                    location.reload();
-                                }, 1200);
-                            }
-                        })
-                        .catch(() => {
-                            if (addLocationResult) addLocationResult.textContent = 'Failed to add location.';
-                        });
-                });
-            }
+                                    // TODO: optionally append the new location row here without reload
+                                }
+                            })
+                            .catch(() => { if (addLocationResult) addLocationResult.textContent = 'Failed to add location.'; });
+                    });
+                }
 
             // Edit Location Modal
             var editLocationModal = document.getElementById('editLocationModal');
@@ -1271,32 +1258,29 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            if (window.IS_SUPER_ADMIN) {
+           if (window.IS_SUPER_ADMIN) {
                 document.querySelectorAll('.delete-location-btn').forEach(function(btn) {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
                         if (!confirm('Are you sure you want to delete this location?')) return;
-                        var row = btn.closest('tr');
-                        var id = row.getAttribute('data-location-id');
+                        const row = btn.closest('tr');
+                        const id = row && row.getAttribute('data-location-id');
+                        if (!id) return;
                         fetch('locations.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: 'action=delete&id=' + encodeURIComponent(id)
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.success) {
-                                    location.reload();
-                                } else {
-                                    alert(data.message || 'Delete failed');
-                                }
-                            })
-                            .catch(() => {
-                                alert('Delete request failed');
-                            });
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'action=delete&id=' + encodeURIComponent(id)
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                if (row) row.remove(); // remove row in-place
+                            } else {
+                                alert(data.message || 'Delete failed');
+                            }
+                        })
+                        .catch(() => { alert('Delete request failed'); });
                     });
                 });
             }
@@ -1371,13 +1355,19 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            // Live orders tab functionality
             const liveOrdersTabs = document.querySelectorAll('#live-orders-tabs .tab');
             liveOrdersTabs.forEach(tab => {
                 tab.addEventListener('click', function(e) {
                     e.preventDefault();
-                    const status = this.getAttribute('data-status');
-                    window.location.href = '?status=' + status;
+                    const status = this.getAttribute('data-status') || '';
+                    // activate clicked tab
+                    liveOrdersTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    // show section and load orders
+                    if (typeof showSection === 'function') showSection('live-orders');
+                    if (typeof fetchOrders === 'function') fetchOrders(status);
+                    // update URL without navigation
+                    history.replaceState(null, '', location.pathname + '?status=' + encodeURIComponent(status));
                 });
             });
 
