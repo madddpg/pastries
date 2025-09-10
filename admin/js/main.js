@@ -517,6 +517,38 @@ if (form) {
   }
 
 
+
+    document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-accept, .btn-ready, .btn-complete, .btn-reject');
+    if (!btn) return;
+    // Prevent any form submission or inline handlers
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    const map = {
+      'btn-accept': 'preparing',
+      'btn-ready': 'ready',
+      'btn-complete': 'picked up',
+      'btn-reject': 'cancelled',
+    };
+    const cls = Object.keys(map).find(k => btn.classList.contains(k));
+    if (!cls) return;
+
+    const orderId = getOrderIdFrom(btn);
+    if (!orderId) {
+      console.error('[admin] live action: unable to get order id', btn);
+      return;
+    }
+    const nextStatus = map[cls];
+    console.info('[admin] live action:', { id: orderId, status: nextStatus });
+
+    const prev = btn.disabled;
+    btn.disabled = true;
+    updateOrderStatus(orderId, nextStatus)
+      .finally(() => { btn.disabled = prev; });
+  }, true); // capture to block inline onclicks if any
+
   (async function () {
 
   async function loadToppings() {
@@ -715,20 +747,24 @@ console.info('[admin] main.js loaded');
       });
   }
 
- function fetchOrders(status = '') {
+function fetchOrders(status = '') {
     const listContainer = document.querySelector('.live-orders-grid'); // match admin.php markup
     if (!listContainer) {
       console.warn('[admin] .live-orders-grid container not found in HTML');
       return;
     }
-    // Use your existing admin AJAX pattern (relative to admin.php)
     fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status))
       .then(res => res.text())
       .then(html => {
         listContainer.innerHTML = html;
-        attachOrderActionHandlers();
+        // Delegated handler covers newly inserted buttons; no manual rebind needed
       })
       .catch(err => console.error('[admin] fetchOrders error', err));
+  }
+
+  // Keep a no-op to avoid errors where older code calls this
+  function attachOrderActionHandlers() {
+    // Events are delegated globally; nothing to do here
   }
 
   
@@ -789,6 +825,7 @@ console.info('[admin] main.js loaded');
   }
 
  
+
   function updateOrderStatus(orderId, status) {
     return fetch('update_order_status.php', {
       method: 'POST',
@@ -805,10 +842,9 @@ console.info('[admin] main.js loaded');
     })
     .then(data => {
       if (!data || !data.success) throw new Error((data && data.message) || 'Update failed');
-      // Refresh only the current live-orders tab
       const activeTab = document.querySelector('#live-orders-tabs .tab.active');
       const activeStatus = activeTab ? (activeTab.dataset.status || '') : '';
-      if (typeof fetchOrders === 'function') fetchOrders(activeStatus);
+      fetchOrders(activeStatus);
       return data;
     })
     .catch(err => {
@@ -818,11 +854,9 @@ console.info('[admin] main.js loaded');
     });
   }
 
-  // Initial hookup for live orders (only if container exists)
   if (document.getElementById('live-orders-list')) {
     attachOrderActionHandlers();
   }
-  // After first render, bind handlers if grid exists
   if (document.querySelector('.live-orders-grid')) {
     attachOrderActionHandlers();
   }
