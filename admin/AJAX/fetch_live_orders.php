@@ -1,7 +1,5 @@
 
 <?php
-declare(strict_types=1);
-
 ini_set('display_errors', '0');
 require_once __DIR__ . '/../database/db_connect.php';
 header('Content-Type: text/html; charset=UTF-8');
@@ -19,17 +17,17 @@ try {
     $db  = new Database();
     $con = $db->opencon();
 
-    // Try full data set first
     $orders = [];
     try {
+        // Full dataset (safe aliases and backticks)
         $sql = "SELECT
                   t.transac_id,
-                  t.transac_id AS reference_number,       -- safe alias
+                  t.transac_id AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
                   t.created_at,
-                  t.payment_method,                        -- may not exist in some schemas
+                  t.payment_method,
                   u.user_FN AS customer_name,
                   p.pickup_time,
                   p.special_instructions
@@ -43,17 +41,15 @@ try {
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $primaryQueryError) {
         error_log('fetch_live_orders full query failed: ' . $primaryQueryError->getMessage());
-        // Fallback: minimal columns only
+        // Minimal fallback (no optional columns)
         $sql = "SELECT
                   t.transac_id,
                   t.transac_id AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
-                  t.created_at,
-                  u.user_FN AS customer_name
+                  t.created_at
                 FROM `transaction` t
-                LEFT JOIN users u ON t.user_id = u.user_id
                 $where
                 ORDER BY t.created_at DESC";
         $stmt = $con->prepare($sql);
@@ -61,7 +57,7 @@ try {
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Try to attach items; skip silently on error
+    // Try to attach items; skip silently if table/columns differ
     if ($orders) {
         try {
             $itemStmt = $con->prepare(
@@ -86,3 +82,5 @@ try {
     http_response_code(500);
     echo '<div class="error-state">Failed to load orders.</div>';
 }
+
+?>

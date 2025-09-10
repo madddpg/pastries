@@ -4,20 +4,19 @@ if (empty($orders)) {
     echo '<div class="empty-state">No orders found.</div>';
     return;
 }
-
 function esc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 foreach ($orders as $order):
-$id     = (int)$order['transac_id'];
+  $id     = (int)($order['transac_id'] ?? 0);
   $refVal = isset($order['reference_number']) && $order['reference_number'] !== '' ? $order['reference_number'] : $id;
   $ref    = esc($refVal);
-  $status = strtolower((string)$order['status']);
-  $time   = esc($order['created_at']);
+  $status = strtolower((string)($order['status'] ?? ''));
+  $time   = esc($order['created_at'] ?? '');
   $name   = esc($order['customer_name'] ?? 'Guest');
   $total  = number_format((float)($order['total_amount'] ?? 0), 2);
   $pickup = trim((string)($order['pickup_time'] ?? ''));
   $note   = trim((string)($order['special_instructions'] ?? ''));
-  $method = strtolower(trim((string)($order['payment_method'] ?? 'cash'))); // 'cash' or 'gcash'
+  $method = strtolower(trim((string)($order['payment_method'] ?? 'cash')));
 ?>
 <div class="order-card <?= esc($status) ?>" data-transac-id="<?= $id ?>" data-id="<?= $id ?>">
   <div class="order-header">
@@ -29,29 +28,20 @@ $id     = (int)$order['transac_id'];
     <div>
       <h4><?= $name ?></h4>
       <p>₱<?= $total ?></p>
-      <p>Payment:
-        <span class="payment-badge <?= $method ?>"><?= esc(ucfirst($method)) ?></span>
-      </p>
+      <p>Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span></p>
     </div>
     <div class="pickup-info" style="margin: 10px 0;">
-      <?php if ($pickup !== ''): ?>
-        <div>Pickup Time: <?= esc($pickup) ?></div>
-      <?php endif; ?>
-      <?php if ($note !== ''): ?>
-        <div>Note: <?= esc($note) ?></div>
-      <?php endif; ?>
+      <?php if ($pickup !== ''): ?><div>Pickup Time: <?= esc($pickup) ?></div><?php endif; ?>
+      <?php if ($note !== ''): ?><div>Note: <?= esc($note) ?></div><?php endif; ?>
     </div>
   </div>
 
   <div class="order-items">
-    <?php if (!empty($order['items'])): ?>
+    <?php if (!empty($order['items']) && is_array($order['items'])): ?>
       <?php foreach ($order['items'] as $it): ?>
-        <div class="item">
-          • <?= esc($it['name']) ?>
-          <?php if (!empty($it['size'])): ?>
-            (<?= esc($it['size']) ?>)
-          <?php endif; ?>
-          × <?= (int)$it['quantity'] ?> - ₱<?= number_format((float)$it['price'], 2) ?>
+        <div class="item">• <?= esc($it['name'] ?? '') ?>
+          <?php if (!empty($it['size'])): ?>(<?= esc($it['size']) ?>)<?php endif; ?>
+          × <?= (int)($it['quantity'] ?? 0) ?> - ₱<?= number_format((float)($it['price'] ?? 0), 2) ?>
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
