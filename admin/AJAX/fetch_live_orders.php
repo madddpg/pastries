@@ -13,10 +13,9 @@ if ($status !== '' && in_array($status, $allowed, true)) {
 try {
     $db = new Database();
     $con = $db->opencon();
-
     $sql = "SELECT
               t.transac_id,
-              t.reference_number,
+              COALESCE(t.reference_number, t.transac_id) AS reference_number,
               t.user_id,
               t.total_amount,
               t.status,

@@ -8,8 +8,9 @@ if (empty($orders)) {
 function esc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
 foreach ($orders as $order):
-  $id     = (int)$order['transac_id'];
-  $ref    = $order['reference_number'] !== null ? esc($order['reference_number']) : ('#' . $id);
+$id     = (int)$order['transac_id'];
+  $refVal = isset($order['reference_number']) && $order['reference_number'] !== '' ? $order['reference_number'] : $id;
+  $ref    = esc($refVal);
   $status = strtolower((string)$order['status']);
   $time   = esc($order['created_at']);
   $name   = esc($order['customer_name'] ?? 'Guest');
