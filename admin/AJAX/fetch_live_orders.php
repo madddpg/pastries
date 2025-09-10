@@ -40,7 +40,7 @@ try {
     }
 
     // Render using the exact same design as admin.php
-    require __DIR__ . '/../partials/live_orders_list.php';
+    require __DIR__ . '/markup.php';
 
 } catch (Throwable $e) {
     http_response_code(500);
