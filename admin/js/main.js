@@ -747,21 +747,23 @@ console.info('[admin] main.js loaded');
       });
   }
 
-function fetchOrders(status = '') {
-    const listContainer = document.querySelector('.live-orders-grid'); // match admin.php markup
+  function fetchOrders(status = '') {
+    // Use the same container your initial render uses (do not change wrapper)
+    const listContainer = document.querySelector('.live-orders-grid'); // or '#live-orders-list' if that is your inner list
     if (!listContainer) {
-      console.warn('[admin] .live-orders-grid container not found in HTML');
+      console.warn('[admin] live-orders container not found');
       return;
     }
-    fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status))
+    fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status), { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
       .then(res => res.text())
       .then(html => {
+        // Replace only the inner content so layout styles remain
         listContainer.innerHTML = html;
-        // Delegated handler covers newly inserted buttons; no manual rebind needed
+        // Delegated click handler covers new buttons
       })
       .catch(err => console.error('[admin] fetchOrders error', err));
   }
-
+  
   // Keep a no-op to avoid errors where older code calls this
   function attachOrderActionHandlers() {
     // Events are delegated globally; nothing to do here
