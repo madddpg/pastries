@@ -730,46 +730,100 @@ console.info('[admin] main.js loaded');
       })
       .catch(err => console.error('[admin] fetchOrders error', err));
   }
+
+  
   function attachOrderActionHandlers() {
-    document.querySelectorAll('.btn-accept').forEach(btn => {
-      btn.onclick = () => updateOrderStatus(btn.dataset.id, 'preparing');
+    const map = new Map([
+      ['.btn-accept', 'preparing'],
+      ['.btn-ready', 'ready'],
+      ['.btn-complete', 'picked up'],
+      ['.btn-reject', 'cancelled'],
+    ]);
+
+    map.forEach((status, selector) => {
+      document.querySelectorAll(selector).forEach(btn => {
+        if (btn._boundByMainJs) return;
+        btn._boundByMainJs = true;
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = getOrderIdFrom(btn);
+          if (!id) {
+            console.error('[admin] Unable to determine order ID for action', selector);
+            return;
+          }
+          const prevDisabled = btn.disabled;
+          btn.disabled = true;
+          updateOrderStatus(id, status)
+            .finally(() => { btn.disabled = prevDisabled; });
+        }, { capture: true });
+      });
     });
-    document.querySelectorAll('.btn-ready').forEach(btn => {
-      btn.onclick = () => updateOrderStatus(btn.dataset.id, 'ready');
-    });
-    document.querySelectorAll('.btn-complete').forEach(btn => {
-      btn.onclick = () => updateOrderStatus(btn.dataset.id, 'completed');
-    });
-    document.querySelectorAll('.btn-reject').forEach(btn => {
-      btn.onclick = () => updateOrderStatus(btn.dataset.id, 'cancelled');
+  }  function attachOrderActionHandlers() {
+    const map = new Map([
+      ['.btn-accept', 'preparing'],
+      ['.btn-ready', 'ready'],
+      ['.btn-complete', 'picked up'],
+      ['.btn-reject', 'cancelled'],
+    ]);
+
+    map.forEach((status, selector) => {
+      document.querySelectorAll(selector).forEach(btn => {
+        if (btn._boundByMainJs) return;
+        btn._boundByMainJs = true;
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = getOrderIdFrom(btn);
+          if (!id) {
+            console.error('[admin] Unable to determine order ID for action', selector);
+            return;
+          }
+          const prevDisabled = btn.disabled;
+          btn.disabled = true;
+          updateOrderStatus(id, status)
+            .finally(() => { btn.disabled = prevDisabled; });
+        }, { capture: true });
+      });
     });
   }
 
+ 
   function updateOrderStatus(orderId, status) {
-    fetch('updating/update_order_status.php', {
+    return fetch('update_order_status.php', {
       method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
       body: 'id=' + encodeURIComponent(orderId) + '&status=' + encodeURIComponent(status)
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        const activeTab = document.querySelector('#live-orders-tabs .tab.active');
-        const st = activeTab ? activeTab.dataset.status : '';
-        fetchOrders(st);
-      } else {
-        alert('Failed to update order');
-      }
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
     })
-    .catch(err => console.error('[admin] updateOrderStatus error', err));
+    .then(data => {
+      if (!data || !data.success) throw new Error((data && data.message) || 'Update failed');
+      // Refresh only the current live-orders tab
+      const activeTab = document.querySelector('#live-orders-tabs .tab.active');
+      const activeStatus = activeTab ? (activeTab.dataset.status || '') : '';
+      if (typeof fetchOrders === 'function') fetchOrders(activeStatus);
+      return data;
+    })
+    .catch(err => {
+      console.error('[admin] updateOrderStatus error', err);
+      alert('Failed to update order status.');
+      throw err;
+    });
   }
 
   // Initial hookup for live orders (only if container exists)
   if (document.getElementById('live-orders-list')) {
     attachOrderActionHandlers();
   }
-
-   if (document.querySelector('.live-orders-grid')) {
+  // After first render, bind handlers if grid exists
+  if (document.querySelector('.live-orders-grid')) {
     attachOrderActionHandlers();
   }
 
@@ -793,3 +847,18 @@ console.info('[admin] main.js loaded');
   setInterval(updateDashboardStats, 15000);
 });
 
+  function getOrderIdFrom(el) {
+    if (!el) return null;
+    if (el.dataset && el.dataset.id) return el.dataset.id;
+    const form = el.closest('form');
+    if (form) {
+      const inp = form.querySelector('input[name="id"], input[name="transac_id"], input[name="order_id"]');
+      if (inp && inp.value) return inp.value;
+    }
+    const container = el.closest('[data-transac-id], [data-id], .order-card');
+    if (container) {
+      if (container.dataset && container.dataset.transacId) return container.dataset.transacId;
+      if (container.dataset && container.dataset.id) return container.dataset.id;
+    }
+    return null;
+  }
