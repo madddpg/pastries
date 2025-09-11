@@ -1,6 +1,6 @@
 
 <?php
-ini_set('display_errors', '0');
+ini_set('display_errors', 0);
 header('Content-Type: application/json; charset=UTF-8');
 require_once __DIR__ . '/../database/db_connect.php';
 
@@ -64,6 +64,7 @@ try {
                 'customer_name'    => $o['customer_name'] ?? 'Unknown',
                 'total_amount'     => (float)$o['total_amount'],
                 'status'           => (string)$o['status'],
+                'created_at'       => $o['created_at'],
                 'items'            => array_map(function ($it) {
                     return [
                         'name'     => $it['name'],
