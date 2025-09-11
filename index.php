@@ -1059,24 +1059,18 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 
-    <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
-        <div class="payment-modal-backdrop" data-close="backdrop"></div>
-        <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
-            <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
-            <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Choose payment method</h3>
-            <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
-                <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('cash')">Pay with Cash</button>
-                <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;" onclick="handlePaymentChoice('gcash')">Pay with GCash</button>
-            </div>
-            <div id="gcashPreview" class="gcash-preview" style="display:none;margin-top:18px;text-align:center;">
-                <p style="font-weight:600;color:#374151;">Scan or save this GCash QR.</p>
-                <img src="img/gcash_pic.jpg" alt="GCash QR" style="max-width:320px;border-radius:8px;border:1px solid #e5e7eb;" />
-                <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
-                    <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 18px;" onclick="submitGcashCheckout()">Done</button>
-                </div>
-            </div>
+ <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
+    <div class="payment-modal-backdrop" data-close="backdrop"></div>
+    <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+        <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
+        <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Confirm payment</h3>
+        <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
+            <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;"
+                onclick="handlePaymentChoice('cash')">Place Order (Cash)</button>
         </div>
+        <!-- Removed GCash button / QR preview -->
     </div>
+</div>
 
 
 

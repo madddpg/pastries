@@ -658,10 +658,12 @@ function submitGcashCheckout() {
   submitPickupForm({ ...pickup, payment_method: 'gcash' });
 }
 
-
+// Ensure submitPickupForm always sends cash regardless of payload
 function submitPickupForm(payload) {
-  // debug log to help verify what is being sent
-  try { console.debug("submitPickupForm payload:", payload); } catch (e) { }
+  payload = payload || {};
+  payload.payment_method = 'cash';
+
+  try { console.debug("submitPickupForm payload (cash-only):", payload); } catch (e) {}
 
   const cart_items = JSON.stringify(cart || []);
   const body = new URLSearchParams();
@@ -669,52 +671,30 @@ function submitPickupForm(payload) {
   body.append("pickup_location", payload.pickup_location || "");
   body.append("pickup_time", payload.pickup_time || "");
   body.append("special_instructions", payload.special_instructions || "");
-  // send exact payment_method value or explicit 'cash' fallback
-  body.append("payment_method", (typeof payload.payment_method !== "undefined" && payload.payment_method !== null) ? String(payload.payment_method) : "cash");
+  body.append("payment_method", "cash");
   body.append("cart_items", cart_items);
 
-  try { console.debug("Submitting to pickup_checkout.php ->", body.toString()); } catch (e) { }
-
-  showNotification("Placing order...", "success");
+  showNotification("Placing order (cash)...", "success");
   fetch("pickup_checkout.php", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
     credentials: "same-origin"
   })
-    .then((res) => res.json())
-    .then((data) => {
+    .then(r => r.json())
+    .then(data => {
       if (data && data.success) {
-        // Ensure any open modals are closed before showing the reference UI
-        try { closeCart(); } catch (e) { /* ignore */ }
-        try {
-          const paymentModal = document.getElementById('paymentMethodModal');
-          if (paymentModal) {
-            paymentModal.style.display = 'none';
-          }
-        } catch (e) { /* ignore */ }
-        try { closeProductModal(); } catch (e) { /* ignore */ }
-        try { closeAuthModal(); } catch (e) { /* ignore */ }
-
-        // Clear client cart and update UI
+        showNotification("Order placed!", "success");
+        if (data.reference_number) showReferenceModal(data.reference_number);
         cart = [];
-        saveCart();
         updateCartCount();
         updateCartDisplay();
-
-        // Small delay to ensure modal removal/scroll reset before showing reference
-        setTimeout(() => {
-          if (typeof showReferenceModal === "function") {
-            showReferenceModal(data.reference_number || data.reference || "N/A");
-          } else {
-            alert("Order placed! Reference: " + (data.reference_number || "N/A"));
-          }
-        }, 140);
+        closeCart();
       } else {
-        showNotification((data && data.message) ? data.message : "Failed to place order.", "error");
+        showNotification(data.message || "Failed to place order.", "error");
       }
     })
-    .catch((err) => {
+    .catch(err => {
       console.error("pickup submit error", err);
       showNotification("Network error. Please try again.", "error");
     });
@@ -2303,35 +2283,23 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
 
 
-// update handlePaymentChoice to call closePaymentModal/open helpers (no other change needed)
 function handlePaymentChoice(method) {
+  // Ignore passed method; enforce cash
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
-  paymentModal.dataset.paymentMethod = method;
+  closePaymentModal();
 
-  if (method === "cash") {
-    // close modal then submit
-    closePaymentModal();
-    const payload = {
-      pickup_name: paymentModal.dataset.pickupName || '',
-      pickup_location: paymentModal.dataset.pickupLocation || '',
-      pickup_time: paymentModal.dataset.pickupTime || '',
-      special_instructions: paymentModal.dataset.specialInstructions || '',
-      payment_method: "cash"
-    };
-    submitPickupForm(payload);
-    return;
-  }
-
-  if (method === "gcash") {
-    // reveal gcash preview inside dialog
-    const gcashPreview = document.getElementById("gcashPreview");
-    if (gcashPreview) gcashPreview.style.display = "block";
-    // move focus to done button in preview
-    const done = document.getElementById('gcashDoneBtn');
-    if (done) done.focus();
-  }
+  const payload = {
+    pickup_name: paymentModal.dataset.pickupName || '',
+    pickup_location: paymentModal.dataset.pickupLocation || '',
+    pickup_time: paymentModal.dataset.pickupTime || '',
+    special_instructions: paymentModal.dataset.specialInstructions || '',
+    payment_method: 'cash'
+  };
+  submitPickupForm(payload);
 }
+
+
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById("paymentMethodModal");
   if (!paymentModal) return;

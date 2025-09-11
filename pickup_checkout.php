@@ -9,12 +9,8 @@ $pickup_location = isset($_POST['pickup_location']) ? trim($_POST['pickup_locati
 $pickup_time = isset($_POST['pickup_time']) ? trim($_POST['pickup_time']) : '';
 $special_instructions = isset($_POST['special_instructions']) ? trim($_POST['special_instructions']) : '';
 $cart_items = isset($_POST['cart_items']) ? json_decode($_POST['cart_items'], true) : [];
+$payment_method = 'cash';
 
-// Strictly validate payment_method since we're using ENUM
-$payment_method = isset($_POST['payment_method']) ? strtolower(trim($_POST['payment_method'])) : 'cash';
-if (!in_array($payment_method, ['cash', 'gcash'])) {
-    $payment_method = 'cash';
-}
 
 // Debug logging
 error_log("Payment method received: " . $payment_method);
@@ -49,17 +45,19 @@ if ($result['success'] && !empty($result['reference_number'])) {
         error_log("pickup_checkout: failed to update payment_method: " . $e->getMessage());
     }
 
-    echo json_encode([
-        'success' => true,
-        'message' => 'Pickup order placed successfully.',
-        'reference_number' => $result['reference_number'],
-        'received_payment_method' => $payment_method
-    ]);
+   echo json_encode([
+    'success' => true,
+    'message' => 'Pickup order placed successfully.',
+    'reference_number' => $result['reference_number'],
+    'received_payment_method' => 'cash'
+]);
     exit;
 }
 
 echo json_encode([
     'success' => false,
     'message' => $result['message'] ?? 'Failed to create order.',
-    'received_payment_method' => $payment_method
+    'received_payment_method' => 'cash'
 ]);
+
+?>
