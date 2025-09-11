@@ -892,6 +892,54 @@ public function getAllAdminFcmTokens(): array
         }
     }
 
+      public function pushAdminNotification(string $title, string $body, ?string $reference = null, array $data = []): bool
+    {
+        // Merge reference into data payload
+        if ($reference) {
+            $data['reference'] = $reference;
+        }
+        if (!isset($data['click_action'])) {
+            $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
+        }
+
+        // Prefer Kreait if installed
+        if (class_exists(\Kreait\Firebase\Factory::class)) {
+            try {
+                $saPath = getenv('FCM_SERVICE_ACCOUNT');
+                if (!$saPath || !is_file($saPath)) {
+                    $fallback = __DIR__ . '/../config/firebase-service-account.json';
+                    if (is_file($fallback)) {
+                        $saPath = $fallback;
+                    }
+                }
+                if ($saPath && is_file($saPath)) {
+                    $factory = (new \Kreait\Firebase\Factory())->withServiceAccount($saPath);
+                    $messaging = $factory->createMessaging();
+                    $tokens = $this->getAllAdminFcmTokens();
+                    if (!$tokens) {
+                        return false;
+                    }
+                    $notification = \Kreait\Firebase\Messaging\Notification::create($title, $body);
+                    $messages = [];
+                    foreach ($tokens as $t) {
+                        $messages[] = \Kreait\Firebase\Messaging\CloudMessage::withTarget('token', $t)
+                            ->withNotification($notification)
+                            ->withData($data);
+                    }
+                    $messaging->sendAll($messages);
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                error_log('Kreait FCM fallback to raw: ' . $e->getMessage());
+            }
+        }
+
+        // Fallback to internal direct FCM v1 sender
+        $this->sendDirectFcm($title, $body, $data);
+        return true;
+    }
+
+
     public function fetch_recent_products_by_data_type($data_type, $limit = 3)
     {
         $con = $this->opencon();

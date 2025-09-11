@@ -1434,7 +1434,7 @@ function fetch_locations_pdo($con)
   if (perm !== 'granted') { console.warn('[FCM] Permission denied'); return; }
 
   const config = {
-    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",
+    apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
     authDomain: "coffeeshop-8ce2a.firebaseapp.com",
     projectId: "coffeeshop-8ce2a",
     storageBucket: "coffeeshop-8ce2a.appspot.com",
@@ -1445,71 +1445,40 @@ function fetch_locations_pdo($con)
   if (!firebase.apps.length) firebase.initializeApp(config);
 
   const messaging = firebase.messaging();
-  // Register (or update) service worker
   const swReg = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
-  console.log('[FCM] SW registered scope:', swReg.scope);
 
   const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
 
-  async function subscribeTopic(force = false) {
-    try {
-      const token = await messaging.getToken({
-        vapidKey,
-        serviceWorkerRegistration: swReg
+  async function registerToken(force=false){
+    try{
+      const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
+      if(!token){ console.warn('[FCM] No token'); return; }
+      if(!force && localStorage.getItem('last_fcm_token')===token) return;
+      const res = await fetch('send_fcm.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token })
       });
-      console.log('[FCM] token:', token ? token.substring(0,25)+'...' : '(none)');
-      if (!token) return;
-
-      if (!force && localStorage.getItem('last_fcm_token') === token) {
-        console.log('[FCM] token unchanged (skip subscribe)');
-        return;
-      }
-
-     const res = await fetch('send_fcm.php', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ token })
-});
-
-      const js = await res.json().catch(()=>({}));
-      console.log('[FCM] subscribe response:', res.status, js);
-      if (js.success) {
-        localStorage.setItem('last_fcm_token', token);
-      } else {
-        console.warn('[FCM] subscription failed');
-      }
-    } catch(e){
-      console.warn('[FCM] subscribe error', e);
-    }
+      const js = await res.json();
+      console.log('[FCM] register response', js);
+      if(js.success){ localStorage.setItem('last_fcm_token', token); }
+    }catch(e){ console.warn('[FCM] token error', e); }
   }
 
-messaging.onMessage(p => {
-    console.log('[FCM] foreground payload:', p);
+  messaging.onMessage(p => {
     const n = p.notification || {};
-    if (!document.hidden) {
-      // Inline banner (non-blocking)
-      const bar = document.createElement('div');
-      bar.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-family:Inter,Arial,sans-serif;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.18);cursor:pointer;';
-      bar.textContent = (n.title || 'New Order') + (n.body ? ' – ' + n.body : '');
-      bar.onclick = () => { window.location.href = '/admin/admin.php'; };
-      document.body.appendChild(bar);
-      setTimeout(()=> bar.remove(), 6000);
-    } else {
-      // Tab not focused -> let Notification API handle
-      new Notification(n.title || 'New Order', {
-        body: n.body || '',
-        icon: n.icon || '/images/CC.png'
-      });
-    }
+    const bar = document.createElement('div');
+    bar.style.cssText='position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
+    bar.textContent=(n.title||'New Order') + (n.body?(' - '+n.body):'');
+    bar.onclick=()=>location.href='/admin/admin.php';
+    document.body.appendChild(bar);
+    setTimeout(()=>bar.remove(),6000);
   });
 
-  await subscribeTopic(true);
-
-  // Re-try on visibility (in case token rotated)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') subscribeTopic();
+  await registerToken(true);
+  document.addEventListener('visibilitychange', ()=> {
+    if(document.visibilityState==='visible') registerToken();
   });
-
 })();
 </script>
 </body>

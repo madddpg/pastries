@@ -1,44 +1,56 @@
-
 <?php
 session_start();
 header('Content-Type: application/json');
 
 if (empty($_SESSION['admin_id'])) {
-    echo json_encode(['success'=>false,'message'=>'Unauthorized']); 
+    http_response_code(401);
+    echo json_encode(['success'=>false,'message'=>'Unauthorized']);
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['success'=>false,'message'=>'Method not allowed']);
+    echo json_encode(['success'=>false,'message'=>'POST required']);
     exit;
 }
 
 require_once __DIR__ . '/database/db_connect.php';
 
-$ref   = trim($_REQUEST['reference'] ?? '');
-$title = trim($_REQUEST['title'] ?? 'Test');
-$body  = trim($_REQUEST['body']  ?? ($ref ? "Reference $ref" : 'Ping'));
+$raw = json_decode(file_get_contents('php://input'), true);
+if (!is_array($raw)) {
+    $raw = $_POST;
+}
+
+$token = trim($raw['token'] ?? '');
+$title = trim($raw['title'] ?? '');
+$body  = trim($raw['body'] ?? '');
+$reference = trim($raw['reference'] ?? '');
+
+$db = new Database();
+
+// Register token only
+if ($token && !$title && !$body && !$reference) {
+    if ($db->saveAdminFcmToken((int)$_SESSION['admin_id'], $token)) {
+        echo json_encode(['success'=>true,'message'=>'Token registered']);
+    } else {
+        http_response_code(500);
+        echo json_encode(['success'=>false,'message'=>'Token save failed']);
+    }
+    exit;
+}
+
+// Need title & body for sending
+if ($title === '' || $body === '') {
+    http_response_code(422);
+    echo json_encode(['success'=>false,'message'=>'Title/body required (unless only registering token)']);
+    exit;
+}
 
 try {
-    $db = new Database();
-    $refClass = new ReflectionClass($db);
-    if (!$refClass->hasMethod('sendDirectFcm')) {
-        throw new RuntimeException('sendDirectFcm not available');
-    }
-    $m = $refClass->getMethod('sendDirectFcm');
-    $m->setAccessible(true);
-    $m->invoke(
-        $db,
-        $title,
-        $body,
-        [
-            'reference'    => $ref,
-            'click_action' => 'https://cupsandcuddles.online/admin/admin.php'
-        ]
-    );
-    echo json_encode(['success'=>true,'message'=>'Push dispatched (check error_log)']);
+    $db->pushAdminNotification($title, $body, $reference ?: null);
+    echo json_encode(['success'=>true,'message'=>'Notification dispatched']);
 } catch (Throwable $e) {
-    error_log('send_fcm.php error: '.$e->getMessage());
-    echo json_encode(['success'=>false,'message'=>'Send failed']);
+    error_log('send_fcm error: '.$e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success'=>false,'message'=>'Internal error']);
 }
