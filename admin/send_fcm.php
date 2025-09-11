@@ -3,7 +3,7 @@ require_once __DIR__ . '/database/db_connect.php';
 $firebase = require __DIR__ . '/firebase.php';
 
 $db = new Database();
-$result = $db->getAdminFcmToken(1); // Example: admin with ID 1
+$result = $db->getAdminFcmToken(1); // Example: Admin ID 1
 $token = $result['fcm_token'] ?? null;
 
 if ($token) {

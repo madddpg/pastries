@@ -1,11 +1,9 @@
 <?php
-// firebase.php
 require __DIR__ . '/vendor/autoload.php';
 
 use Google\Auth\Credentials\ServiceAccountCredentials;
 use Dotenv\Dotenv;
 
-// Load .env
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -20,7 +18,6 @@ if (!$serviceAccount || !isset($serviceAccount['project_id'])) {
 $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
 $credentials = new ServiceAccountCredentials($scopes, $serviceAccount);
 
-// Fetch OAuth2 access token
 $token = $credentials->fetchAuthToken();
 if (!isset($token['access_token'])) {
     throw new Exception('Failed to obtain access token for FCM');
