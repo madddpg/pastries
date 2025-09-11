@@ -69,6 +69,9 @@ body {
 
 /* Tables: keep scroll on narrow devices and collapse rows into card view */
 .table-container { overflow-x: auto; }
+/* Ensure pagination always centered and consistent */
+#pickedup-pagination { display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:12px; }
+#pickedup-pagination button { font-family:'Inter',sans-serif; }
 
 /* Make modals adapt full width on small screens */
 .modal-content, .product-modal-content {

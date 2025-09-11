@@ -1406,7 +1406,12 @@ function fetch_locations_pdo($con)
                 const bar = document.createElement('div');
                 bar.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
                 bar.textContent = (n.title || 'New Order') + (n.body ? (' - ' + n.body) : '');
-                bar.onclick = () => location.href = '/admin/admin.php';
+                bar.onclick = () => {
+                    document.querySelector('.nav-item[data-section="order-history"]')?.click();
+                    window.PickedUpOrders?.refresh();
+                };
+
+                window.PickedUpOrders?.refresh();
                 document.body.appendChild(bar);
                 setTimeout(() => bar.remove(), 6000);
             });
@@ -1417,114 +1422,128 @@ function fetch_locations_pdo($con)
             });
         })();
 
-        (function(){
-  const tbody = document.getElementById('pickedup-orders-tbody');
-  const pager = document.getElementById('pickedup-pagination');
-  if (!tbody || !pager) return;
+        (function() {
+            const tbody = document.getElementById('pickedup-orders-tbody');
+            const pager = document.getElementById('pickedup-pagination');
+            if (!tbody || !pager) return;
 
-  let pickedUpPage = 1;
-  const pageSize = 10;
+            let pickedUpPage = 1;
+            const pageSize = 10;
 
-  function money(v){ return Number(v||0).toFixed(2); }
+            function money(v) {
+                return Number(v || 0).toFixed(2);
+            }
 
-  function renderRows(list){
-    tbody.innerHTML = '';
-    if (!list.length){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
-      return;
-    }
-    list.forEach(o=>{
-      const itemsText = (o.items||[])
-        .map(i=>`${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)
-        .join(', ');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+            function renderRows(list) {
+                tbody.innerHTML = '';
+                if (!list.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
+                    return;
+                }
+                list.forEach(o => {
+                    const itemsText = (o.items || [])
+                        .map(i => `${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)
+                        .join(', ');
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
         <td style="padding:6px;">${o.reference_number}</td>
         <td style="padding:6px;">${o.customer_name}</td>
         <td style="padding:6px;">${itemsText || '-'}</td>
         <td style="padding:6px;">${money(o.total_amount)}</td>
         <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
         <td style="padding:6px;">${new Date(o.created_at).toLocaleString()}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
+                    tbody.appendChild(tr);
+                });
+            }
 
-  function button(page,label,disabled=false,active=false){
-    const b=document.createElement('button');
-    b.textContent=label;
-    b.disabled=disabled;
-    b.style.cssText=`padding:6px 10px;border:1px solid #059669;border-radius:6px;
+            function button(page, label, disabled = false, active = false) {
+                const b = document.createElement('button');
+                b.textContent = label;
+                b.disabled = disabled;
+                b.style.cssText = `padding:6px 10px;border:1px solid #059669;border-radius:6px;
       background:${active?'#059669':'#fff'};color:${active?'#fff':'#059669'};
       cursor:${disabled?'not-allowed':'pointer'};font-size:12px;`;
-    if(!disabled && !active) b.addEventListener('click',()=>load(page));
-    return b;
-  }
+                if (!disabled && !active) b.addEventListener('click', () => load(page));
+                return b;
+            }
 
-  function renderPager(meta){
-    pager.innerHTML='';
-    if(meta.totalPages<=1) return;
-    if(pickedUpPage>1) pager.appendChild(button(pickedUpPage-1,'«'));
-    const max=7;
-    let start=Math.max(1,pickedUpPage-3);
-    let end=Math.min(meta.totalPages,start+max-1);
-    if(end-start+1<max) start=Math.max(1,end-max+1);
-    if(start>1){
-      pager.appendChild(button(1,'1'));
-      if(start>2){
-        const span=document.createElement('span');span.textContent='...';span.style.cssText='padding:6px 4px;font-size:12px;';pager.appendChild(span);
-      }
-    }
-    for(let p=start;p<=end;p++) pager.appendChild(button(p,String(p),false,p===pickedUpPage));
-    if(end<meta.totalPages){
-      if(end<meta.totalPages-1){
-        const span=document.createElement('span');span.textContent='...';span.style.cssText='padding:6px 4px;font-size:12px;';pager.appendChild(span);
-      }
-      pager.appendChild(button(meta.totalPages,String(meta.totalPages)));
-    }
-    if(pickedUpPage<meta.totalPages) pager.appendChild(button(pickedUpPage+1,'»'));
-  }
+            function renderPager(meta) {
+                pager.innerHTML = '';
+                if (meta.totalPages <= 1) return;
+                if (pickedUpPage > 1) pager.appendChild(button(pickedUpPage - 1, '«'));
+                const max = 7;
+                let start = Math.max(1, pickedUpPage - 3);
+                let end = Math.min(meta.totalPages, start + max - 1);
+                if (end - start + 1 < max) start = Math.max(1, end - max + 1);
+                if (start > 1) {
+                    pager.appendChild(button(1, '1'));
+                    if (start > 2) {
+                        const span = document.createElement('span');
+                        span.textContent = '...';
+                        span.style.cssText = 'padding:6px 4px;font-size:12px;';
+                        pager.appendChild(span);
+                    }
+                }
+                for (let p = start; p <= end; p++) pager.appendChild(button(p, String(p), false, p === pickedUpPage));
+                if (end < meta.totalPages) {
+                    if (end < meta.totalPages - 1) {
+                        const span = document.createElement('span');
+                        span.textContent = '...';
+                        span.style.cssText = 'padding:6px 4px;font-size:12px;';
+                        pager.appendChild(span);
+                    }
+                    pager.appendChild(button(meta.totalPages, String(meta.totalPages)));
+                }
+                if (pickedUpPage < meta.totalPages) pager.appendChild(button(pickedUpPage + 1, '»'));
+            }
 
-  function load(page=1){
-    pickedUpPage=page;
-    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
-    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`,{cache:'no-store'})
-      .then(r=>r.json())
-      .then(d=>{
-        if(!d.success) throw 0;
-        renderRows(d.orders||[]);
-        renderPager(d);
-      })
-      .catch(()=>{
-        tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
-        pager.innerHTML='';
-      });
-  }
+            function load(page = 1) {
+                pickedUpPage = page;
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
+                fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`, {
+                        cache: 'no-store'
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (!d.success) throw 0;
+                        renderRows(d.orders || []);
+                        renderPager(d);
+                    })
+                    .catch(() => {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
+                        pager.innerHTML = '';
+                    });
+            }
 
-  // Mutation observer to lazy load when section shown
-  const observer=new MutationObserver(()=>{
-    const sec=document.getElementById('order-history-section');
-    if(sec && sec.classList.contains('active') && !tbody.dataset.loaded){
-      tbody.dataset.loaded='1';
-      load(1);
-    }
-  });
-  observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+            // Mutation observer to lazy load when section shown
+            const observer = new MutationObserver(() => {
+                const sec = document.getElementById('order-history-section');
+                if (sec && sec.classList.contains('active') && !tbody.dataset.loaded) {
+                    tbody.dataset.loaded = '1';
+                    load(1);
+                }
+            });
+            observer.observe(document.body, {
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class']
+            });
 
-  // Global refresh hook
-  const prev = window.forceDashRefresh;
-  window.forceDashRefresh = function(){
-    if (typeof prev==='function') prev();
-    if (document.getElementById('order-history-section')?.classList.contains('active')){
-      load(pickedUpPage);
-    }
-  };
+            // Global refresh hook
+            const prev = window.forceDashRefresh;
+            window.forceDashRefresh = function() {
+                if (typeof prev === 'function') prev();
+                if (document.getElementById('order-history-section')?.classList.contains('active')) {
+                    load(pickedUpPage);
+                }
+            };
 
-  // If already active on initial load
-  if (document.getElementById('order-history-section')?.classList.contains('active')){
-    tbody.dataset.loaded='1';
-    load(1);
-  }
-})();
+            // If already active on initial load
+            if (document.getElementById('order-history-section')?.classList.contains('active')) {
+                tbody.dataset.loaded = '1';
+                load(1);
+            }
+        })();
     </script>
 </body>
 
