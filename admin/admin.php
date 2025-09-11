@@ -1505,22 +1505,27 @@ function fetch_locations_pdo($con)
                 if (pickedUpPage < meta.totalPages) pager.appendChild(button(pickedUpPage + 1, '»'));
             }
 
-           
-// ...inside the IIFE handling picked up pagination...
-const sortSelect = document.getElementById('pickedup-sort');
-
-function load(page = 1) {
-  pickedUpPage = page;
-  const sort = sortSelect ? sortSelect.value : 'id_desc';
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
-  fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`, { cache:'no-store' })
-    .then(r=>r.json())
-    .then(d=>{ /* unchanged render */ });
-}
-
+            function load(page = 1) {
+                pickedUpPage = page;
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
+                fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`, {
+                        cache: 'no-store'
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (!d.success) throw 0;
+                        renderRows(d.orders || []);
+                        renderPager(d);
+                    })
+                    .catch(() => {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
+                        pager.innerHTML = '';
+                    });
+                    
 if (sortSelect) {
   sortSelect.addEventListener('change', ()=> load(1));
 }
+            }
 
             // Mutation observer to lazy load when section shown
             const observer = new MutationObserver(() => {
