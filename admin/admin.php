@@ -323,6 +323,7 @@ function fetch_locations_pdo($con)
                                 } ?>
                             </tbody>
                         </table>
+                        <div id="pickedup-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:12px;"></div>
                         <?php if ($showMore): ?>
                             <div style="text-align:center;margin-top:12px;">
                                 <button id="showMoreOrdersBtn" class="btn-primary" style="padding:8px 24px;">Show More</button>
@@ -788,6 +789,8 @@ function fetch_locations_pdo($con)
             </div>
         </main>
     </div>
+
+    
     <script>
         // Navigation functionality
         document.addEventListener("DOMContentLoaded", function() {
@@ -1319,6 +1322,77 @@ function fetch_locations_pdo($con)
             });
 
 
+(function(){
+  const tbody = document.getElementById('pickedup-orders-tbody');
+  const pag   = document.getElementById('pickedup-pagination');
+  let currentPage = 1;
+  const pageSize = 10;
+
+  function fmtMoney(v){ return Number(v).toFixed(2); }
+
+  function renderOrders(d){
+    if(!tbody) return;
+    tbody.innerHTML = '';
+    if(!d.orders || d.orders.length===0){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders found.</td></tr>';
+      return;
+    }
+    d.orders.forEach(o=>{
+      const items = (o.items||[]).map(it=>`${it.quantity}x ${it.name}${it.size?(' ('+it.size+')'):''}`).join(', ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px;">${o.reference_number}</td>
+        <td style="padding:6px;">${o.customer_name}</td>
+        <td style="padding:6px;">${items || '-'}</td>
+        <td style="padding:6px;">${fmtMoney(o.total_amount)}</td>
+        <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
+        <td style="padding:6px;">${new Date().toLocaleDateString()}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderPagination(d){
+    if(!pag) return;
+    pag.innerHTML = '';
+    if(d.totalPages<=1) return;
+    const mkBtn=(p,label=String(p))=>{
+      const b=document.createElement('button');
+      b.textContent=label;
+      b.style.cssText='padding:6px 10px;border:1px solid #059669;background:'+(p===currentPage?'#059669;color:#fff;':'#fff;color:#059669;')+'border-radius:6px;cursor:pointer;font-size:12px;';
+      b.disabled = (p===currentPage);
+      b.onclick=()=>load(p);
+      return b;
+    };
+    if(currentPage>1) pag.appendChild(mkBtn(currentPage-1,'«'));
+    for(let i=1;i<=d.totalPages && i<=7;i++){
+      // show first 7 or all if less
+      pag.appendChild(mkBtn(i));
+    }
+    if(d.totalPages>7){
+      const span=document.createElement('span');
+      span.textContent=' ... ';
+      span.style.cssText='padding:6px 4px;font-size:12px;';
+      pag.appendChild(span);
+      pag.appendChild(mkBtn(d.totalPages));
+    }
+    if(currentPage<d.totalPages) pag.appendChild(mkBtn(currentPage+1,'»'));
+  }
+
+  function load(page=1){
+    currentPage = page;
+    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`)
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d.success){ throw new Error('Fail'); }
+        renderOrders(d);
+        renderPagination(d);
+      })
+      .catch(()=>{
+        if(tbody) tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:#b91c1c;">Failed to load picked up orders.</td></tr>';
+      });
+  }
+  load();
+})();
 
 
             // Dashboard stats AJAX update
