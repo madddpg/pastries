@@ -293,6 +293,14 @@ function fetch_locations_pdo($con)
                                 </tr>
                             </tbody>
                         </table>
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px;">
+  <select id="pickedup-sort" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;">
+    <option value="id_desc" selected>Newest ID</option>
+    <option value="id_asc">Oldest ID</option>
+    <option value="created_desc">Newest Date</option>
+    <option value="created_asc">Oldest Date</option>
+  </select>
+</div>
                         <div id="pickedup-pagination" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;"></div>
                     </div>
                 </div>
@@ -1497,23 +1505,22 @@ function fetch_locations_pdo($con)
                 if (pickedUpPage < meta.totalPages) pager.appendChild(button(pickedUpPage + 1, '»'));
             }
 
-            function load(page = 1) {
-                pickedUpPage = page;
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
-                fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`, {
-                        cache: 'no-store'
-                    })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (!d.success) throw 0;
-                        renderRows(d.orders || []);
-                        renderPager(d);
-                    })
-                    .catch(() => {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
-                        pager.innerHTML = '';
-                    });
-            }
+           
+// ...inside the IIFE handling picked up pagination...
+const sortSelect = document.getElementById('pickedup-sort');
+
+function load(page = 1) {
+  pickedUpPage = page;
+  const sort = sortSelect ? sortSelect.value : 'id_desc';
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
+  fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`, { cache:'no-store' })
+    .then(r=>r.json())
+    .then(d=>{ /* unchanged render */ });
+}
+
+if (sortSelect) {
+  sortSelect.addEventListener('change', ()=> load(1));
+}
 
             // Mutation observer to lazy load when section shown
             const observer = new MutationObserver(() => {
