@@ -33,6 +33,8 @@ function showSection(sectionName) {
 // ensure global exposure (redundant if declared at top-level but explicit is fine)
 
 window.showSection = showSection;
+// Ensure a global default sugar selection
+window.selectedSugar = window.selectedSugar || 'Less Sweet';
 let cart = []
 let currentSection = "home"
 let isLoggedIn = false
@@ -51,6 +53,16 @@ const TOPPINGS = [
   { key: 'whipped_cream', name: 'Additional whipped cream', price: 20 }
 ];
 
+function selectSugar(level) {
+  const normalized = (level || '').toString().trim();
+  document.querySelectorAll('.sugar-btn').forEach(btn => btn.classList.remove('active'));
+  const btnMatch = Array.from(document.querySelectorAll('.sugar-btn'))
+    .find(b => (b.dataset.sugar || b.textContent).trim().toLowerCase() === normalized.toLowerCase());
+  if (btnMatch) btnMatch.classList.add('active');
+  window.selectedSugar = normalized || 'Less Sweet';
+  if (currentProduct) currentProduct.sugar = window.selectedSugar;
+  if (typeof recalcModalTotal === 'function') recalcModalTotal();
+}
 
 function recalcModalTotal() {
   if (!currentProduct) return;
@@ -209,41 +221,47 @@ document.addEventListener('click', function (e) {
   }
 });
 
-
 function addProductToCart() {
   if (!currentProduct) return;
-  // build item object with toppings
-  // determine base price same way recalcModalTotal does (without toppings)
+
   let base = Number(currentProduct.price || 0);
   if (currentProduct.dataType !== 'pastries') {
-    base = selectedSize === 'Grande' ? Number(currentProduct.grandePrice || base) : Number(currentProduct.supremePrice || base);
+    base = selectedSize === 'Grande'
+      ? Number(currentProduct.grandePrice || base)
+      : Number(currentProduct.supremePrice || base);
   } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
     base = Number(currentProduct.price || base);
   }
-  const toppingsArr = Object.keys(modalSelectedToppings).map(k => {
+  
+  const toppingsArr = Object.keys(modalSelectedToppings || {}).map(k => {
     const t = modalSelectedToppings[k];
-    return { id: k, name: t.name, price: Number(t.price || 0), quantity: Number(t.qty || 1) };
+    return {
+      id: k,
+      name: t.name,
+      price: Number(t.price || 0),
+      quantity: Number(t.qty || 1)
+    };
   });
   const toppingsSum = toppingsArr.reduce((s, t) => s + (t.price * t.quantity), 0);
   const itemPrice = Number((base + toppingsSum).toFixed(2));
+  const sugarLevel = currentProduct.sugar || window.selectedSugar || 'Less Sweet';
 
-  const item = {
+ const item = {
     product_id: currentProduct.id || ('manual-' + (currentProduct.name || '').replace(/\s+/g, '-').toLowerCase()),
-    name: `${currentProduct.name} ${currentProduct.dataType === 'pastries' ? '(' + selectedSize + ')' : '(' + selectedSize + ')'}`,
+    name: `${currentProduct.name} (${selectedSize})`,
     basePrice: base,
     price: itemPrice,
     quantity: 1,
     size: selectedSize,
+    sugar: sugarLevel,             // NEW: include sugar level in cart item
     toppings: toppingsArr,
     description: currentProduct.description || ''
   };
 
-  // reuse existing addToCart by accepting an object
   addToCart(item);
   closeProductModal();
   showNotification("Product added to cart!", "success");
 }
-
 // ...existing code...
 // small delegated handlers to match the new button UI in the modal
 document.addEventListener('click', function (e) {
