@@ -865,82 +865,84 @@ private function getFcmAccessToken(): ?string
         return $data['access_token'];
     }
 
-   private function sendDirectFcm(string $title, string $body, array $data = []): void
-    {
-        $tokens = $this->getAllAdminFcmTokens();
-        if (!$tokens) {
-            error_log('FCM v1: no admin tokens to send.');
-            return;
-        }
+ private function sendDirectFcm(string $title, string $body, array $data = []): void
+{
+    $tokens = $this->getAllAdminFcmTokens();
+    if (!$tokens) {
+        error_log('FCM v1: no admin tokens to send.');
+        return;
+    }
 
-        $accessToken = $this->getFcmAccessToken();
-        if (!$accessToken) {
-            error_log('FCM v1: cannot obtain access token.');
-            return;
-        }
+    $accessToken = $this->getFcmAccessToken();
+    if (!$accessToken) {
+        error_log('FCM v1: cannot obtain access token.');
+        return;
+    }
 
-        $projectId = 'coffeeshop-8ce2a'; // ensure this matches your Firebase project ID
-        $endpoint  = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
-        $icon      = '/images/CC.png';
+    $projectId = 'coffeeshop-8ce2a'; // ensure this matches your Firebase project ID
+    $endpoint  = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+    $icon      = '/images/CC.png';
 
-        // Merge click_action if not already provided
-        if (!isset($data['click_action'])) {
-            $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
-        }
+    // Merge click_action if not already provided
+    if (!isset($data['click_action'])) {
+        $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
+    }
 
-        foreach ($tokens as $token) {
-            $payload = [
-                'message' => [
-                    'token'        => $token,
+    foreach ($tokens as $token) {
+        $payload = [
+            'message' => [
+                'token'        => $token,
+                'notification' => [
+                    'title' => $title,
+                    'body'  => $body
+                ],
+                'data'        => $data,
+                'webpush'     => [
                     'notification' => [
-                        'title' => $title,
-                        'body'  => $body
+                        'icon' => $icon
                     ],
-                    'data'        => $data,
-                    'webpush'     => [
-                        'notification' => [
-                            'icon' => $icon
-                        ],
-                        'fcm_options' => [
-                            'link' => $data['click_action']
-                        ]
-                    ],
-                    'android'     => [
-                        'notification' => [
-                            'icon' => $icon,
-                            'click_action' => $data['click_action']
-                        ]
+                    'fcm_options' => [
+                        'link' => $data['click_action']
+                    ]
+                ],
+                'android'     => [
+                    'notification' => [
+                        'icon'         => $icon,
+                        'click_action' => $data['click_action']
                     ]
                 ]
-            ];
+            ]
+        ];
 
-            $ch = curl_init($endpoint);
-            curl_setopt_array($ch, [
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    "Authorization: Bearer {$accessToken}",
-                    "Content-Type: application/json"
-                ],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POSTFIELDS     => json_encode($payload),
-                CURLOPT_TIMEOUT        => 20
-            ]);
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                "Authorization: Bearer {$accessToken}",
+                "Content-Type: application/json"
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_TIMEOUT        => 20
+        ]);
 
-            $resp = curl_exec($ch);
-            if ($resp === false) {
-                error_log('FCM v1 cURL error: ' . curl_error($ch));
-            } else {
-                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                if ($code >= 300) {
-                    error_log("FCM v1 send fail HTTP {$code}: {$resp}");
-                } else {
-                    // Successful response contains name field like: projects/.../messages/0:...
-                    error_log("FCM v1 send OK: {$resp}");
-                }
+        $resp = curl_exec($ch);
+        if ($resp === false) {
+            error_log('FCM v1 cURL error: ' . curl_error($ch));
+        } else {
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            // Log both the payload and Firebase’s raw response
+            error_log("FCM v1 request: " . json_encode($payload));
+            error_log("FCM v1 response (HTTP {$code}): {$resp}");
+
+            if ($code >= 300) {
+                error_log("FCM v1 send failed for token {$token}");
             }
-            curl_close($ch);
         }
+        curl_close($ch);
     }
+}
+
 
     public function fetch_recent_products_by_data_type($data_type, $limit = 3)
     {
