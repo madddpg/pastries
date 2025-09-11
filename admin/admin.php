@@ -1482,13 +1482,24 @@ function fetch_locations_pdo($con)
     }
   }
 
-  messaging.onMessage(p => {
+messaging.onMessage(p => {
     console.log('[FCM] foreground payload:', p);
     const n = p.notification || {};
-    new Notification(n.title || 'New Order', {
-      body: n.body || '',
-      icon: n.icon || '/images/CC.png'
-    });
+    if (!document.hidden) {
+      // Inline banner (non-blocking)
+      const bar = document.createElement('div');
+      bar.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-family:Inter,Arial,sans-serif;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.18);cursor:pointer;';
+      bar.textContent = (n.title || 'New Order') + (n.body ? ' – ' + n.body : '');
+      bar.onclick = () => { window.location.href = '/admin/admin.php'; };
+      document.body.appendChild(bar);
+      setTimeout(()=> bar.remove(), 6000);
+    } else {
+      // Tab not focused -> let Notification API handle
+      new Notification(n.title || 'New Order', {
+        body: n.body || '',
+        icon: n.icon || '/images/CC.png'
+      });
+    }
   });
 
   await subscribeTopic(true);

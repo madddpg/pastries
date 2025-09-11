@@ -878,4 +878,18 @@ class Database
         $stmt = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''");
         return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
     }
+
+
+      public function sendOrderNotification(string $reference, string $status = 'pending'): void
+    {
+        $this->sendDirectFcm(
+            "New Order",
+            "Reference {$reference}",
+            [
+                'reference'    => $reference,
+                'status'       => $status,
+                'click_action' => 'https://cupsandcuddles.online/admin/admin.php'
+            ]
+        );
+    }
 }
