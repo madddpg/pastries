@@ -1429,12 +1429,12 @@ function fetch_locations_pdo($con)
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 (async function initAdminPush(){
-  if (!('Notification' in window)) return;
+  if (!('Notification' in window)) { console.warn('[FCM] Notifications not supported'); return; }
   const perm = await Notification.requestPermission();
-  if (perm !== 'granted') return;
+  if (perm !== 'granted') { console.warn('[FCM] Permission denied'); return; }
 
   const config = {
-    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",              // replace
+    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",
     authDomain: "coffeeshop-8ce2a.firebaseapp.com",
     projectId: "coffeeshop-8ce2a",
     storageBucket: "coffeeshop-8ce2a.appspot.com",
@@ -1445,25 +1445,45 @@ function fetch_locations_pdo($con)
   if (!firebase.apps.length) firebase.initializeApp(config);
 
   const messaging = firebase.messaging();
+  // Register (or update) service worker
   const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-  messaging.useServiceWorker(swReg);
+  console.log('[FCM] SW registered scope:', swReg.scope);
 
-  const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";       // replace with BBD4... key (VAPID)
-  async function subscribeTopic() {
+  const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
+
+  async function subscribeTopic(force = false) {
     try {
-      const token = await messaging.getToken({ vapidKey });
+      const token = await messaging.getToken({
+        vapidKey,
+        serviceWorkerRegistration: swReg
+      });
+      console.log('[FCM] token:', token ? token.substring(0,25)+'...' : '(none)');
       if (!token) return;
-      if (localStorage.getItem('last_fcm_token') === token) return;
-      await fetch('firebase.php', {              // updated to actual filename
+
+      if (!force && localStorage.getItem('last_fcm_token') === token) {
+        console.log('[FCM] token unchanged (skip subscribe)');
+        return;
+      }
+
+      const res = await fetch('firebase.php', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ token })
       });
-      localStorage.setItem('last_fcm_token', token);
-    } catch(e){ console.warn('FCM token error', e); }
+      const js = await res.json().catch(()=>({}));
+      console.log('[FCM] subscribe response:', res.status, js);
+      if (js.success) {
+        localStorage.setItem('last_fcm_token', token);
+      } else {
+        console.warn('[FCM] subscription failed');
+      }
+    } catch(e){
+      console.warn('[FCM] subscribe error', e);
+    }
   }
 
   messaging.onMessage(p => {
+    console.log('[FCM] foreground payload:', p);
     const n = p.notification || {};
     new Notification(n.title || 'New Order', {
       body: n.body || '',
@@ -1471,10 +1491,13 @@ function fetch_locations_pdo($con)
     });
   });
 
-  subscribeTopic();
+  await subscribeTopic(true);
+
+  // Re-try on visibility (in case token rotated)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') subscribeTopic();
   });
+
 })();
 </script>
 </body>
