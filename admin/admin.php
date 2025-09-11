@@ -325,7 +325,7 @@ function fetch_locations_pdo($con)
                         </table>
                         <div id="pickedup-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:12px;"></div>
                         <?php if ($showMore): ?>
-                            
+
                         <?php endif; ?>
                     </div>
                 </div>
@@ -342,7 +342,7 @@ function fetch_locations_pdo($con)
                         <a href="?status=pending" class="tab<?= $live_status === 'pending' ? ' active' : '' ?>" data-status="pending">Pending</a>
                     </div>
 
-                        <div class="live-orders-grid">
+                    <div class="live-orders-grid">
                         <?php
                         // Use the same data + template as AJAX to keep design identical
                         $orders = fetch_live_orders_pdo($con, $live_status);
@@ -788,7 +788,7 @@ function fetch_locations_pdo($con)
         </main>
     </div>
 
-    
+
     <script>
         // Navigation functionality
         document.addEventListener("DOMContentLoaded", function() {
@@ -1123,24 +1123,29 @@ function fetch_locations_pdo($con)
                 });
             }
 
-         if (addLocationForm) {
-                    addLocationForm.addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        if (addLocationResult) addLocationResult.textContent = '';
-                        const formData = new FormData(addLocationForm);
-                        fetch('locations.php', { method: 'POST', body: formData })
-                            .then(res => res.text())
-                            .then(text => {
-                                if (addLocationResult) addLocationResult.textContent = text;
-                                if (text.toLowerCase().includes('success')) {
-                                    addLocationModal.style.display = 'none';
-                                    addLocationForm.reset();
-                                    // TODO: optionally append the new location row here without reload
-                                }
-                            })
-                            .catch(() => { if (addLocationResult) addLocationResult.textContent = 'Failed to add location.'; });
-                    });
-                }
+            if (addLocationForm) {
+                addLocationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    if (addLocationResult) addLocationResult.textContent = '';
+                    const formData = new FormData(addLocationForm);
+                    fetch('locations.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.text())
+                        .then(text => {
+                            if (addLocationResult) addLocationResult.textContent = text;
+                            if (text.toLowerCase().includes('success')) {
+                                addLocationModal.style.display = 'none';
+                                addLocationForm.reset();
+                                // TODO: optionally append the new location row here without reload
+                            }
+                        })
+                        .catch(() => {
+                            if (addLocationResult) addLocationResult.textContent = 'Failed to add location.';
+                        });
+                });
+            }
 
             // Edit Location Modal
             var editLocationModal = document.getElementById('editLocationModal');
@@ -1196,7 +1201,7 @@ function fetch_locations_pdo($con)
                                 setTimeout(() => {
                                     editLocationModal.style.display = 'none';
                                     editLocationForm.reset();
-                                    location.reload();
+                                    
                                 }, 1200);
                             }
                         })
@@ -1206,7 +1211,7 @@ function fetch_locations_pdo($con)
                 });
             }
 
-           if (window.IS_SUPER_ADMIN) {
+            if (window.IS_SUPER_ADMIN) {
                 document.querySelectorAll('.delete-location-btn').forEach(function(btn) {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
@@ -1216,19 +1221,23 @@ function fetch_locations_pdo($con)
                         const id = row && row.getAttribute('data-location-id');
                         if (!id) return;
                         fetch('locations.php', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                            body: 'action=delete&id=' + encodeURIComponent(id)
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                if (row) row.remove(); // remove row in-place
-                            } else {
-                                alert(data.message || 'Delete failed');
-                            }
-                        })
-                        .catch(() => { alert('Delete request failed'); });
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: 'action=delete&id=' + encodeURIComponent(id)
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    if (row) row.remove(); // remove row in-place
+                                } else {
+                                    alert(data.message || 'Delete failed');
+                                }
+                            })
+                            .catch(() => {
+                                alert('Delete request failed');
+                            });
                     });
                 });
             }
@@ -1320,77 +1329,83 @@ function fetch_locations_pdo($con)
             });
 
 
-(function(){
-  const tbody = document.getElementById('pickedup-orders-tbody');
-  const pag   = document.getElementById('pickedup-pagination');
-  let currentPage = 1;
-  const pageSize = 10;
+            (function() {
+                const tbody = document.getElementById('pickedup-orders-tbody');
+                const pag = document.getElementById('pickedup-pagination');
+                let currentPage = 1;
+                const pageSize = 10;
 
-  function fmtMoney(v){ return Number(v).toFixed(2); }
+                function fmtMoney(v) {
+                    return Number(v).toFixed(2);
+                }
 
-  function renderOrders(d){
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    if(!d.orders || d.orders.length===0){
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders found.</td></tr>';
-      return;
-    }
-    d.orders.forEach(o=>{
-      const items = (o.items||[]).map(it=>`${it.quantity}x ${it.name}${it.size?(' ('+it.size+')'):''}`).join(', ');
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+                function renderOrders(d) {
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+                    if (!d.orders || d.orders.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders found.</td></tr>';
+                        return;
+                    }
+                    d.orders.forEach(o => {
+                        const items = (o.items || []).map(it => `${it.quantity}x ${it.name}${it.size?(' ('+it.size+')'):''}`).join(', ');
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
         <td style="padding:6px;">${o.reference_number}</td>
         <td style="padding:6px;">${o.customer_name}</td>
         <td style="padding:6px;">${items || '-'}</td>
         <td style="padding:6px;">${fmtMoney(o.total_amount)}</td>
         <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
         <td style="padding:6px;">${new Date().toLocaleDateString()}</td>`;
-      tbody.appendChild(tr);
-    });
-  }
+                        tbody.appendChild(tr);
+                    });
+                }
 
-  function renderPagination(d){
-    if(!pag) return;
-    pag.innerHTML = '';
-    if(d.totalPages<=1) return;
-    const mkBtn=(p,label=String(p))=>{
-      const b=document.createElement('button');
-      b.textContent=label;
-      b.style.cssText='padding:6px 10px;border:1px solid #059669;background:'+(p===currentPage?'#059669;color:#fff;':'#fff;color:#059669;')+'border-radius:6px;cursor:pointer;font-size:12px;';
-      b.disabled = (p===currentPage);
-      b.onclick=()=>load(p);
-      return b;
-    };
-    if(currentPage>1) pag.appendChild(mkBtn(currentPage-1,'«'));
-    for(let i=1;i<=d.totalPages && i<=7;i++){
-      // show first 7 or all if less
-      pag.appendChild(mkBtn(i));
-    }
-    if(d.totalPages>7){
-      const span=document.createElement('span');
-      span.textContent=' ... ';
-      span.style.cssText='padding:6px 4px;font-size:12px;';
-      pag.appendChild(span);
-      pag.appendChild(mkBtn(d.totalPages));
-    }
-    if(currentPage<d.totalPages) pag.appendChild(mkBtn(currentPage+1,'»'));
-  }
+                function renderPagination(d) {
+                    if (!pag) return;
+                    pag.innerHTML = '';
+                    if (d.totalPages <= 1) return;
+                    const mkBtn = (p, label = String(p)) => {
+                        const b = document.createElement('button');
+                        b.textContent = label;
+                        b.style.cssText = 'padding:6px 10px;border:1px solid #059669;background:' + (p === currentPage ? '#059669;color:#fff;' : '#fff;color:#059669;') + 'border-radius:6px;cursor:pointer;font-size:12px;';
+                        b.disabled = (p === currentPage);
+                        b.onclick = () => load(p);
+                        return b;
+                    };
+                    if (currentPage > 1) pag.appendChild(mkBtn(currentPage - 1, '«'));
+                    for (let i = 1; i <= d.totalPages && i <= 7; i++) {
+                        // show first 7 or all if less
+                        pag.appendChild(mkBtn(i));
+                    }
+                    if (d.totalPages > 7) {
+                        const span = document.createElement('span');
+                        span.textContent = ' ... ';
+                        span.style.cssText = 'padding:6px 4px;font-size:12px;';
+                        pag.appendChild(span);
+                        pag.appendChild(mkBtn(d.totalPages));
+                    }
+                    if (currentPage < d.totalPages) pag.appendChild(mkBtn(currentPage + 1, '»'));
+                }
 
-  function load(page=1){
-    currentPage = page;
-    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`)
-      .then(r=>r.json())
-      .then(d=>{
-        if(!d.success){ throw new Error('Fail'); }
-        renderOrders(d);
-        renderPagination(d);
-      })
-      .catch(()=>{
-        if(tbody) tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;color:#b91c1c;">Failed to load picked up orders.</td></tr>';
-      });
-  }
-  load();
-})();
+
+
+                function load(page = 1) {
+                    currentPage = page;
+                    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`)
+                        .then(r => r.json())
+                        .then(d => {
+                            if (!d.success) {
+                                throw new Error('Fail');
+                            }
+                            renderOrders(d);
+                            renderPagination(d);
+                        })
+                        .catch(() => {
+                            if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;color:#b91c1c;">Failed to load picked up orders.</td></tr>';
+                        });
+                }
+                load();
+            })();
 
 
             // Dashboard stats AJAX update
@@ -1407,7 +1422,105 @@ function fetch_locations_pdo($con)
             updateDashboardStats();
             setInterval(updateDashboardStats, 15000); // update every 15s
 
-           
+
+            function currentLiveStatus() {
+                const active = document.querySelector('#live-orders-tabs .tab.active');
+                return active ? (active.getAttribute('data-status') || '') : '';
+            }
+
+            function refreshLiveOrders() {
+                const grid = document.querySelector('.live-orders-grid');
+                if (!grid) return;
+                const status = currentLiveStatus();
+                grid.dataset.loading = '1';
+                fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status))
+                    .then(r => r.text())
+                    .then(html => {
+                        grid.innerHTML = html;
+                    })
+                    .catch(() => {
+                        grid.innerHTML = '<div style="padding:12px;color:#b91c1c;">Failed to load live orders.</div>';
+                    })
+                    .finally(() => {
+                        delete grid.dataset.loading;
+                    });
+            }
+
+
+            let liveOrdersTimer = null;
+
+            function manageLiveOrdersPolling() {
+                const sec = document.getElementById('live-orders-section');
+                const visible = sec && sec.classList.contains('active');
+                if (visible && !liveOrdersTimer) {
+                    refreshLiveOrders();
+                    liveOrdersTimer = setInterval(refreshLiveOrders, 7000);
+                } else if (!visible && liveOrdersTimer) {
+                    clearInterval(liveOrdersTimer);
+                    liveOrdersTimer = null;
+                }
+            }
+
+
+            let pickedUpOrdersPage = 1;
+
+            function refreshPickedUpOrders(page) {
+                if (typeof page === 'number') pickedUpOrdersPage = page;
+                const tbody = document.getElementById('pickedup-orders-tbody');
+                if (!tbody) return;
+                fetch(`AJAX/fetch_pickedup_orders_page.php?page=${pickedUpOrdersPage}&pageSize=10`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (!d.success) throw 0;
+                        // rebuild rows (3 column layout in current table differs from ajax layout; adapt)
+                        tbody.innerHTML = '';
+                        if (!d.orders.length) {
+                            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No picked up orders found.</td></tr>';
+                            return;
+                        }
+                        d.orders.forEach(o => {
+                            if (!o.items.length) {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `<td>${o.reference_number}</td>
+                        <td>-</td>
+                        <td style="text-align:center;">-</td>
+                        <td>${o.customer_name}</td>
+                        <td>₱${o.total_amount.toFixed(2)}</td>
+                        <td>${o.status}</td>`;
+                                tbody.appendChild(tr);
+                            } else {
+                                o.items.forEach((it, idx) => {
+                                    const tr = document.createElement('tr');
+                                    tr.innerHTML = (idx === 0 ? `<td rowspan="${o.items.length}">${o.reference_number}</td>` : '') +
+                                        `<td>${it.name}</td>
+               <td style="text-align:center;">${it.quantity}</td>` +
+                                        (idx === 0 ? `<td rowspan="${o.items.length}">${o.customer_name}</td>
+                        <td rowspan="${o.items.length}">₱${o.total_amount.toFixed(2)}</td>
+                        <td rowspan="${o.items.length}">${o.status}</td>` : '');
+                                    tbody.appendChild(tr);
+                                });
+                            }
+                        });
+                    })
+                    .catch(() => {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;">Failed to load picked up orders.</td></tr>';
+                    });
+            }
+
+            // Expose a force refresh (called by FCM)
+            function forceDashRefresh() {
+                if (typeof updateDashboardStats === 'function') updateDashboardStats();
+                if (typeof updateRevenueOverview === 'function') updateRevenueOverview();
+                refreshLiveOrders();
+                refreshPickedUpOrders(pickedUpOrdersPage);
+            }
+
+            // Initial minor refresh delay
+            setTimeout(() => {
+                refreshLiveOrders();
+                refreshPickedUpOrders(pickedUpOrdersPage);
+            }, 1500);
+            setInterval(manageLiveOrdersPolling, 1000);
             // Revenue Overview AJAX update
             function updateRevenueOverview() {
                 fetch('AJAX/fetch_revenue_overview.php')
@@ -1437,62 +1550,82 @@ function fetch_locations_pdo($con)
         // expose super-admin flag to admin UI JS (used to show force-delete)
         window.IS_SUPER_ADMIN = <?php echo Database::isSuperAdmin() ? 'true' : 'false'; ?>;
     </script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
-<script>
-(async function initAdminPush(){
-  if (!('Notification' in window)) { console.warn('[FCM] Notifications not supported'); return; }
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') { console.warn('[FCM] Permission denied'); return; }
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+    <script>
+        (async function initAdminPush() {
+            if (!('Notification' in window)) {
+                console.warn('[FCM] Notifications not supported');
+                return;
+            }
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                console.warn('[FCM] Permission denied');
+                return;
+            }
 
-  const config = {
-    apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
-    authDomain: "coffeeshop-8ce2a.firebaseapp.com",
-    projectId: "coffeeshop-8ce2a",
-    storageBucket: "coffeeshop-8ce2a.appspot.com",
-    messagingSenderId: "398338296558",
-    appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
-    measurementId: "G-5DGJCENLGV"
-  };
-  if (!firebase.apps.length) firebase.initializeApp(config);
+            const config = {
+                apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
+                authDomain: "coffeeshop-8ce2a.firebaseapp.com",
+                projectId: "coffeeshop-8ce2a",
+                storageBucket: "coffeeshop-8ce2a.appspot.com",
+                messagingSenderId: "398338296558",
+                appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
+                measurementId: "G-5DGJCENLGV"
+            };
+            if (!firebase.apps.length) firebase.initializeApp(config);
 
-  const messaging = firebase.messaging();
-  const swReg = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
+            const messaging = firebase.messaging();
+            const swReg = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
 
-  const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
+            const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
 
-  async function registerToken(force=false){
-    try{
-      const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: swReg });
-      if(!token){ console.warn('[FCM] No token'); return; }
-      if(!force && localStorage.getItem('last_fcm_token')===token) return;
-      const res = await fetch('send_fcm.php',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ token })
-      });
-      const js = await res.json();
-      console.log('[FCM] register response', js);
-      if(js.success){ localStorage.setItem('last_fcm_token', token); }
-    }catch(e){ console.warn('[FCM] token error', e); }
-  }
+            async function registerToken(force = false) {
+                try {
+                    const token = await messaging.getToken({
+                        vapidKey,
+                        serviceWorkerRegistration: swReg
+                    });
+                    if (!token) {
+                        console.warn('[FCM] No token');
+                        return;
+                    }
+                    if (!force && localStorage.getItem('last_fcm_token') === token) return;
+                    const res = await fetch('send_fcm.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            token
+                        })
+                    });
+                    const js = await res.json();
+                    console.log('[FCM] register response', js);
+                    if (js.success) {
+                        localStorage.setItem('last_fcm_token', token);
+                    }
+                } catch (e) {
+                    console.warn('[FCM] token error', e);
+                }
+            }
 
-  messaging.onMessage(p => {
-    const n = p.notification || {};
-    const bar = document.createElement('div');
-    bar.style.cssText='position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
-    bar.textContent=(n.title||'New Order') + (n.body?(' - '+n.body):'');
-    bar.onclick=()=>location.href='/admin/admin.php';
-    document.body.appendChild(bar);
-    setTimeout(()=>bar.remove(),6000);
-  });
+            messaging.onMessage(p => {
+                const n = p.notification || {};
+                const bar = document.createElement('div');
+                bar.style.cssText = 'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
+                bar.textContent = (n.title || 'New Order') + (n.body ? (' - ' + n.body) : '');
+                bar.onclick = () => location.href = '/admin/admin.php';
+                document.body.appendChild(bar);
+                setTimeout(() => bar.remove(), 6000);
+            });
 
-  await registerToken(true);
-  document.addEventListener('visibilitychange', ()=> {
-    if(document.visibilityState==='visible') registerToken();
-  });
-})();
-</script>
+            await registerToken(true);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') registerToken();
+            });
+        })();
+    </script>
 </body>
 
 </html>

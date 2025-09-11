@@ -14,11 +14,10 @@ try {
     $db  = new Database();
     $pdo = $db->opencon();
 
-    // Total orders with status 'picked up'
     $total = (int)$pdo->query("SELECT COUNT(*) FROM `transaction` WHERE status = 'picked up'")->fetchColumn();
     $totalPages = max(1, (int)ceil($total / $pageSize));
-
     $orders = [];
+
     if ($total > 0) {
         $sql = "SELECT 
                     t.transac_id,
