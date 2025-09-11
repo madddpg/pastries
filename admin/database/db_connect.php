@@ -67,7 +67,10 @@ class Database
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
         return $orders;
-    } // Update the fetch_live_orders_pdo method
+    } 
+
+
+
     public function fetch_live_orders_pdo($status = '')
     {
         $con = $this->opencon();
@@ -102,6 +105,17 @@ class Database
         }
         return $orders;
     }
+public function getAdminFcmToken(int $adminId): ?array
+{
+    $pdo = $this->openPdo();
+
+    $stmt = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE id = ?");
+    $stmt->execute([$adminId]);
+
+    $row = $stmt->fetch();
+    return $row ?: null;
+}
+
 
     // Fetch all products with sales count 
     public function fetch_products_with_sales_pdo()

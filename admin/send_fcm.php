@@ -1,56 +1,44 @@
 <?php
-session_start();
-header('Content-Type: application/json');
-
-if (empty($_SESSION['admin_id'])) {
-    http_response_code(401);
-    echo json_encode(['success'=>false,'message'=>'Unauthorized']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success'=>false,'message'=>'POST required']);
-    exit;
-}
-
 require_once __DIR__ . '/database/db_connect.php';
-
-$raw = json_decode(file_get_contents('php://input'), true);
-if (!is_array($raw)) {
-    $raw = $_POST;
-}
-
-$token = trim($raw['token'] ?? '');
-$title = trim($raw['title'] ?? '');
-$body  = trim($raw['body'] ?? '');
-$reference = trim($raw['reference'] ?? '');
+$firebase = require __DIR__ . '/firebase.php';
 
 $db = new Database();
+$result = $db->getAdminFcmToken(1); // Example: admin with ID 1
+$token = $result['fcm_token'] ?? null;
 
-// Register token only
-if ($token && !$title && !$body && !$reference) {
-    if ($db->saveAdminFcmToken((int)$_SESSION['admin_id'], $token)) {
-        echo json_encode(['success'=>true,'message'=>'Token registered']);
-    } else {
-        http_response_code(500);
-        echo json_encode(['success'=>false,'message'=>'Token save failed']);
-    }
-    exit;
-}
+if ($token) {
+    $projectId   = $firebase['project_id'];
+    $accessToken = $firebase['access_token'];
 
-// Need title & body for sending
-if ($title === '' || $body === '') {
-    http_response_code(422);
-    echo json_encode(['success'=>false,'message'=>'Title/body required (unless only registering token)']);
-    exit;
-}
+    $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
 
-try {
-    $db->pushAdminNotification($title, $body, $reference ?: null);
-    echo json_encode(['success'=>true,'message'=>'Notification dispatched']);
-} catch (Throwable $e) {
-    error_log('send_fcm error: '.$e->getMessage());
-    http_response_code(500);
-    echo json_encode(['success'=>false,'message'=>'Internal error']);
+    $message = [
+        'message' => [
+            'token' => $token,
+            'notification' => [
+                'title' => 'New Order',
+                'body'  => 'You have a new coffee order!'
+            ],
+            'data' => [
+                'click_action' => '/admin/orders'
+            ]
+        ]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer $accessToken",
+            "Content-Type: application/json"
+        ],
+        CURLOPT_POSTFIELDS => json_encode($message),
+        CURLOPT_RETURNTRANSFER => true,
+    ]);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    echo $response ?: "Notification sent (empty response)";
+} else {
+    echo "No FCM token found for admin.";
 }
