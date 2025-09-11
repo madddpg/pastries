@@ -1446,7 +1446,7 @@ function fetch_locations_pdo($con)
 
   const messaging = firebase.messaging();
   // Register (or update) service worker
-  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+  const swReg = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
   console.log('[FCM] SW registered scope:', swReg.scope);
 
   const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
