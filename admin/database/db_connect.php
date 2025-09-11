@@ -471,12 +471,14 @@ class Database
                 $overall_sugar
             ]);
 
-            $con->commit();
+           $con->commit();
 
-            // FCM push (optional)
-            if (method_exists($this, 'sendFcmTopicAdmins')) {
-                $this->sendDirectFcm("New Order", "Reference {$reference_number}", ['reference' => $reference_number]);
-            }
+            // Unconditional direct push (removed method_exists wrapper)
+            $this->sendDirectFcm(
+                "New Order",
+                "Reference {$reference_number}",
+                ['reference' => $reference_number, 'click_action' => 'https://cupsandcuddles.online/admin/admin.php']
+            );
 
             return [
                 'success' => true,
@@ -784,24 +786,29 @@ class Database
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    private function sendDirectFcm(string $title, string $body, array $data = []): void
+     private function sendDirectFcm(string $title, string $body, array $data = []): void
     {
         $tokens = $this->getAllAdminFcmTokens();
-        if (!$tokens) return;
-        $serverKey = getenv('FCM_SERVER_KEY');
-        if (!$serverKey) {
-            error_log('FCM_SERVER_KEY missing');
-            return;
-        }
+        if (!$tokens) { error_log('FCM: no admin tokens to send'); return; }
 
-        $chunks = array_chunk($tokens, 900);
-        foreach ($chunks as $c) {
+        $serverKey = getenv('FCM_SERVER_KEY');
+        if (!$serverKey) { error_log('FCM: FCM_SERVER_KEY missing'); return; }
+
+        $endpoint = "https://fcm.googleapis.com/fcm/send";
+        $icon = '/images/CC.png';
+
+        foreach (array_chunk($tokens, 900) as $chunk) {
             $payload = [
-                'registration_ids' => $c,
-                'notification' => ['title' => $title, 'body' => $body, 'icon' => '/images/CC.png'],
+                'registration_ids' => $chunk,
+                'notification' => [
+                    'title' => $title,
+                    'body'  => $body,
+                    'icon'  => $icon
+                ],
                 'data' => $data
             ];
-            $ch = curl_init("https://fcm.googleapis.com/fcm/send");
+
+            $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
                 CURLOPT_POST => true,
                 CURLOPT_HTTPHEADER => [
@@ -810,9 +817,19 @@ class Database
                 ],
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_POSTFIELDS => json_encode($payload),
-                CURLOPT_TIMEOUT => 15
+                CURLOPT_TIMEOUT => 20
             ]);
-            curl_exec($ch);
+
+            $resp = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            if ($resp === false) {
+                error_log('FCM cURL error: '.curl_error($ch));
+            } elseif ($code >= 300) {
+                error_log("FCM send failed HTTP {$code}: {$resp}");
+            } else {
+                error_log("FCM send OK HTTP {$code}: {$resp}");
+            }
             curl_close($ch);
         }
     }
