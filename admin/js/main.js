@@ -892,133 +892,131 @@ console.info('[admin] main.js loaded');
     return null;
   }
 
-(function(){
-    const tbody = document.getElementById('pickedup-orders-tbody');
-    const pager = document.getElementById('pickedup-pagination');
-    if (!tbody || !pager) return;
+(function pickedUpOrdersModule(){
+  const tbody = document.getElementById('pickedup-orders-tbody');
+  const pager = document.getElementById('pickedup-pagination');
+  if (!tbody || !pager) return;
 
-    let currentPage = 1;
-    const pageSize = 10;
-    let totalPages = 1;
-    let loadedOnce = false;
+  let page = 1;
+  const pageSize = 10;
+  let totalPages = 1;
+  let initialized = false;
 
-    function money(v){ return Number(v||0).toFixed(2); }
+  function fmtMoney(v){ return Number(v||0).toFixed(2); }
 
-    function renderRows(list){
-      tbody.innerHTML = '';
-      if (!list.length){
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
-        return;
+  function renderRows(list){
+    tbody.innerHTML = '';
+    if (!list.length){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
+      return;
+    }
+    list.forEach(o=>{
+      const items = (o.items||[]).map(i=>`${i.quantity}x ${i.name}${i.size?` (${i.size})`:''}`).join(', ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px;">${o.reference_number}</td>
+        <td style="padding:6px;">${o.customer_name}</td>
+        <td style="padding:6px;">${items || '-'}</td>
+        <td style="padding:6px;">${fmtMoney(o.total_amount)}</td>
+        <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
+        <td style="padding:6px;">${new Date(o.created_at).toLocaleString()}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function btn(p,label,disabled=false,active=false){
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='pager-btn'+(active?' active':'');
+    b.textContent=label;
+    b.disabled=disabled;
+    if(!disabled && !active){
+      b.addEventListener('click',()=>load(p));
+    }
+    return b;
+  }
+
+  function renderPager(){
+    pager.innerHTML='';
+    if (totalPages <= 1){
+      pager.style.display='none';
+      return;
+    }
+    pager.style.display='flex';
+
+    pager.appendChild(btn(page-1,'«',page===1));
+
+    const windowSize = 5;
+    let start = Math.max(1, page - Math.floor(windowSize/2));
+    let end = start + windowSize - 1;
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - windowSize + 1);
+    }
+
+    if (start > 1){
+      pager.appendChild(btn(1,'1',false,page===1));
+      if (start > 2){
+        pager.appendChild(dotSpan());
       }
-      list.forEach(o=>{
-        const itemsText = (o.items||[])
-          .map(i=>`${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)
-          .join(', ');
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="padding:6px;">${o.reference_number}</td>
-          <td style="padding:6px;">${o.customer_name}</td>
-          <td style="padding:6px;">${itemsText || '-'}</td>
-          <td style="padding:6px;">${money(o.total_amount)}</td>
-          <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
-          <td style="padding:6px;">${new Date(o.created_at).toLocaleString()}</td>`;
-        tbody.appendChild(tr);
+    }
+
+    for (let p=start;p<=end;p++){
+      pager.appendChild(btn(p,String(p),false,p===page));
+    }
+
+    if (end < totalPages){
+      if (end < totalPages -1) pager.appendChild(dotSpan());
+      pager.appendChild(btn(totalPages,String(totalPages),false,page===totalPages));
+    }
+
+    pager.appendChild(btn(page+1,'»',page===totalPages));
+  }
+
+  function dotSpan(){
+    const s=document.createElement('span');
+    s.className='pager-ellipsis';
+    s.textContent='...';
+    return s;
+  }
+
+  function load(next=1){
+    page = next;
+    tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
+    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`,{cache:'no-store'})
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d.success) throw 0;
+        totalPages = d.totalPages || 1;
+        renderRows(d.orders||[]);
+        renderPager();
+        initialized = true;
+      })
+      .catch(()=>{
+        tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
+        pager.innerHTML='';
       });
-    }
+  }
 
-    function makeBtn(page,label,disabled=false,active=false){
-      const b=document.createElement('button');
-      b.type='button';
-      b.textContent=label;
-      b.disabled=disabled;
-      b.setAttribute('aria-label', 'Go to page ' + label);
-      if (active) b.setAttribute('aria-current','page');
-      b.style.cssText=`padding:6px 10px;margin:0 2px;border:1px solid #059669;border-radius:6px;
-        background:${active?'#059669':'#fff'};color:${active?'#fff':'#059669'};
-        cursor:${disabled?'not-allowed':'pointer'};font-size:12px;min-width:34px;`;
-      if(!disabled && !active){
-        b.addEventListener('click', ()=>load(page));
-      }
-      return b;
-    }
+  // Expose global API
+  window.PickedUpOrders = {
+    ensureLoaded(){ if(!initialized) load(1); },
+    refresh(){ if(initialized) load(page); },
+    goFirst(){ if(page!==1) load(1); },
+    goLast(){ if(page!==totalPages) load(totalPages); }
+  };
 
-    function renderPager(){
-      pager.innerHTML='';
-      if (totalPages <= 1){
-        pager.style.display='none';
-        return;
-      }
-      pager.style.display='flex';
-
-      // Prev
-      pager.appendChild(makeBtn(currentPage-1,'«',currentPage===1,false));
-
-      const windowSize = 5; // middle numbers
-      let start = Math.max(1, currentPage - Math.floor(windowSize/2));
-      let end = start + windowSize - 1;
-      if (end > totalPages) {
-        end = totalPages;
-        start = Math.max(1, end - windowSize + 1);
-      }
-
-      if (start > 1){
-        pager.appendChild(makeBtn(1,'1',false,currentPage===1));
-        if (start > 2){
-          const dots = document.createElement('span');
-            dots.textContent='...';
-            dots.style.cssText='padding:6px 4px;font-size:12px;';
-          pager.appendChild(dots);
-        }
-      }
-
-      for (let p=start; p<=end; p++){
-        pager.appendChild(makeBtn(p,String(p),false,currentPage===p));
-      }
-
-      if (end < totalPages){
-        if (end < totalPages -1){
-          const dots = document.createElement('span');
-          dots.textContent='...';
-          dots.style.cssText='padding:6px 4px;font-size:12px;';
-          pager.appendChild(dots);
-        }
-        pager.appendChild(makeBtn(totalPages,String(totalPages),false,currentPage===totalPages));
-      }
-
-      // Next
-      pager.appendChild(makeBtn(currentPage+1,'»',currentPage===totalPages,false));
-    }
-
-    function load(page=1){
-      currentPage = page;
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
-      fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`, { cache:'no-store' })
-        .then(r=>r.json())
-        .then(d=>{
-          if(!d.success) throw 0;
-          totalPages = d.totalPages || 1;
-          renderRows(d.orders||[]);
-          renderPager();
-          loadedOnce = true;
-        })
-        .catch(()=>{
-          tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
-          pager.innerHTML='';
-        });
-    }
-
-    // Public API
-    window.PickedUpOrders = {
-      ensureLoaded(){
-        if(!loadedOnce) load(1);
-      },
-      refresh(){
-        if(loadedOnce) load(currentPage);
-      }
-    };
-
-    // If section already active on first paint
-    if (document.getElementById('order-history-section')?.classList.contains('active')){
+  // Lazy load when section becomes visible
+  const observer = new MutationObserver(()=>{
+    const sec = document.getElementById('order-history-section');
+    if (sec && sec.classList.contains('active')) {
       window.PickedUpOrders.ensureLoaded();
     }
-  })();
+  });
+  observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
+
+  // If already active
+  if (document.getElementById('order-history-section')?.classList.contains('active')){
+    window.PickedUpOrders.ensureLoaded();
+  }
+})();

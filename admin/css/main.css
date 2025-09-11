@@ -69,9 +69,48 @@ body {
 
 /* Tables: keep scroll on narrow devices and collapse rows into card view */
 .table-container { overflow-x: auto; }
-/* Ensure pagination always centered and consistent */
-#pickedup-pagination { display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;margin-top:12px; }
-#pickedup-pagination button { font-family:'Inter',sans-serif; }
+/* Pagination unified styles */
+#pickedup-pagination {
+  display:flex;
+  gap:4px;
+  justify-content:center;
+  align-items:center;
+  margin-top:12px;
+  flex-wrap:wrap;
+  padding:12px 0 4px;
+}
+#pickedup-pagination .pager-btn {
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  border:1px solid #059669;
+  border-radius:8px;
+  color:#059669;
+  cursor:pointer;
+  min-width:34px;
+  font-weight:600;
+  line-height:1;
+  transition:background .15s,color .15s;
+}
+#pickedup-pagination .pager-btn:hover:not(:disabled):not(.active){
+  background:#e6f9f1;
+}
+#pickedup-pagination .pager-btn:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+#pickedup-pagination .pager-btn.active {
+  background:#059669;
+  color:#fff;
+  cursor:default;
+}
+#pickedup-pagination .pager-ellipsis {
+  padding:6px 4px;
+  font-size:12px;
+  color:#059669;
+  font-weight:600;
+  user-select:none;
+}
 
 /* Make modals adapt full width on small screens */
 .modal-content, .product-modal-content {
