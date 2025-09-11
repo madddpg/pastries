@@ -1966,35 +1966,29 @@ window.addEventListener("scroll", () => {
 async function loadActiveToppings() {
   try {
     const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
-    if (!res.ok) throw new Error('Network response not ok');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.toppings)) {
-      console.warn('loadActiveToppings: unexpected response', data);
-      return;
-    }
     const container = document.getElementById('toppingsList');
-    if (!container) {
-      console.warn('loadActiveToppings: #toppingsList not found');
+    if (!container) return;
+    if (!data.success || !Array.isArray(data.toppings) || !data.toppings.length) {
+      container.innerHTML = '<div style="padding:8px 6px;font-size:.9rem;color:#9ca3af;">No toppings available.</div>';
       return;
     }
-
-    // render as pill buttons (matches your modal UI)
     container.innerHTML = data.toppings.map(t => {
-      const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      const key = (t.key || t.id || safeName.toLowerCase().replace(/\s+/g,'-'));
+      const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const key = (t.id || safeName.toLowerCase().replace(/\s+/g,'-'));
       const price = Number(t.price || 0).toFixed(2);
       return `<button type="button" class="add-on-btn" data-key="${key}" data-price="${price}">
                 <span>${safeName}</span>
                 <span class="price">₱${price}</span>
               </button>`;
     }).join('');
-
-    // clear any previously selected toppings state
     modalSelectedToppings = {};
-    // trigger total recalc if available
     if (typeof recalcModalTotal === 'function') recalcModalTotal();
-  } catch (err) {
-    console.error('loadActiveToppings error', err);
+  } catch (e) {
+    const container = document.getElementById('toppingsList');
+    if (container) container.innerHTML = '<div style="padding:8px 6px;font-size:.9rem;color:#dc2626;">Failed to load toppings.</div>';
+    console.error('loadActiveToppings error', e);
   }
 }
 

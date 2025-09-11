@@ -1130,23 +1130,9 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             </div>
                         <?php endif; ?>
 
+                        <!-- Replace static buttons with a placeholder container -->
                         <div id="toppingsList" class="add-ons-grid" style="margin-top:10px;">
-                            <button class="add-on-btn" data-key="extra_shot" data-price="40">
-                                <span>Extra Shot</span>
-                                <span class="price">₱40</span>
-                            </button>
-                            <button class="add-on-btn" data-key="extra_sauce" data-price="20">
-                                <span>Extra Sauce</span>
-                                <span class="price">₱20</span>
-                            </button>
-                            <button class="add-on-btn" data-key="oatmilk" data-price="50">
-                                <span>Oat Milk</span>
-                                <span class="price">₱50</span>
-                            </button>
-                            <button class="add-on-btn" data-key="whipped_cream" data-price="20">
-                                <span>Additional Whip Cream</span>
-                                <span class="price">₱20</span>
-                            </button>
+                            <div style="padding:8px 6px;font-size:.9rem;color:#6b7280;">Loading toppings...</div>
                         </div>
                     </div>
 
