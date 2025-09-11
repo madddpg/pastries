@@ -1465,11 +1465,11 @@ function fetch_locations_pdo($con)
         return;
       }
 
-      const res = await fetch('firebase.php', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ token })
-      });
+     await fetch('saveAdminFcmToken.php', {
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body: JSON.stringify({ token })
+});
       const js = await res.json().catch(()=>({}));
       console.log('[FCM] subscribe response:', res.status, js);
       if (js.success) {

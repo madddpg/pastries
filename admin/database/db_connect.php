@@ -787,161 +787,175 @@ class Database
     }
 
 
-
-
-private function getFcmAccessToken(): ?string
+ public function getAllAdminFcmTokens(): array
     {
+        $pdo = $this->opencon();
+        $stmt = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''");
+        $tokens = $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        // De‑duplicate
+        return array_values(array_unique($tokens));
+    }
+
+    private function getFcmAccessToken(): ?string
+    {
+        static $cached = null;
+        static $expiresAt = 0;
+
+        if ($cached && time() < $expiresAt - 60) {
+            return $cached;
+        }
+
         $saPath = getenv('FCM_SERVICE_ACCOUNT');
         if (!$saPath || !is_file($saPath)) {
-            // Fallback relative path (adjust if you store JSON elsewhere)
             $fallback = __DIR__ . '/../config/firebase-service-account.json';
             if (is_file($fallback)) {
                 $saPath = $fallback;
             } else {
-                error_log('FCM: service account JSON not found (set FCM_SERVICE_ACCOUNT env var).');
+                error_log('FCM: service account JSON not found (set FCM_SERVICE_ACCOUNT).');
                 return null;
             }
         }
 
         $json = json_decode(@file_get_contents($saPath), true);
         if (!$json || empty($json['client_email']) || empty($json['private_key'])) {
-            error_log('FCM: invalid service account file (missing client_email/private_key).');
+            error_log('FCM: invalid service account file.');
             return null;
         }
 
         $now = time();
-        $header = ['alg' => 'RS256', 'typ' => 'JWT'];
+        $header = ['alg'=>'RS256','typ'=>'JWT'];
         $claims = [
-            'iss'   => $json['client_email'],
-            'sub'   => $json['client_email'],
-            'aud'   => 'https://oauth2.googleapis.com/token',
-            'iat'   => $now,
-            'exp'   => $now + 3600,
+            'iss' => $json['client_email'],
+            'sub' => $json['client_email'],
+            'aud' => 'https://oauth2.googleapis.com/token',
+            'iat' => $now,
+            'exp' => $now + 3600,
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging'
         ];
 
-        $b64 = function ($data) {
-            return rtrim(strtr(base64_encode(is_string($data) ? $data : json_encode($data)), '+/', '-_'), '=');
-        };
-
-        $jwtUnsigned = $b64($header) . '.' . $b64($claims);
-        $signature = '';
-        if (!openssl_sign($jwtUnsigned, $signature, $json['private_key'], 'sha256WithRSAEncryption')) {
-            error_log('FCM: openssl_sign failed (check private key permissions).');
+        $b64 = fn($d) => rtrim(strtr(base64_encode(is_string($d)?$d:json_encode($d)), '+/','-_'), '=');
+        $unsigned = $b64($header).'.'.$b64($claims);
+        if (!openssl_sign($unsigned, $sig, $json['private_key'], 'sha256WithRSAEncryption')) {
+            error_log('FCM: openssl_sign failed.');
             return null;
         }
-        $jwt = $jwtUnsigned . '.' . $b64($signature);
-
-        $post = http_build_query([
-            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            'assertion'  => $jwt
-        ]);
+        $jwt = $unsigned.'.'.$b64($sig);
 
         $ch = curl_init('https://oauth2.googleapis.com/token');
         curl_setopt_array($ch, [
-            CURLOPT_POST            => true,
-            CURLOPT_POSTFIELDS      => $post,
-            CURLOPT_RETURNTRANSFER  => true,
-            CURLOPT_TIMEOUT         => 20
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+                'assertion'  => $jwt
+            ]),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 20
         ]);
         $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         if ($resp === false) {
-            error_log('FCM: access token curl error: ' . curl_error($ch));
+            error_log('FCM: token curl error: '.curl_error($ch));
             curl_close($ch);
             return null;
         }
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
         if ($code >= 300) {
-            error_log("FCM: access token HTTP $code body=$resp");
+            error_log("FCM: token HTTP $code body=$resp");
             return null;
         }
-
         $data = json_decode($resp, true);
         if (empty($data['access_token'])) {
-            error_log('FCM: access token missing in response.');
+            error_log('FCM: missing access_token field.');
             return null;
         }
-        return $data['access_token'];
+
+        $cached = $data['access_token'];
+        $expiresAt = $now + (int)($data['expires_in'] ?? 3600);
+        return $cached;
     }
 
- private function sendDirectFcm(string $title, string $body, array $data = []): void
-{
-  $tokens = ['fN154lryWn2CcdLdph3wLo:APA91bFj3y9bVoKQgu-Ee7yKQOgpo7ZH5k3gTiPAFImVsyAl_1tcDcZJF8Gcd3cd0F14bxXJ7J-orzOybw7lbS3onUQglyIaKonaNUztFfxPAkNj38jVs7s']; // $this->getAllAdminFcmTokens();
-    if (!$tokens) {
-        error_log('FCM v1: no admin tokens to send.');
-        return;
-    }
+    private function sendDirectFcm(string $title, string $body, array $data = []): void
+    {
+        $tokens = $this->getAllAdminFcmTokens();
+        if (!$tokens) {
+            error_log('FCM v1: no admin tokens.');
+            return;
+        }
 
-    $accessToken = $this->getFcmAccessToken();
-    if (!$accessToken) {
-        error_log('FCM v1: cannot obtain access token.');
-        return;
-    }
+        $accessToken = $this->getFcmAccessToken();
+        if (!$accessToken) {
+            error_log('FCM v1: access token unavailable.');
+            return;
+        }
 
-    $projectId = 'coffeeshop-8ce2a'; // ensure this matches your Firebase project ID
-    $endpoint  = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
-    $icon      = '/images/CC.png';
+        if (!isset($data['click_action'])) {
+            $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
+        }
 
-    // Merge click_action if not already provided
-    if (!isset($data['click_action'])) {
-        $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
-    }
+        $projectId = 'coffeeshop-8ce2a';
+        $endpoint  = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+        $icon = '/images/CC.png';
 
-    foreach ($tokens as $token) {
-        $payload = [
-            'message' => [
-                'token'        => $token,
-                'notification' => [
-                    'title' => $title,
-                    'body'  => $body
-                ],
-                'data'        => $data,
-                'webpush'     => [
+        $pdo = $this->opencon();
+        $invalidTokens = [];
+
+        foreach ($tokens as $token) {
+            $payload = [
+                'message' => [
+                    'token' => $token,
                     'notification' => [
-                        'icon' => $icon
+                        'title' => $title,
+                        'body'  => $body
                     ],
-                    'fcm_options' => [
-                        'link' => $data['click_action']
-                    ]
-                ],
-                'android'     => [
-                    'notification' => [
-                        'icon'         => $icon,
-                        'click_action' => $data['click_action']
+                    'data' => $data,
+                    'webpush' => [
+                        'notification' => ['icon' => $icon],
+                        'fcm_options'   => ['link' => $data['click_action']]
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        $ch = curl_init($endpoint);
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => [
-                "Authorization: Bearer {$accessToken}",
-                "Content-Type: application/json"
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POSTFIELDS     => json_encode($payload),
-            CURLOPT_TIMEOUT        => 20
-        ]);
-
-        $resp = curl_exec($ch);
-        if ($resp === false) {
-            error_log('FCM v1 cURL error: ' . curl_error($ch));
-        } else {
+            $ch = curl_init($endpoint);
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: Bearer {$accessToken}",
+                    "Content-Type: application/json"
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_TIMEOUT => 15
+            ]);
+            $resp = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            // Log both the payload and Firebase’s raw response
-            error_log("FCM v1 request: " . json_encode($payload));
-            error_log("FCM v1 response (HTTP {$code}): {$resp}");
+            curl_close($ch);
+
+            if ($resp === false) {
+                error_log("FCM v1: curl error sending to token (truncated): ".substr($token,0,24).'...');
+                continue;
+            }
 
             if ($code >= 300) {
-                error_log("FCM v1 send failed for token {$token}");
+                error_log("FCM v1: HTTP {$code} resp={$resp}");
+                if (strpos($resp, 'UNREGISTERED') !== false ||
+                    strpos($resp, 'NotRegistered') !== false ||
+                    strpos($resp, 'INVALID_ARGUMENT') !== false) {
+                    $invalidTokens[] = $token;
+                }
+            } else {
+                error_log("FCM v1: OK {$resp}");
             }
         }
-        curl_close($ch);
+
+        // Clean invalid tokens
+        if ($invalidTokens) {
+            $in = implode(',', array_fill(0, count($invalidTokens), '?'));
+            $stmt = $pdo->prepare("UPDATE admin_users SET fcm_token = NULL WHERE fcm_token IN ($in)");
+            $stmt->execute($invalidTokens);
+            error_log('FCM v1: cleaned '.count($invalidTokens).' invalid tokens.');
+        }
     }
-}
 
 
     public function fetch_recent_products_by_data_type($data_type, $limit = 3)
@@ -982,12 +996,7 @@ private function getFcmAccessToken(): ?string
         return $stmt->execute([$token, $admin_id]);
     }
 
-   public function getAllAdminFcmTokens(): array {
-    $conn = $this->opencon();
-    $stmt = $conn->query("SELECT fcm_token FROM admins WHERE fcm_token IS NOT NULL");
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
-}
-
+   
 
 
       public function sendOrderNotification(string $reference, string $status = 'pending'): void
