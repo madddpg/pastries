@@ -1,15 +1,29 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+date_default_timezone_set('Asia/Manila');
+require_once __DIR__ . '/../database/db_connect.php';
+$db  = new Database();
+$con = $db->opencon();
 
-if (!ini_get('date.timezone')) {
-    date_default_timezone_set('Asia/Manila');
-}
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+$today = date('Y-m-d');
 
+$totSql = "SELECT COUNT(*) FROM `transaction` WHERE DATE(created_at)=?";
+$cnt    = $con->prepare($totSql);
+$cnt->execute([$today]);
+$totalOrdersToday = (int)$cnt->fetchColumn();
+
+$statSql = "SELECT COUNT(*) FROM `transaction` WHERE LOWER(TRIM(status))=? AND DATE(created_at)=?";
+$pendingOrders   = (int)($con->prepare($statSql)->execute(['pending', $today])   ? $con->prepare($statSql)->fetchColumn() : 0);
+$preparingOrders = (int)($con->prepare($statSql)->execute(['preparing', $today]) ? $con->prepare($statSql)->fetchColumn() : 0);
+$readyOrders     = (int)($con->prepare($statSql)->execute(['ready', $today])     ? $con->prepare($statSql)->fetchColumn() : 0);
+
+header('Content-Type: application/json');
+echo json_encode([
+    'totalOrdersToday' => $totalOrdersToday,
+    'pendingOrders' => $pendingOrders,
+    'preparingOrders' => $preparingOrders,
+    'readyOrders' => $readyOrders
+]);
 
 $flash = null;
 if (!empty($_SESSION['flash'])) {
@@ -25,8 +39,7 @@ if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin
     header('Location: ../index.php');
     exit;
 }
-$db = new Database();
-$con = $db->opencon();
+
 
 // Get status filter from GET parameter for live orders
 $live_status = isset($_GET['status']) ? $_GET['status'] : '';
@@ -186,37 +199,38 @@ function fetch_locations_pdo($con)
                 <div id="dashboard-overview-section" class="content-section active">
                     <div class="dashboard-overview">
                         <!-- Top Stats Cards -->
+
                         <div class="stats-grid">
                             <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="bi bi-cup-hot"></i>
+                                <div class="stat-icon"><i class="bi bi-cup-hot-fill"></i></div>
+                                <div>
+                                    <h3 id="stat-total-orders">0</h3>
+                                    <p>Total Orders Today</p>
                                 </div>
-                                <h3 id="stat-total-orders">0</h3>
-                                <p>Total Orders Today</p>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="bi bi-hourglass-split"></i>
+                                <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+                                <div>
+                                    <h3 id="stat-pending-orders">0</h3>
+                                    <p>Pending Orders</p>
                                 </div>
-                                <h3 id="stat-pending-orders">0</h3>
-                                <p>Pending Orders</p>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="bi bi-arrow-clockwise"></i>
+                                <div class="stat-icon"><i class="bi bi-arrow-clockwise"></i></div>
+                                <div>
+                                    <h3 id="stat-preparing-orders">0</h3>
+                                    <p>Preparing Orders</p>
                                 </div>
-                                <h3 id="stat-preparing-orders">0</h3>
-                                <p>Preparing Orders</p>
                             </div>
                             <div class="stat-card">
-                                <div class="stat-icon">
-                                    <i class="bi bi-check-circle"></i>
+                                <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+                                <div>
+                                    <h3 id="stat-ready-orders">0</h3>
+                                    <p>Ready Orders</p>
                                 </div>
-                                <h3 id="stat-ready-orders">0</h3>
-                                <p>Ready Orders</p>
                             </div>
                         </div>
-
+                        .
 
 
                         <!-- Bottom Grid -->
@@ -1201,7 +1215,7 @@ function fetch_locations_pdo($con)
                                 setTimeout(() => {
                                     editLocationModal.style.display = 'none';
                                     editLocationForm.reset();
-                                    
+
                                 }, 1200);
                             }
                         })
@@ -1411,16 +1425,19 @@ function fetch_locations_pdo($con)
             // Dashboard stats AJAX update
             function updateDashboardStats() {
                 fetch('AJAX/dashboard_stats.php')
-                    .then(res => res.json())
-                    .then(stats => {
-                        document.getElementById('stat-total-orders').textContent = stats.totalOrdersToday;
-                        document.getElementById('stat-pending-orders').textContent = stats.pendingOrders;
-                        document.getElementById('stat-preparing-orders').textContent = stats.preparingOrders;
-                        document.getElementById('stat-ready-orders').textContent = stats.readyOrders;
-                    });
+                    .then(r => r.json())
+                    .then(s => {
+                        const set = (id, val) => {
+                            const el = document.getElementById(id);
+                            if (el) el.textContent = val;
+                        };
+                        set('stat-total-orders', s.totalOrdersToday ?? 0);
+                        set('stat-pending-orders', s.pendingOrders ?? 0);
+                        set('stat-preparing-orders', s.preparingOrders ?? 0);
+                        set('stat-ready-orders', s.readyOrders ?? 0);
+                    })
+                    .catch(() => console.warn('Stats load failed'));
             }
-            updateDashboardStats();
-            setInterval(updateDashboardStats, 15000); // update every 15s
 
 
             function currentLiveStatus() {
