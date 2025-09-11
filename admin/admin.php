@@ -1434,7 +1434,7 @@ function fetch_locations_pdo($con)
   if (perm !== 'granted') return;
 
   const config = {
-    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",              
+    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",              // replace
     authDomain: "coffeeshop-8ce2a.firebaseapp.com",
     projectId: "coffeeshop-8ce2a",
     storageBucket: "coffeeshop-8ce2a.appspot.com",
@@ -1448,7 +1448,7 @@ function fetch_locations_pdo($con)
   const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
   messaging.useServiceWorker(swReg);
 
-  const vapidKey = "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k";      
+  const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";       // replace with BBD4... key (VAPID)
   async function subscribeTopic() {
     try {
       const token = await messaging.getToken({ vapidKey });

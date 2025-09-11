@@ -341,6 +341,8 @@ public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_l
 {
     $con = $this->opencon();
     $con->beginTransaction();
+
+    
     try {
         $total_amount = 0;
 
@@ -467,7 +469,16 @@ public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_l
         $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions, sugar_level) VALUES (?, ?, ?, ?, ?, ?)")
             ->execute([$transaction_id, $pickup_name, $pickup_location, $pickup_datetime, $special_instructions, $overall_sugar]);
 
+
         $con->commit();
+
+        // SEND FCM (was missing)
+        $this->sendFcmTopicAdmins(
+            "New Order",
+            "Reference {$reference_number}",
+            "https://cupscuddles.com/admin/admin.php"
+        );
+        
         return ['success' => true, 'reference_number' => $reference_number];
     } catch (Exception $e) {
         $con->rollBack();
