@@ -15,7 +15,7 @@ switch ($sort) {
     case 'id_asc':       $orderBy = 't.transac_id ASC'; break;
     case 'created_asc':  $orderBy = 't.created_at ASC'; break;
     case 'created_desc': $orderBy = 't.created_at DESC'; break;
-    default:             $orderBy = 't.transac_id DESC';
+    default:             $orderBy = 't.transac_id DESC'; // id_desc (default)
 }
 
 try {
@@ -61,31 +61,31 @@ try {
     }
 
     echo json_encode([
-        'success'=>true,
-        'page'=>$page,
-        'pageSize'=>$pageSize,
-        'total'=>$total,
-        'totalPages'=>$totalPages,
-        'orders'=>array_map(function($o){
+        'success'    => true,
+        'page'       => $page,
+        'pageSize'   => $pageSize,
+        'total'      => $total,
+        'totalPages' => $totalPages,
+        'orders'     => array_map(function ($o) {
             return [
-                'reference_number'=>$o['reference_number'],
-                'customer_name'=>$o['customer_name'] ?? 'Unknown',
-                'total_amount'=>(float)$o['total_amount'],
-                'status'=>(string)$o['status'],
-                'created_at'=>$o['created_at'],
-                'items'=>array_map(function($it){
+                'reference_number' => $o['reference_number'],
+                'customer_name'    => $o['customer_name'] ?? 'Unknown',
+                'total_amount'     => (float)$o['total_amount'],
+                'status'           => (string)$o['status'],
+                'created_at'       => $o['created_at'],
+                'items'            => array_map(function ($it) {
                     return [
-                        'name'=>$it['name'],
-                        'quantity'=>(int)$it['quantity'],
-                        'size'=>$it['size'],
-                        'price'=>(float)$it['price'],
+                        'name'     => $it['name'],
+                        'quantity' => (int)$it['quantity'],
+                        'size'     => $it['size'],
+                        'price'    => (float)$it['price'],
                     ];
                 }, $o['items'] ?? []),
             ];
         }, $orders),
     ]);
 } catch (Throwable $e) {
-    error_log('fetch_pickedup_orders_page error: '.$e->getMessage());
+    error_log('fetch_all_pickedup_orders error: '.$e->getMessage());
     http_response_code(500);
     echo json_encode(['success'=>false,'message'=>'Server error']);
 }

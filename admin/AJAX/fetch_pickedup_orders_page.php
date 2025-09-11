@@ -10,9 +10,17 @@ if ($pageSize < 1)  $pageSize = 10;
 if ($pageSize > 50) $pageSize = 50;
 $offset = ($page - 1) * $pageSize;
 
+$sort = $_GET['sort'] ?? 'id_desc';
+switch ($sort) {
+    case 'id_asc':       $orderBy = 't.transac_id ASC'; break;
+    case 'created_asc':  $orderBy = 't.created_at ASC'; break;
+    case 'created_desc': $orderBy = 't.created_at DESC'; break;
+    default:             $orderBy = 't.transac_id DESC';
+}
+
 try {
     $db  = new Database();
-    $pdo = $db->opencon();
+    $pdo = $db->openPdo();
 
     $total = (int)$pdo->query("SELECT COUNT(*) FROM `transaction` WHERE status = 'picked up'")->fetchColumn();
     $totalPages = max(1, (int)ceil($total / $pageSize));
@@ -29,13 +37,13 @@ try {
                 FROM `transaction` t
                 LEFT JOIN users u ON t.user_id = u.user_id
                 WHERE t.status = 'picked up'
-                ORDER BY t.created_at DESC
+                ORDER BY $orderBy
                 LIMIT :limit OFFSET :offset";
         $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':limit',  $pageSize, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset,   PDO::PARAM_INT);
         $stmt->execute();
-        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $orders = $stmt->fetchAll();
 
         if ($orders) {
             $itemStmt = $pdo->prepare("
@@ -46,38 +54,38 @@ try {
             ");
             foreach ($orders as &$o) {
                 $itemStmt->execute([(int)$o['transac_id']]);
-                $o['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                $o['items'] = $itemStmt->fetchAll() ?: [];
             }
             unset($o);
         }
     }
 
     echo json_encode([
-        'success'    => true,
-        'page'       => $page,
-        'pageSize'   => $pageSize,
-        'total'      => $total,
-        'totalPages' => $totalPages,
-        'orders'     => array_map(function ($o) {
+        'success'=>true,
+        'page'=>$page,
+        'pageSize'=>$pageSize,
+        'total'=>$total,
+        'totalPages'=>$totalPages,
+        'orders'=>array_map(function($o){
             return [
-                'reference_number' => $o['reference_number'],
-                'customer_name'    => $o['customer_name'] ?? 'Unknown',
-                'total_amount'     => (float)$o['total_amount'],
-                'status'           => (string)$o['status'],
-                'created_at'       => $o['created_at'],
-                'items'            => array_map(function ($it) {
+                'reference_number'=>$o['reference_number'],
+                'customer_name'=>$o['customer_name'] ?? 'Unknown',
+                'total_amount'=>(float)$o['total_amount'],
+                'status'=>(string)$o['status'],
+                'created_at'=>$o['created_at'],
+                'items'=>array_map(function($it){
                     return [
-                        'name'     => $it['name'],
-                        'quantity' => (int)$it['quantity'],
-                        'size'     => $it['size'],
-                        'price'    => (float)$it['price'],
+                        'name'=>$it['name'],
+                        'quantity'=>(int)$it['quantity'],
+                        'size'=>$it['size'],
+                        'price'=>(float)$it['price'],
                     ];
                 }, $o['items'] ?? []),
             ];
         }, $orders),
     ]);
 } catch (Throwable $e) {
-    error_log('fetch_pickedup_orders_page error: ' . $e->getMessage());
+    error_log('fetch_pickedup_orders_page error: '.$e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Server error']);
+    echo json_encode(['success'=>false,'message'=>'Server error']);
 }
