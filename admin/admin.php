@@ -11,7 +11,7 @@ if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin
     header('Location: ../index.php');
     exit;
 }
-@include __DIR__ . '/AJAX/fetch_recent_customers.php';
+
 
 
 
@@ -525,7 +525,7 @@ function fetch_locations_pdo($con)
                                     <input type="number" name="new_price" id="editProductPrice" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
                                 <div class="form-group" style="margin-bottom:14px;">
-                                    <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
+                                    s <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
                                     <input type="text" name="new_category" id="editProductCategory" required class="form-control" placeholder="Category" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
                                 <button type="submit" class="btn-primary" style="width:100%;background:#059669;color:#fff;padding:12px 0;border:none;border-radius:10px;font-size:0.95rem;cursor:pointer;font-weight:600;">Save Changes</button>
@@ -608,37 +608,36 @@ function fetch_locations_pdo($con)
                     <div class="card" style="padding:18px;">
                         <div style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
-                            $stmt = $con->prepare("SELECT id,title,image,image_path,active,created_at FROM promos ORDER BY created_at DESC");
+                            $promos = $db->fetch_locations_pdo($con); // placeholder - avoid; fetch from promos table instead
+                            // Better: query directly:
+                            $stmt = $con->prepare("SELECT * FROM promos ORDER BY created_at DESC");
                             $stmt->execute();
                             $promos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             if (empty($promos)) {
                                 echo '<div>No promos yet.</div>';
                             } else {
                                 foreach ($promos as $pr) {
-                                    $rawImg = $pr['image_path'] ?: $pr['image'];
-                                    if ($rawImg && !preg_match('~^https?://~', $rawImg)) {
-                                        $rawImg = '/uploads/promos/' . ltrim($rawImg, '/');
-                                    }
-                                    $img = htmlspecialchars($rawImg ?: '', ENT_QUOTES, 'UTF-8');
-                                    $title = htmlspecialchars($pr['title'] ?? '', ENT_QUOTES, 'UTF-8');
-                                    $isActive = (int)$pr['active'] === 1;
-                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;display:flex;flex-direction:column;gap:6px;'>
-                            <div style='width:100%;height:120px;background:#f3f4f6;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;'>
-                                " . ($img ? "<img src=\"{$img}\" alt=\"Promo\" style=\"width:100%;height:100%;object-fit:cover;\">" : "<span style='font-size:12px;color:#666;'>No Image</span>") . "
-                            </div>
-                            <div style='font-size:0.85rem;font-weight:600;'>$title</div>
-                            <div style='display:flex;gap:6px;'>
-                                <form method='post' action='delete_promo.php' style='margin:0;'>
-                                  <input type='hidden' name='id' value='{$pr['id']}'>
-                                  <button class='btn-secondary' type='submit' style='padding:6px 8px;font-size:12px;'>Delete</button>
-                                </form>
-                                <form method='post' action='update_promos.php' style='margin:0;'>
-                                  <input type='hidden' name='id' value='{$pr['id']}'>
-                                  <input type='hidden' name='active' value='" . ($isActive ? "0" : "1") . "'>
-                                  <button class='btn-primary' type='submit' style='padding:6px 8px;font-size:12px;'>" . ($isActive ? "Set Inactive" : "Set Active") . "</button>
-                                </form>
-                            </div>
-                          </div>";
+                                    $img = "/" . htmlspecialchars($pr['image']);
+
+
+                                    $title = htmlspecialchars($pr['title']);
+                                    $active = $pr['active'] ? 'Active' : 'Inactive';
+
+                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
+            <img src=" . $img . " style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
+            <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
+            <div style='display:flex;gap:6px;'>
+              <form method='post' action='delete_promo.php' style='margin:0;'>
+                <input type='hidden' name='id' value='{$pr['id']}'>
+                <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
+              </form>
+              <form method='post' action='update_promos.php' style='margin:0;'>
+                <input type='hidden' name='id' value='{$pr['id']}'>
+                <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
+                <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
+              </form>
+            </div>
+          </div>";
                                 }
                             }
                             ?>
@@ -1450,108 +1449,8 @@ function fetch_locations_pdo($con)
                     })
                     .catch(() => console.warn('Stats load failed'));
             }
-            updateDashboardStats();
-            setInterval(updateDashboardStats, 7000);
 
-
-            function currentLiveStatus() {
-                const active = document.querySelector('#live-orders-tabs .tab.active');
-                return active ? (active.getAttribute('data-status') || '') : '';
-            }
-
-            function refreshLiveOrders() {
-                const grid = document.querySelector('.live-orders-grid');
-                if (!grid) return;
-                const status = currentLiveStatus();
-                grid.dataset.loading = '1';
-                fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status))
-                    .then(r => r.text())
-                    .then(html => {
-                        grid.innerHTML = html;
-                    })
-                    .catch(() => {
-                        grid.innerHTML = '<div style="padding:12px;color:#b91c1c;">Failed to load live orders.</div>';
-                    })
-                    .finally(() => {
-                        delete grid.dataset.loading;
-                    });
-            }
-
-
-            let liveOrdersTimer = null;
-
-            function manageLiveOrdersPolling() {
-                const sec = document.getElementById('live-orders-section');
-                const visible = sec && sec.classList.contains('active');
-                if (visible && !liveOrdersTimer) {
-                    refreshLiveOrders();
-                    liveOrdersTimer = setInterval(refreshLiveOrders, 7000);
-                } else if (!visible && liveOrdersTimer) {
-                    clearInterval(liveOrdersTimer);
-                    liveOrdersTimer = null;
-                }
-            }
-
-
-            let pickedUpOrdersPage = 1;
-
-            function refreshPickedUpOrders(page) {
-                if (typeof page === 'number') pickedUpOrdersPage = page;
-                const tbody = document.getElementById('pickedup-orders-tbody');
-                if (!tbody) return;
-                fetch(`AJAX/fetch_pickedup_orders_page.php?page=${pickedUpOrdersPage}&pageSize=10`)
-                    .then(r => r.json())
-                    .then(d => {
-                        if (!d.success) throw 0;
-                        // rebuild rows (3 column layout in current table differs from ajax layout; adapt)
-                        tbody.innerHTML = '';
-                        if (!d.orders.length) {
-                            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No picked up orders found.</td></tr>';
-                            return;
-                        }
-                        d.orders.forEach(o => {
-                            if (!o.items.length) {
-                                const tr = document.createElement('tr');
-                                tr.innerHTML = `<td>${o.reference_number}</td>
-                        <td>-</td>
-                        <td style="text-align:center;">-</td>
-                        <td>${o.customer_name}</td>
-                        <td>₱${o.total_amount.toFixed(2)}</td>
-                        <td>${o.status}</td>`;
-                                tbody.appendChild(tr);
-                            } else {
-                                o.items.forEach((it, idx) => {
-                                    const tr = document.createElement('tr');
-                                    tr.innerHTML = (idx === 0 ? `<td rowspan="${o.items.length}">${o.reference_number}</td>` : '') +
-                                        `<td>${it.name}</td>
-               <td style="text-align:center;">${it.quantity}</td>` +
-                                        (idx === 0 ? `<td rowspan="${o.items.length}">${o.customer_name}</td>
-                        <td rowspan="${o.items.length}">₱${o.total_amount.toFixed(2)}</td>
-                        <td rowspan="${o.items.length}">${o.status}</td>` : '');
-                                    tbody.appendChild(tr);
-                                });
-                            }
-                        });
-                    })
-                    .catch(() => {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;">Failed to load picked up orders.</td></tr>';
-                    });
-            }
-
-            // Expose a force refresh (called by FCM)
-            function forceDashRefresh() {
-                if (typeof updateDashboardStats === 'function') updateDashboardStats();
-                if (typeof updateRevenueOverview === 'function') updateRevenueOverview();
-                refreshLiveOrders();
-                refreshPickedUpOrders(pickedUpOrdersPage);
-            }
-
-            // Initial minor refresh delay
-            setTimeout(() => {
-                refreshLiveOrders();
-                refreshPickedUpOrders(pickedUpOrdersPage);
-            }, 1500);
-            setInterval(manageLiveOrdersPolling, 1000);
+W
             // Revenue Overview AJAX update
             function updateRevenueOverview() {
                 fetch('AJAX/fetch_revenue_overview.php')
