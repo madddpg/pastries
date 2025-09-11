@@ -23,6 +23,28 @@ class Database
     {
         return true;
     }
+
+
+       public function openPdo(): PDO
+    {
+        static $pdo = null;
+        if ($pdo instanceof PDO) {
+            return $pdo;
+        }
+        $dsn = "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4";
+        $pdo = new PDO(
+            $dsn,
+            $this->user,
+            $this->password,
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+        return $pdo;
+    }
+
     // Fetch all picked up orders 
     public function fetch_pickedup_orders_pdo()
     {
@@ -496,43 +518,6 @@ class Database
         }
     }
 
-
-    private function sendFcmTopicAdmins($title, $body, $click = '/', $icon = '/images/CC.png')
-    {
-        $serverKey = getenv('FCM_SERVER_KEY');
-        if (!$serverKey) {
-            error_log('FCM_SERVER_KEY missing');
-            return;
-        }
-
-        $payload = [
-            "to" => "/topics/admins",
-            "notification" => [
-                "title" => $title,
-                "body"  => $body,
-                "icon"  => $icon
-            ],
-            "data" => [
-                "click_action" => $click
-            ]
-        ];
-
-        $ch = curl_init("https://fcm.googleapis.com/fcm/send");
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => [
-                "Content-Type: application/json",
-                "Authorization: key={$serverKey}"
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POSTFIELDS => json_encode($payload)
-        ]);
-        $resp = curl_exec($ch);
-        if ($resp === false) {
-            error_log('FCM send error: ' . curl_error($ch));
-        }
-        curl_close($ch);
-    }
 
     public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
     {

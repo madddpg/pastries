@@ -982,17 +982,23 @@ console.info('[admin] main.js loaded');
 
   function load(next=1){
     page = next;
+    console.debug('[pickedup] load page', page);
     tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
     fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`,{cache:'no-store'})
-      .then(r=>r.json())
+      .then(r=>{
+        console.debug('[pickedup] HTTP status', r.status);
+        return r.json();
+      })
       .then(d=>{
+        console.debug('[pickedup] payload', d);
         if(!d.success) throw 0;
         totalPages = d.totalPages || 1;
         renderRows(d.orders||[]);
         renderPager();
         initialized = true;
       })
-      .catch(()=>{
+      .catch(err=>{
+        console.error('[pickedup] load error', err);
         tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
         pager.innerHTML='';
       });
