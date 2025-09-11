@@ -294,13 +294,13 @@ function fetch_locations_pdo($con)
                             </tbody>
                         </table>
                         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px;">
-  <select id="pickedup-sort" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;">
-    <option value="id_desc" selected>Newest ID</option>
-    <option value="id_asc">Oldest ID</option>
-    <option value="created_desc">Newest Date</option>
-    <option value="created_asc">Oldest Date</option>
-  </select>
-</div>
+                            <select id="pickedup-sort" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;">
+                                <option value="id_desc" selected>Newest ID</option>
+                                <option value="id_asc">Oldest ID</option>
+                                <option value="created_desc">Newest Date</option>
+                                <option value="created_asc">Oldest Date</option>
+                            </select>
+                        </div>
                         <div id="pickedup-pagination" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;"></div>
                     </div>
                 </div>
@@ -1521,10 +1521,10 @@ function fetch_locations_pdo($con)
                         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
                         pager.innerHTML = '';
                     });
-                    
-if (sortSelect) {
-  sortSelect.addEventListener('change', ()=> load(1));
-}
+
+                if (sortSelect) {
+                    sortSelect.addEventListener('change', () => load(1));
+                }
             }
 
             // Mutation observer to lazy load when section shown
