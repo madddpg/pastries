@@ -414,7 +414,7 @@ public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_l
 
             $item_sugar = $item['sugar'] ?? null; // sugar per item
 
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
+           if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $topping) {
                     $topping_id = null;
                     $t_name = trim($topping['name'] ?? '');
@@ -436,32 +436,28 @@ public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_l
                         throw new Exception("Invalid topping data for product_id {$product_id}");
                     }
 
-                    $toppingInsert->execute([
+                  $toppingInsert->execute([
                         $transaction_id,
                         $transaction_item_id,
                         $product_id,
                         $topping_id,
                         $t_qty,
                         $t_price,
-                        $item_sugar     // store sugar level with each topping row
+                        $item_sugar
                     ]);
                 }
             } else {
-                // OPTIONAL: if you also want sugar saved even with no toppings,
-                // uncomment below IF your schema allows nullable topping_id.
-                /*
-                if ($item_sugar) {
+                 if ($item_sugar !== null && $item_sugar !== '') {
                     $toppingInsert->execute([
                         $transaction_id,
                         $transaction_item_id,
                         $product_id,
-                        null,
-                        0,
-                        0.00,
+                        null,          // topping_id NULL
+                        0,             // quantity
+                        0.00,          // unit_price
                         $item_sugar
                     ]);
                 }
-                */
             }
         }
 
@@ -481,6 +477,43 @@ public function createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_l
 }
 
 
+
+ private function sendFcmTopicAdmins($title, $body, $click = '/', $icon = '/images/CC.png')
+    {
+        $serverKey = getenv('FCM_SERVER_KEY');
+        if (!$serverKey) {
+            error_log('FCM_SERVER_KEY missing');
+            return;
+        }
+
+        $payload = [
+            "to" => "/topics/admins",
+            "notification" => [
+                "title" => $title,
+                "body"  => $body,
+                "icon"  => $icon
+            ],
+            "data" => [
+                "click_action" => $click
+            ]
+        ];
+
+        $ch = curl_init("https://fcm.googleapis.com/fcm/send");
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => [
+                "Content-Type: application/json",
+                "Authorization: key={$serverKey}"
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POSTFIELDS => json_encode($payload)
+        ]);
+        $resp = curl_exec($ch);
+        if ($resp === false) {
+            error_log('FCM send error: ' . curl_error($ch));
+        }
+        curl_close($ch);
+    }
 
 public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
 {
