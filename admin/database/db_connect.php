@@ -337,170 +337,165 @@ class Database
 
 
 
-public function createPickupOrder(
-    $user_id,
-    array $cart_items,
-    string $pickup_name,
-    string $pickup_location,
-    string $pickup_time,
-    string $special_instructions = '',
-    string $payment_method = 'cash'
-) {
-    $con = $this->opencon();
-    $con->beginTransaction();
+    public function createPickupOrder(
+        $user_id,
+        array $cart_items,
+        string $pickup_name,
+        string $pickup_location,
+        string $pickup_time,
+        string $special_instructions = '',
+        string $payment_method = 'cash'
+    ) {
+        $con = $this->opencon();
+        $con->beginTransaction();
 
-    try {
-        if (!$pickup_name || !$pickup_location || !$pickup_time) {
-            throw new Exception("Missing required pickup details.");
-        }
-        if (empty($cart_items)) {
-            throw new Exception("Cart is empty.");
-        }
-
-        // Normalize pickup time (assume HH:MM from form)
-        // If client sends e.g. "17:25" we build full datetime for today
-        $pickup_datetime = date('Y-m-d') . ' ' . preg_replace('/[^0-9:]/', '', $pickup_time) . ':00';
-
-        // Calculate total
-        $total_amount = 0.0;
-        foreach ($cart_items as $item) {
-            $qty = max(1, (int)($item['quantity'] ?? 1));
-            $base = (float)($item['basePrice'] ?? $item['price'] ?? 0);
-            $tSum = 0.0;
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                foreach ($item['toppings'] as $t) {
-                    $t_price = (float)($t['price'] ?? 0);
-                    $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $tSum += $t_price * $t_qty;
-                }
+        try {
+            if (!$pickup_name || !$pickup_location || !$pickup_time) {
+                throw new Exception("Missing required pickup details.");
             }
-            $total_amount += ($base + $tSum) * $qty;
-        }
+            if (empty($cart_items)) {
+                throw new Exception("Cart is empty.");
+            }
 
-        // Insert transaction
-        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, payment_method, created_at) VALUES (?, ?, 'pending', ?, NOW())");
-        $stmt->execute([$user_id ?: null, $total_amount, $payment_method]);
-        $transaction_id = (int)$con->lastInsertId();
+            // Normalize pickup time (assume HH:MM from form)
+            // If client sends e.g. "17:25" we build full datetime for today
+            $pickup_datetime = date('Y-m-d') . ' ' . preg_replace('/[^0-9:]/', '', $pickup_time) . ':00';
 
-        $reference_number = 'CNC-' . date('Ymd') . '-' . str_pad($transaction_id, 4, '0', STR_PAD_LEFT);
-        $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
-            ->execute([$reference_number, $transaction_id]);
+            // Calculate total
+            $total_amount = 0.0;
+            foreach ($cart_items as $item) {
+                $qty = max(1, (int)($item['quantity'] ?? 1));
+                $base = (float)($item['basePrice'] ?? $item['price'] ?? 0);
+                $tSum = 0.0;
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    foreach ($item['toppings'] as $t) {
+                        $t_price = (float)($t['price'] ?? 0);
+                        $t_qty   = max(1, (int)($t['quantity'] ?? 1));
+                        $tSum += $t_price * $t_qty;
+                    }
+                }
+                $total_amount += ($base + $tSum) * $qty;
+            }
 
-        $insertItem = $con->prepare("
+            // Insert transaction
+            $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, payment_method, created_at) VALUES (?, ?, 'pending', ?, NOW())");
+            $stmt->execute([$user_id ?: null, $total_amount, $payment_method]);
+            $transaction_id = (int)$con->lastInsertId();
+
+            $reference_number = 'CNC-' . date('Ymd') . '-' . str_pad($transaction_id, 4, '0', STR_PAD_LEFT);
+            $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
+                ->execute([$reference_number, $transaction_id]);
+
+            $insertItem = $con->prepare("
             INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price, sugar_level)
             VALUES (?, ?, ?, ?, ?, ?)
         ");
 
-        $insertTopping = $con->prepare("
+            $insertTopping = $con->prepare("
             INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
-        // If you need to resolve topping names to IDs dynamically:
-        $findTopping = $con->prepare("SELECT id FROM toppings WHERE id = ? LIMIT 1");
+            // If you need to resolve topping names to IDs dynamically:
+            $findTopping = $con->prepare("SELECT id FROM toppings WHERE id = ? LIMIT 1");
 
-        $overall_sugar = null;
+            $overall_sugar = null;
 
-        foreach ($cart_items as $item) {
-            $product_id = $item['product_id'] ?? $item['id'] ?? null;
-            if (!$product_id) {
-                throw new Exception("Missing product_id in cart item.");
-            }
-            $quantity   = max(1, (int)($item['quantity'] ?? 1));
-            $size       = $item['size'] ?? '';
-            $item_sugar = isset($item['sugar']) && $item['sugar'] !== '' ? trim($item['sugar']) : null;
+            foreach ($cart_items as $item) {
+                $product_id = $item['product_id'] ?? $item['id'] ?? null;
+                if (!$product_id) {
+                    throw new Exception("Missing product_id in cart item.");
+                }
+                $quantity   = max(1, (int)($item['quantity'] ?? 1));
+                $size       = $item['size'] ?? '';
+                $item_sugar = isset($item['sugar']) && $item['sugar'] !== '' ? trim($item['sugar']) : null;
 
-            if ($overall_sugar === null && $item_sugar) {
-                $overall_sugar = $item_sugar;
-            }
+                if ($overall_sugar === null && $item_sugar) {
+                    $overall_sugar = $item_sugar;
+                }
 
-            // Derive stored item price: base + toppings (already accounted in total, replicate calculation)
-            $basePrice = (float)($item['basePrice'] ?? $item['price'] ?? 0);
-            $tSum = 0.0;
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                foreach ($item['toppings'] as $t) {
-                    $t_price = (float)($t['price'] ?? 0);
-                    $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $tSum += $t_price * $t_qty;
+                // Derive stored item price: base + toppings (already accounted in total, replicate calculation)
+                $basePrice = (float)($item['basePrice'] ?? $item['price'] ?? 0);
+                $tSum = 0.0;
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    foreach ($item['toppings'] as $t) {
+                        $t_price = (float)($t['price'] ?? 0);
+                        $t_qty   = max(1, (int)($t['quantity'] ?? 1));
+                        $tSum += $t_price * $t_qty;
+                    }
+                }
+                $linePrice = $basePrice + $tSum; // per single unit
+                $insertItem->execute([$transaction_id, $product_id, $quantity, $size, $linePrice, $item_sugar]);
+                $transaction_item_id = (int)$con->lastInsertId();
+
+                // Only insert toppings if they exist (never with NULL topping_id)
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    foreach ($item['toppings'] as $t) {
+                        $topping_id = $t['id'] ?? null;
+                        if (!$topping_id || !ctype_digit((string)$topping_id)) {
+                            // If front-end sends only name/price but no ID, you could optionally create/reuse a topping record.
+                            // For safety here we skip invalid ones.
+                            continue;
+                        }
+                        // Validate topping exists (optional)
+                        $findTopping->execute([$topping_id]);
+                        if (!$findTopping->fetch(PDO::FETCH_ASSOC)) {
+                            // Skip unknown topping id
+                            continue;
+                        }
+                        $t_qty   = max(1, (int)($t['quantity'] ?? 1));
+                        $t_price = (float)($t['price'] ?? 0);
+                        $insertTopping->execute([
+                            $transaction_id,
+                            $transaction_item_id,
+                            $product_id,
+                            $topping_id,
+                            $t_qty,
+                            $t_price,
+                            $item_sugar
+                        ]);
+                    }
                 }
             }
-            $linePrice = $basePrice + $tSum; // per single unit
-            $insertItem->execute([$transaction_id, $product_id, $quantity, $size, $linePrice, $item_sugar]);
-            $transaction_item_id = (int)$con->lastInsertId();
 
-            // Only insert toppings if they exist (never with NULL topping_id)
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                foreach ($item['toppings'] as $t) {
-                    $topping_id = $t['id'] ?? null;
-                    if (!$topping_id || !ctype_digit((string)$topping_id)) {
-                        // If front-end sends only name/price but no ID, you could optionally create/reuse a topping record.
-                        // For safety here we skip invalid ones.
-                        continue;
-                    }
-                    // Validate topping exists (optional)
-                    $findTopping->execute([$topping_id]);
-                    if (!$findTopping->fetch(PDO::FETCH_ASSOC)) {
-                        // Skip unknown topping id
-                        continue;
-                    }
-                    $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $t_price = (float)($t['price'] ?? 0);
-                    $insertTopping->execute([
-                        $transaction_id,
-                        $transaction_item_id,
-                        $product_id,
-                        $topping_id,
-                        $t_qty,
-                        $t_price,
-                        $item_sugar
-                    ]);
-                }
-            }
-        }
-
-        // Insert pickup_detail
-        $con->prepare("
+            // Insert pickup_detail
+            $con->prepare("
             INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions, sugar_level)
             VALUES (?, ?, ?, ?, ?, ?)
         ")->execute([
-            $transaction_id,
-            $pickup_name,
-            $pickup_location,
-            $pickup_datetime,
-            $special_instructions,
-            $overall_sugar
-        ]);
+                $transaction_id,
+                $pickup_name,
+                $pickup_location,
+                $pickup_datetime,
+                $special_instructions,
+                $overall_sugar
+            ]);
 
-        $con->commit();
+            $con->commit();
 
-        // FCM push (optional)
-        if (method_exists($this, 'sendFcmTopicAdmins')) {
-            $this->sendFcmTopicAdmins(
-                "New Order",
-                "Reference {$reference_number}",
-                "https://cupscuddles.com/admin/admin.php"
-            );
+            // FCM push (optional)
+            if (method_exists($this, 'sendFcmTopicAdmins')) {
+                $this->sendDirectFcm("New Order", "Reference {$reference_number}", ['reference' => $reference_number]);
+            }
+
+            return [
+                'success' => true,
+                'reference_number' => $reference_number
+            ];
+        } catch (Exception $e) {
+            if ($con->inTransaction()) {
+                $con->rollBack();
+            }
+            error_log("createPickupOrder error: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
         }
-
-        return [
-            'success' => true,
-            'reference_number' => $reference_number
-        ];
-
-    } catch (Exception $e) {
-        if ($con->inTransaction()) {
-            $con->rollBack();
-        }
-        error_log("createPickupOrder error: " . $e->getMessage());
-        return [
-            'success' => false,
-            'message' => $e->getMessage()
-        ];
     }
-}
 
 
- private function sendFcmTopicAdmins($title, $body, $click = '/', $icon = '/images/CC.png')
+    private function sendFcmTopicAdmins($title, $body, $click = '/', $icon = '/images/CC.png')
     {
         $serverKey = getenv('FCM_SERVER_KEY');
         if (!$serverKey) {
@@ -537,108 +532,108 @@ public function createPickupOrder(
         curl_close($ch);
     }
 
-public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
-{
-    $con = $this->opencon();
-    $con->beginTransaction();
-    try {
-        // Insert base transaction
-        $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
-        $stmt->execute([$user_id, $total]);
-        $transaction_id = $con->lastInsertId();
+    public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
+    {
+        $con = $this->opencon();
+        $con->beginTransaction();
+        try {
+            // Insert base transaction
+            $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
+            $stmt->execute([$user_id, $total]);
+            $transaction_id = $con->lastInsertId();
 
-        // prepared statements for items and toppings (match schema including sugar_level)
-        $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
-        $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            // prepared statements for items and toppings (match schema including sugar_level)
+            $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
+            $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-        // helper: find topping by name (if not numeric id), and insert if missing
-        $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
-        $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
+            // helper: find topping by name (if not numeric id), and insert if missing
+            $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
+            $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
-        // Insert items and their toppings (if any)
-        foreach ($items as $item) {
-            $size = '';
-            if (isset($item['size']) && $item['size']) {
-                $size = $item['size'];
-            } elseif (isset($item['name']) && preg_match('/\((.*?)\)$/', $item['name'], $matches)) {
-                $size = $matches[1];
-            }
-
-            $product_id = isset($item['id']) ? $item['id'] : (isset($item['product_id']) ? $item['product_id'] : null);
-            $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
-
-            // compute price to store (base + toppings)
-            $computed_toppings_sum = 0;
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                foreach ($item['toppings'] as $t) {
-                    $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
-                    $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
-                    $computed_toppings_sum += ($t_price * $t_qty);
+            // Insert items and their toppings (if any)
+            foreach ($items as $item) {
+                $size = '';
+                if (isset($item['size']) && $item['size']) {
+                    $size = $item['size'];
+                } elseif (isset($item['name']) && preg_match('/\((.*?)\)$/', $item['name'], $matches)) {
+                    $size = $matches[1];
                 }
-            }
-            if (isset($item['price'])) {
-                $price_to_store = floatval($item['price']);
-            } elseif (isset($item['basePrice'])) {
-                $price_to_store = floatval($item['basePrice']) + $computed_toppings_sum;
-            } else {
-                $price_to_store = 0.00;
-            }
 
-            $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
-            $transaction_item_id = $con->lastInsertId();
+                $product_id = isset($item['id']) ? $item['id'] : (isset($item['product_id']) ? $item['product_id'] : null);
+                $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
 
-            // Handle toppings (create/find topping and insert into transaction_toppings with sugar_level)
-            if (!empty($item['toppings']) && is_array($item['toppings'])) {
-                // sugar selected for this cart item (null if not provided)
-                $item_sugar = isset($item['sugar']) ? $item['sugar'] : null;
-
-                foreach ($item['toppings'] as $topping) {
-                    $topping_id = null;
-                    $t_name = isset($topping['name']) ? trim($topping['name']) : '';
-                    $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
-                    $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
-
-                    if (isset($topping['id']) && is_numeric($topping['id']) && intval($topping['id']) > 0) {
-                        $topping_id = intval($topping['id']);
-                    } elseif ($t_name !== '') {
-                        $findTopping->execute([$t_name]);
-                        $found = $findTopping->fetch(PDO::FETCH_ASSOC);
-                        if ($found && isset($found['id'])) {
-                            $topping_id = intval($found['id']);
-                        } else {
-                            $insertTopping->execute([$t_name, $t_price]);
-                            $topping_id = $con->lastInsertId();
-                        }
-                    } else {
-                        throw new Exception("Invalid topping data for product_id {$product_id}");
+                // compute price to store (base + toppings)
+                $computed_toppings_sum = 0;
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    foreach ($item['toppings'] as $t) {
+                        $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
+                        $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
+                        $computed_toppings_sum += ($t_price * $t_qty);
                     }
+                }
+                if (isset($item['price'])) {
+                    $price_to_store = floatval($item['price']);
+                } elseif (isset($item['basePrice'])) {
+                    $price_to_store = floatval($item['basePrice']) + $computed_toppings_sum;
+                } else {
+                    $price_to_store = 0.00;
+                }
 
-                    // insert topping record including sugar_level
-                    $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price, $item_sugar]);
+                $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
+                $transaction_item_id = $con->lastInsertId();
+
+                // Handle toppings (create/find topping and insert into transaction_toppings with sugar_level)
+                if (!empty($item['toppings']) && is_array($item['toppings'])) {
+                    // sugar selected for this cart item (null if not provided)
+                    $item_sugar = isset($item['sugar']) ? $item['sugar'] : null;
+
+                    foreach ($item['toppings'] as $topping) {
+                        $topping_id = null;
+                        $t_name = isset($topping['name']) ? trim($topping['name']) : '';
+                        $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
+                        $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
+
+                        if (isset($topping['id']) && is_numeric($topping['id']) && intval($topping['id']) > 0) {
+                            $topping_id = intval($topping['id']);
+                        } elseif ($t_name !== '') {
+                            $findTopping->execute([$t_name]);
+                            $found = $findTopping->fetch(PDO::FETCH_ASSOC);
+                            if ($found && isset($found['id'])) {
+                                $topping_id = intval($found['id']);
+                            } else {
+                                $insertTopping->execute([$t_name, $t_price]);
+                                $topping_id = $con->lastInsertId();
+                            }
+                        } else {
+                            throw new Exception("Invalid topping data for product_id {$product_id}");
+                        }
+
+                        // insert topping record including sugar_level
+                        $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price, $item_sugar]);
+                    }
                 }
             }
+
+            // Insert pickup details if provided
+            if ($method === 'pickup' && $pickupInfo) {
+                $special = isset($pickupInfo['special']) ? $pickupInfo['special'] : '';
+                $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
+                $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
+                    ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
+            } else {
+                throw new Exception("No valid pickup or delivery info provided.");
+            }
+
+            // clear cart for user if applicable
+            $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
+
+            $con->commit();
+            return ['success' => true, 'transaction_id' => $transaction_id];
+        } catch (Exception $e) {
+            $con->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
         }
-
-        // Insert pickup details if provided
-        if ($method === 'pickup' && $pickupInfo) {
-            $special = isset($pickupInfo['special']) ? $pickupInfo['special'] : '';
-            $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
-            $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
-                ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
-        } else {
-            throw new Exception("No valid pickup or delivery info provided.");
-        }
-
-        // clear cart for user if applicable
-        $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
-
-        $con->commit();
-        return ['success' => true, 'transaction_id' => $transaction_id];
-    } catch (Exception $e) {
-        $con->rollBack();
-        return ['success' => false, 'message' => $e->getMessage()];
     }
-}
 
     public function fetch_toppings_pdo()
     {
@@ -789,6 +784,38 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    private function sendDirectFcm(string $title, string $body, array $data = []): void
+    {
+        $tokens = $this->getAllAdminFcmTokens();
+        if (!$tokens) return;
+        $serverKey = getenv('FCM_SERVER_KEY');
+        if (!$serverKey) {
+            error_log('FCM_SERVER_KEY missing');
+            return;
+        }
+
+        $chunks = array_chunk($tokens, 900);
+        foreach ($chunks as $c) {
+            $payload = [
+                'registration_ids' => $c,
+                'notification' => ['title' => $title, 'body' => $body, 'icon' => '/images/CC.png'],
+                'data' => $data
+            ];
+            $ch = curl_init("https://fcm.googleapis.com/fcm/send");
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => [
+                    "Content-Type: application/json",
+                    "Authorization: key={$serverKey}"
+                ],
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POSTFIELDS => json_encode($payload),
+                CURLOPT_TIMEOUT => 15
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
+    }
 
     public function fetch_recent_products_by_data_type($data_type, $limit = 3)
     {
@@ -819,5 +846,19 @@ public function createTransaction($user_id, $items, $total, $method, $pickupInfo
     public static function isAdmin()
     {
         return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'admin';
+    }
+
+    public function saveAdminFcmToken(int $admin_id, string $token): bool
+    {
+        $pdo = $this->opencon();
+        $stmt = $pdo->prepare("UPDATE admin_users SET fcm_token = ?, fcm_token_updated_at = NOW() WHERE admin_id = ?");
+        return $stmt->execute([$token, $admin_id]);
+    }
+
+    public function getAllAdminFcmTokens(): array
+    {
+        $pdo = $this->opencon();
+        $stmt = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
     }
 }
