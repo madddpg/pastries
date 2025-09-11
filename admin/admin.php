@@ -323,10 +323,8 @@ function fetch_locations_pdo($con)
                                 } ?>
                             </tbody>
                         </table>
+                         <div id="pickedup-pagination" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;"></div>
                         <?php if ($showMore): ?>
-                            <div style="text-align:center;margin-top:12px;">
-                                <button id="showMoreOrdersBtn" class="btn-primary" style="padding:8px 24px;">Show More</button>
-                            </div>
                         <?php endif; ?>
                     </div>
                 </div>

@@ -898,3 +898,134 @@ console.info('[admin] main.js loaded');
     }
     return null;
   }
+
+
+  // ...existing code...
+
+// === Order History (Picked Up) Pagination ===
+(function(){
+  const tbody = document.getElementById('pickedup-orders-tbody');
+  const pager = document.getElementById('pickedup-pagination');
+  if (!tbody || !pager) return;
+
+  let pickedUpPage = 1;
+  const pageSize = 10;
+
+  function money(v){ return Number(v||0).toFixed(2); }
+
+  function renderRows(list){
+    tbody.innerHTML = '';
+    if (!list.length){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
+      return;
+    }
+    list.forEach(o=>{
+      const itemsText = (o.items||[])
+        .map(i=>`${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)
+        .join(', ');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="padding:6px;">${o.reference_number}</td>
+        <td style="padding:6px;">${o.customer_name}</td>
+        <td style="padding:6px;">${itemsText || '-'}</td>
+        <td style="padding:6px;">${money(o.total_amount)}</td>
+        <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
+        <td style="padding:6px;">${new Date().toLocaleDateString()}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function makeBtn(page,label,disabled=false,active=false){
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.disabled = disabled;
+    b.style.cssText = `padding:6px 10px;border:1px solid #059669;border-radius:6px;
+      background:${active?'#059669':'#fff'};color:${active?'#fff':'#059669'};
+      cursor:${disabled?'not-allowed':'pointer'};font-size:12px;`;
+    if(!disabled && !active){
+      b.addEventListener('click', ()=>load(page));
+    }
+    return b;
+  }
+
+  function renderPager(meta){
+    pager.innerHTML = '';
+    if (meta.totalPages <= 1) return;
+
+    if (pickedUpPage > 1) pager.appendChild(makeBtn(pickedUpPage-1,'«'));
+    const maxButtons = 7;
+    let start = Math.max(1, pickedUpPage - 3);
+    let end = Math.min(meta.totalPages, start + maxButtons - 1);
+    if (end - start + 1 < maxButtons) start = Math.max(1, end - maxButtons + 1);
+
+    if (start > 1){
+      pager.appendChild(makeBtn(1,'1'));
+      if (start > 2){
+        const span = document.createElement('span');
+        span.textContent = '...';
+        span.style.cssText='padding:6px 4px;font-size:12px;';
+        pager.appendChild(span);
+      }
+    }
+
+    for (let p = start; p <= end; p++){
+      pager.appendChild(makeBtn(p,String(p),false,p===pickedUpPage));
+    }
+
+    if (end < meta.totalPages){
+      if (end < meta.totalPages -1){
+        const span = document.createElement('span');
+        span.textContent='...';
+        span.style.cssText='padding:6px 4px;font-size:12px;';
+        pager.appendChild(span);
+      }
+      pager.appendChild(makeBtn(meta.totalPages,String(meta.totalPages)));
+    }
+
+    if (pickedUpPage < meta.totalPages) pager.appendChild(makeBtn(pickedUpPage+1,'»'));
+  }
+
+  function load(page=1){
+    pickedUpPage = page;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
+    fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}`, { cache: 'no-store' })
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d.success) throw new Error('fail');
+        renderRows(d.orders||[]);
+        renderPager(d);
+      })
+      .catch(()=>{
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#b91c1c;padding:12px;">Failed to load.</td></tr>';
+        pager.innerHTML = '';
+      });
+  }
+
+  // Expose refresh for FCM or other triggers
+  window.refreshPickedUpOrders = () => load(pickedUpPage);
+
+  // Auto-load when section becomes visible
+  const observer = new MutationObserver(()=>{
+    const sec = document.getElementById('order-history-section');
+    if (sec && sec.classList.contains('active') && !tbody.dataset.loaded){
+      tbody.dataset.loaded = '1';
+      load(1);
+    }
+  });
+  observer.observe(document.body, { subtree:true, attributes:true, attributeFilter:['class'] });
+
+  // If Order History is default visible, load immediately
+  if (document.getElementById('order-history-section')?.classList.contains('active')){
+    tbody.dataset.loaded='1';
+    load(1);
+  }
+
+  // Optional: integrate with existing forceDashRefresh (if defined later)
+  const prevForce = window.forceDashRefresh;
+  window.forceDashRefresh = function(){
+    if (typeof prevForce === 'function') prevForce();
+    if (document.getElementById('order-history-section')?.classList.contains('active')){
+      load(pickedUpPage);
+    }
+  };
+})();
