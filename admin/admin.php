@@ -1425,7 +1425,7 @@ function fetch_locations_pdo($con)
         // expose super-admin flag to admin UI JS (used to show force-delete)
         window.IS_SUPER_ADMIN = <?php echo Database::isSuperAdmin() ? 'true' : 'false'; ?>;
     </script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <script>
 (async function initAdminPush(){
@@ -1433,59 +1433,45 @@ function fetch_locations_pdo($con)
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') return;
 
-  firebase.initializeApp({
-    apiKey: "YOUR_PUBLIC_API_KEY",
+  const config = {
+    apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",              
     authDomain: "coffeeshop-8ce2a.firebaseapp.com",
     projectId: "coffeeshop-8ce2a",
     storageBucket: "coffeeshop-8ce2a.appspot.com",
     messagingSenderId: "398338296558",
     appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
     measurementId: "G-5DGJCENLGV"
-  });
+  };
+  if (!firebase.apps.length) firebase.initializeApp(config);
 
   const messaging = firebase.messaging();
   const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
   messaging.useServiceWorker(swReg);
 
-  const vapidKey = "YOUR_VAPID_PUBLIC_KEY";
+  const vapidKey = "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k";      
   async function subscribeTopic() {
     try {
       const token = await messaging.getToken({ vapidKey });
       if (!token) return;
-      // Avoid redundant post each focus (optional)
-      if (localStorage.getItem('last_fcm_token') !== token) {
-        await fetch('subscribe_admin_topic.php', {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({token})
-        });
-        localStorage.setItem('last_fcm_token', token);
-      } else {
-        // still re-hit subscription silently once a day if you want (not implemented here)
-      }
-    } catch(e) {
-      console.warn('FCM token error', e);
-    }
+      if (localStorage.getItem('last_fcm_token') === token) return;
+      await fetch('firebase.php', {              // updated to actual filename
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ token })
+      });
+      localStorage.setItem('last_fcm_token', token);
+    } catch(e){ console.warn('FCM token error', e); }
   }
 
   messaging.onMessage(p => {
     const n = p.notification || {};
-    // Show a foreground notification (optional)
-    if (document.hidden) {
-      new Notification(n.title || 'New Order', {
-        body: n.body || '',
-        icon: n.icon || '/images/CC.png'
-      });
-    } else {
-      // or inline UI indicator
-      console.log('Incoming order notification', p);
-    }
+    new Notification(n.title || 'New Order', {
+      body: n.body || '',
+      icon: n.icon || '/images/CC.png'
+    });
   });
 
-  // Subscribe immediately
   subscribeTopic();
-
-  // Re-check on visibility regain (token might rotate)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') subscribeTopic();
   });

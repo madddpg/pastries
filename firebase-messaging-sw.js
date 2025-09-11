@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68",
+  apiKey: "AIzaSyDaOMOHuBT8ue90gYA-Jgr6UreCSHNcj_k",    
   authDomain: "coffeeshop-8ce2a.firebaseapp.com",
   projectId: "coffeeshop-8ce2a",
   storageBucket: "coffeeshop-8ce2a.appspot.com",
@@ -13,14 +13,13 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Background (page not focused)
 messaging.onBackgroundMessage(payload => {
   const n = payload.notification || {};
-  const title = n.title || payload.data?.title || 'New Order';
+  const title = n.title || (payload.data && payload.data.title) || 'New Order';
   const options = {
-    body: n.body || payload.data?.body || '',
+    body: n.body || (payload.data && payload.data.body) || '',
     icon: n.icon || '/images/CC.png',
-    data: { click_action: payload.data?.click_action || '/' }
+    data: { click_action: (payload.data && payload.data.click_action) || '/' }
   };
   self.registration.showNotification(title, options);
 });
