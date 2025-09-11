@@ -1025,4 +1025,11 @@ console.info('[admin] main.js loaded');
   if (document.getElementById('order-history-section')?.classList.contains('active')){
     window.PickedUpOrders.ensureLoaded();
   }
+
+  if (document.readyState !== 'loading') {
+     // ensure initial attempt even if observer misses
+     setTimeout(()=>window.PickedUpOrders?.ensureLoaded(), 250);
+  } else {
+     document.addEventListener('DOMContentLoaded', ()=>setTimeout(()=>window.PickedUpOrders?.ensureLoaded(), 250));
+  }
 })();
