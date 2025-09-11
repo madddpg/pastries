@@ -867,7 +867,7 @@ private function getFcmAccessToken(): ?string
 
  private function sendDirectFcm(string $title, string $body, array $data = []): void
 {
-    $tokens = $this->getAllAdminFcmTokens();
+  $tokens = ['fN154lryWn2CcdLdph3wLo:APA91bFj3y9bVoKQgu-Ee7yKQOgpo7ZH5k3gTiPAFImVsyAl_1tcDcZJF8Gcd3cd0F14bxXJ7J-orzOybw7lbS3onUQglyIaKonaNUztFfxPAkNj38jVs7s']; // $this->getAllAdminFcmTokens();
     if (!$tokens) {
         error_log('FCM v1: no admin tokens to send.');
         return;
@@ -982,12 +982,12 @@ private function getFcmAccessToken(): ?string
         return $stmt->execute([$token, $admin_id]);
     }
 
-    public function getAllAdminFcmTokens(): array
-    {
-        $pdo = $this->opencon();
-        $stmt = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''");
-        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-    }
+   public function getAllAdminFcmTokens(): array {
+    $conn = $this->opencon();
+    $stmt = $conn->query("SELECT fcm_token FROM admins WHERE fcm_token IS NOT NULL");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+
 
 
       public function sendOrderNotification(string $reference, string $status = 'pending'): void
