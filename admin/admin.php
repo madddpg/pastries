@@ -325,9 +325,7 @@ function fetch_locations_pdo($con)
                         </table>
                         <div id="pickedup-pagination" style="display:flex;gap:8px;justify-content:center;margin-top:12px;"></div>
                         <?php if ($showMore): ?>
-                            <div style="text-align:center;margin-top:12px;">
-                                <button id="showMoreOrdersBtn" class="btn-primary" style="padding:8px 24px;">Show More</button>
-                            </div>
+                            
                         <?php endif; ?>
                     </div>
                 </div>
@@ -1409,67 +1407,7 @@ function fetch_locations_pdo($con)
             updateDashboardStats();
             setInterval(updateDashboardStats, 15000); // update every 15s
 
-            // Show More Orders functionality
-            const showMoreBtn = document.getElementById('showMoreOrdersBtn');
-            if (showMoreBtn) {
-                showMoreBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showMoreBtn.disabled = true;
-                    fetch('AJAX/fetch_all_pickedup_orders.php')
-                        .then(res => res.json())
-                        .then(data => {
-                            const tbody = document.getElementById('pickedup-orders-tbody');
-                            if (!tbody) return;
-                            tbody.innerHTML = '';
-                            if (!data || data.length === 0) {
-                                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No picked up orders found.</td></tr>';
-                            } else {
-                                data.forEach(order => {
-                                    if (!order.items || order.items.length === 0) return;
-                                    let first = true;
-                                    order.items.forEach((item, idx) => {
-                                        const tr = document.createElement('tr');
-                                        if (first) {
-                                            const tdRef = document.createElement('td');
-                                            tdRef.rowSpan = order.items.length;
-                                            tdRef.textContent = order.reference_number;
-                                            tr.appendChild(tdRef);
-                                        }
-                                        const tdItem = document.createElement('td');
-                                        tdItem.textContent = item.name;
-                                        tr.appendChild(tdItem);
-                                        const tdQty = document.createElement('td');
-                                        tdQty.textContent = item.quantity;
-                                        tdQty.style.textAlign = 'center';
-                                        tr.appendChild(tdQty);
-                                        if (first) {
-                                            const tdCust = document.createElement('td');
-                                            tdCust.rowSpan = order.items.length;
-                                            tdCust.textContent = order.customer_name || 'Unknown';
-                                            tr.appendChild(tdCust);
-                                            const tdTotal = document.createElement('td');
-                                            tdTotal.rowSpan = order.items.length;
-                                            tdTotal.textContent = '₱' + order.total_amount;
-                                            tr.appendChild(tdTotal);
-                                            const tdStatus = document.createElement('td');
-                                            tdStatus.rowSpan = order.items.length;
-                                            tdStatus.textContent = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-                                            tr.appendChild(tdStatus);
-                                        }
-                                        tbody.appendChild(tr);
-                                        first = false;
-                                    });
-                                });
-                            }
-                            showMoreBtn.style.display = 'none';
-                        })
-                        .catch(() => {
-                            showMoreBtn.disabled = false;
-                            alert('Failed to load all orders.');
-                        });
-                });
-            }
-
+           
             // Revenue Overview AJAX update
             function updateRevenueOverview() {
                 fetch('AJAX/fetch_revenue_overview.php')
