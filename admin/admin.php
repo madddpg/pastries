@@ -273,61 +273,27 @@ function fetch_locations_pdo($con)
                     </div>
                 </div>
 
-                <!-- Order History Section -->
-                <div id="order-history-section" class="content-section">
-                    <h1>Order History</h1>
-                    <!-- Tab Navigation -->
-                    <div class="tabs">
-                        <a href="#" class="tab active">Picked Up Orders</a>
-                    </div>
-                    <!-- Orders Table (Dynamic from transactions) -->
-                    <div class="table-container">
-                        <table class="orders-table" border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse:collapse; font-family: Arial, sans-serif; font-size: 14px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); border: 1px solid #e5e7eb;">
-                            <thead style="background-color: #f9fafb; text-align: left;">
-                                <tr style="border-bottom: 2px solid #e5e7eb;">
-                                    <th style="padding: 12px 16px; color: #111827;">Reference Number</th>
-                                    <th style="padding: 12px 16px; color: #111827; text-align:center;">Item</th>
-                                    <th style="padding: 12px 16px; color: #111827; text-align:center;">Quantity</th>
-                                    <th style="padding: 12px 16px; color: #111827;">Customer</th>
-                                    <th style="padding: 12px 16px; color: #111827;">Total</th>
-                                    <th style="padding: 12px 16px; color: #111827;">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pickedup-orders-tbody">
-                                <?php
-                                $orders = fetch_pickedup_orders_pdo($con);
-                                $showMore = count($orders) > 5;
-                                if (empty($orders)) {
-                                    echo '<tr><td colspan="6" style="text-align:center;">No picked up orders found.</td></tr>';
-                                } else {
-                                    $displayOrders = array_slice($orders, 0, 5);
-                                    foreach ($displayOrders as $order):
-                                        $rowspan = count($order['items']) ?: 1;
-                                        $first = true;
-                                        foreach ($order['items'] as $item): ?>
-                                            <tr>
-                                                <?php if ($first): ?>
-                                                    <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($order['reference_number']) ?></td>
-                                                <?php endif; ?>
-                                                <td><?= htmlspecialchars($item['name']) ?></td>
-                                                <td style="text-align:center;"><?= htmlspecialchars($item['quantity']) ?></td>
-                                                <?php if ($first): ?>
-                                                    <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars($order['customer_name'] ?? 'Unknown') ?></td>
-                                                    <td rowspan="<?= $rowspan ?>">₱<?= htmlspecialchars($order['total_amount'], 2) ?></td>
-                                                    <td rowspan="<?= $rowspan ?>"><?= htmlspecialchars(ucwords($order['status'])) ?></td>
-                                                <?php endif; ?>
-                                            </tr>
-                                <?php $first = false;
-                                        endforeach;
-                                    endforeach;
-                                } ?>
-                            </tbody>
-                        </table>
-                         <div id="pickedup-pagination" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;"></div>
-                        <?php if ($showMore): ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
+            <div id="order-history-section" class="content-section">
+  <h1>Order History</h1>
+  <div class="table-container">
+    <table id="pickedup-orders-table" class="orders-table" style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding:8px;">Reference</th>
+          <th style="text-align:left;padding:8px;">Customer</th>
+          <th style="text-align:left;padding:8px;">Items</th>
+          <th style="text-align:left;padding:8px;">Total (₱)</th>
+          <th style="text-align:left;padding:8px;">Status</th>
+          <th style="text-align:left;padding:8px;">Created</th>
+        </tr>
+      </thead>
+      <tbody id="pickedup-orders-tbody">
+        <tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>
+      </tbody>
+    </table>
+    <div id="pickedup-pagination" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;"></div>
+  </div>
+</div>
 
                 <!-- Live Orders Section -->
                 <div id="live-orders-section" class="content-section">
