@@ -5,19 +5,20 @@ require __DIR__ . '/../vendor/autoload.php';
 use Dotenv\Dotenv;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 
-$root = dirname(__DIR__); // /public_html
-$envFile = $root.'/.env.example';
-if (is_file($envFile)) {
-    Dotenv::createImmutable($root)->safeLoad();
+$root = dirname(__DIR__);
+$loaded = false;
+foreach (['/.env','/.env.example'] as $rel) {
+    $f = $root.$rel;
+    if (is_file($f)) {
+        Dotenv::createImmutable($root, basename($f))->safeLoad();
+        $loaded = true;
+        break;
+    }
 }
 
 $path = $_ENV['FIREBASE_SERVICE_ACCOUNT_PATH'] ?? getenv('FIREBASE_SERVICE_ACCOUNT_PATH') ?: '';
-if (!$path) {
-    throw new Exception('FIREBASE_SERVICE_ACCOUNT_PATH not set. Create .env in web root.');
-}
-if (!is_file($path)) {
-    throw new Exception('Service account file not found at: '.$path);
-}
+if (!$path) throw new Exception('FIREBASE_SERVICE_ACCOUNT_PATH not set (no .env or .env.example value).');
+if (!is_file($path)) throw new Exception('Service account file not found at: '.$path);
 
 $sa = json_decode(file_get_contents($path), true);
 if (!is_array($sa) ||
@@ -25,7 +26,7 @@ if (!is_array($sa) ||
     empty($sa['project_id']) ||
     empty($sa['private_key']) ||
     empty($sa['client_email'])) {
-    throw new Exception('Invalid service account JSON structure.');
+    throw new Exception('Invalid service account JSON.');
 }
 
 $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
