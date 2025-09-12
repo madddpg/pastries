@@ -1420,43 +1420,38 @@ function fetch_locations_pdo($con)
                 }
             }
 
-            // Foreground notifications
-            messaging.onMessage(payload => {
+       messaging.onMessage(payload => {
                 const n = payload.notification || {};
+                const d = payload.data || {};
+                const title = n.title || d.title || 'New Order';
+                const body  = n.body  || d.body  || '';
+                const icon  = d.icon  || n.icon  || '/img/kape.png';
+                const image = d.image || n.image || '/img/logo.png';
+
+                // Existing green bar
                 const bar = document.createElement('div');
                 bar.style.cssText =
                     'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;' +
                     'padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
-                bar.textContent = (n.title || 'New Order') + (n.body ? (' - ' + n.body) : '');
+                bar.textContent = title + (body ? (' - ' + body) : '');
                 bar.onclick = () => {
                     document.querySelector('.nav-item[data-section="order-history"]')?.click();
                     window.PickedUpOrders?.refresh();
                 };
                 document.body.appendChild(bar);
                 setTimeout(() => bar.remove(), 6000);
+
+                // Show OS notification with icon + image
+                if (Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body,
+                        icon,
+                        image,
+                        data: d,
+                        badge: icon
+                    });
+                }
             });
-            
-            if (firebase.messaging.isSupported()) {
-                const messaging = firebase.messaging();
-                messaging.onMessage(payload => {
-                    console.log('FCM foreground payload:', payload);
-                    const d = payload.data || {};
-                    const n = payload.notification || {};
-                    const title = d.title || n.title || 'Notification';
-                    const body = d.body || n.body || '';
-                    const icon = d.icon || n.icon || '/img/kape.png';
-                    const image = d.image || n.image || undefined;
-                    if (Notification.permission === 'granted') {
-                        new Notification(title, {
-                            body,
-                            icon,
-                            image,
-                            data: d,
-                            badge: icon
-                        });
-                    }
-                });
-            }
 
             await registerToken(true);
             document.addEventListener('visibilitychange', () => {

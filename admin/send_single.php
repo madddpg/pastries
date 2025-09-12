@@ -18,6 +18,8 @@ $payload = [
       'icon'         => '/img/kape.png',   // absolute
       'image'        => '/img/logo.png',   // absolute
       'click_action' => '/admin/'
+
+      
     ]
   ]
 ];
