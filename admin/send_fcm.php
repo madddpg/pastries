@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/database/db_connect.php';
-$firebase = require __DIR__ . '/firebase.php';
+$firebase = require __DIR__ . './firebase.php';
 
 $projectId   = $firebase['project_id'];
 $accessToken = $firebase['access_token'];
