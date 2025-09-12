@@ -2,23 +2,22 @@
 <?php
 header('Content-Type: application/json');
 $firebase = require __DIR__.'/firebase.php';
-
 $token = $_GET['token'] ?? '';
-if (!$token) { echo json_encode(['error'=>'token required']); exit; }
-
-$url = "https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/messages:send";
+if(!$token){ echo json_encode(['error'=>'token required']); exit; }
+$url="https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/messages:send";
 $payload = [
   'message'=>[
     'token'=>$token,
     'data'=>[
       'title'=>'Direct Test (data)',
-      'body'=>'Single token push (data message)',
-      'click_action'=>'/admin/'
+      'body'=>'Single token push',
+      'click_action'=>'/admin/',
+      'icon'=>'/img/kape.png',
+      'image'=>'/img/logo.png'
     ]
   ]
 ];
-
-$ch = curl_init($url);
+$ch=curl_init($url);
 curl_setopt_array($ch,[
   CURLOPT_POST=>true,
   CURLOPT_HTTPHEADER=>[
@@ -26,17 +25,10 @@ curl_setopt_array($ch,[
     "Content-Type: application/json"
   ],
   CURLOPT_POSTFIELDS=>json_encode($payload),
-  CURLOPT_RETURNTRANSFER=>true,
-  CURLOPT_TIMEOUT=>15
+  CURLOPT_RETURNTRANSFER=>true
 ]);
-$r = curl_exec($ch);
-$err = curl_error($ch);
-$code = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+$r=curl_exec($ch);
+$code=curl_getinfo($ch,CURLINFO_HTTP_CODE);
+$err=curl_error($ch);
 curl_close($ch);
-
-echo json_encode([
-  'httpCode'=>$code,
-  'error'=>$err?:null,
-  'resp'=>json_decode($r,true),
-  'raw'=>$r
-]);
+echo json_encode(['httpCode'=>$code,'error'=>$err?:null,'resp'=>json_decode($r,true),'raw'=>$r]);
