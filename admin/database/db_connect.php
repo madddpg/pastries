@@ -130,9 +130,39 @@ class Database
     public function getAllAdminFcmTokens(): array
     {
         $pdo = $this->connect();
-        $rows = $pdo->query("SELECT DISTINCT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''")
+        $rows = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''")
             ->fetchAll(PDO::FETCH_COLUMN);
-        return array_values(array_unique($rows ?: []));
+        if (!$rows) return [];
+
+        $flat = [];
+        foreach ($rows as $raw) {
+            if (!is_string($raw)) continue;
+            $raw = trim($raw);
+            if ($raw === '') continue;
+            // If the column now stores a JSON array (Option C) expand it
+            if ($raw[0] === '[') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $t) {
+                        if (is_string($t) && $t !== '') {
+                            $flat[] = $t;
+                        }
+                    }
+                }
+            } else {
+                // Legacy single token value
+                $flat[] = $raw;
+            }
+        }
+        // Dedupe & reindex
+        $flat = array_values(array_unique($flat));
+        // Optional: log count for debugging
+        if (!$flat) {
+            error_log('FCM: getAllAdminFcmTokens found no usable tokens after flatten');
+        } else {
+            error_log('FCM: getAllAdminFcmTokens flattened count=' . count($flat));
+        }
+        return $flat;
     }
 
     // Fetch all products with sales count 
