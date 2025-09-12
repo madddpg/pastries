@@ -10,7 +10,10 @@ if (!is_file($path)) {
 }
 
 $sa = json_decode(file_get_contents($path), true);
-if (($sa['type'] ?? '') !== 'service_account') {
+if (($sa['type'] ?? '') !== 'service_account'
+    || empty($sa['project_id'])
+    || empty($sa['private_key'])
+    || empty($sa['client_email'])) {
     throw new Exception("Invalid service account JSON");
 }
 
@@ -19,9 +22,7 @@ $cred = new ServiceAccountCredentials(
     $sa
 );
 $tok = $cred->fetchAuthToken();
-if (empty($tok['access_token'])) {
-    throw new Exception('Failed to obtain access token');
-}
+if (empty($tok['access_token'])) throw new Exception('Failed to obtain access token');
 
 return [
   'access_token' => $tok['access_token'],

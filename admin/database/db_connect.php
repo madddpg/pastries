@@ -639,7 +639,7 @@ class Database
                 $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
                 $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
                     ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
-            } 
+            }
 
             // clear cart for user if applicable
             $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
@@ -864,39 +864,39 @@ class Database
         return $tok;
     }
 
-
     private function sendDirectFcm(string $title, string $body, array $data = []): void
     {
         $tokens = $this->getAllAdminFcmTokens();
         if (!$tokens) {
-            error_log('FCM v1: no tokens');
+            error_log('FCM: no tokens');
             return;
         }
-
-        // Obtain access via firebase.php style (reuse your external helper OR existing JWT)
         $access = $this->getFcmAccessToken();
         if (!$access) {
-            error_log('FCM v1: no access token');
+            error_log('FCM: no access token');
             return;
         }
 
-        if (!isset($data['click_action'])) {
-            $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
-        }
-        $icon = '/images/CC.png';
-        $projectId = 'coffeeshop-8ce2a'; // use project_id
-        $endpoint = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
+        // Defaults
+        $payloadBase = [
+            'title'        => $title,
+            'body'         => $body,
+            'click_action' => $data['click_action'] ?? '/admin/',
+            'icon'         => $data['icon']  ?? '/img/kape.png',
+            'image'        => $data['image'] ?? '/img/logo.png',
+        ];
+
+        // Merge (explicit data overrides defaults except title/body)
+        $merged = array_merge($payloadBase, $data);
+
+        $endpoint = "https://fcm.googleapis.com/v1/projects/coffeeshop-8ce2a/messages:send";
 
         foreach ($tokens as $t) {
             $payload = [
                 'message' => [
                     'token' => $t,
-                    'notification' => ['title' => $title, 'body' => $body],
-                    'data' => $data,
-                    'webpush' => [
-                        'notification' => ['icon' => $icon],
-                        'fcm_options' => ['link' => $data['click_action']]
-                    ]
+                    // Data‑only so foreground handler fires; SW handles background
+                    'data' => $merged
                 ]
             ];
             $ch = curl_init($endpoint);
@@ -910,19 +910,10 @@ class Database
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 15
             ]);
-            $resp = curl_exec($ch);
-            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $r = curl_exec($ch);
+            $c = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            if ($resp === false || $code >= 300) {
-                error_log("FCM v1 send fail ($code) token=" . substr($t, 0, 24) . " body=$resp");
-                if (strpos($resp, 'UNREGISTERED') !== false) {
-                    $pdo = $this->opencon();
-                    $stmt = $pdo->prepare("UPDATE admin_users SET fcm_token=NULL WHERE fcm_token=?");
-                    $stmt->execute([$t]);
-                }
-            } else {
-                error_log("FCM v1 OK $resp");
-            }
+            error_log("FCM SEND code=$c " . substr($t, 0, 18) . " resp=$r");
         }
     }
 
@@ -1014,9 +1005,16 @@ class Database
 
 
 
-
-    public function sendOrderNotification(string $reference): void
+    public function sendOrderNotification(string $ref): void
     {
-        $this->sendDirectFcm('New Order', "Reference $reference", ['reference' => $reference]);
+        $this->sendDirectFcm(
+            'New Order',
+            "Ref $ref",
+            [
+                'reference'    => $ref,
+                'click_action' => '/admin/',
+                // you can override icon/image here if desired
+            ]
+        );
     }
 }

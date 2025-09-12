@@ -13,7 +13,6 @@ $payload = [
     'data'=>[
       'title'=>'Direct Test (data)',
       'body'=>'Single token push (data message)',
-      'image'=>'../img/logo.png',
       'click_action'=>'/admin/'
     ]
   ]

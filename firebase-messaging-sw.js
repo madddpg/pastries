@@ -13,12 +13,21 @@ firebase.initializeApp({
   appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
   measurementId: "G-5DGJCENLGV"
 });
+
 const messaging = firebase.messaging();
+
 messaging.onBackgroundMessage(payload => {
+  const d = payload.data || {};
   const n = payload.notification || {};
-  self.registration.showNotification(n.title || 'Notification', {
-    body: n.body || '',
-    data: payload.data || {},
-    icon: '/icon-192.png'
+  const title = d.title || n.title || 'Notification';
+  const body  = d.body  || n.body  || '';
+  const icon  = d.icon  || n.icon  || '/img/kape.png';
+  const image = d.image || n.image || undefined;
+  self.registration.showNotification(title, {
+    body,
+    icon,
+    image,
+    data: d,
+    badge: icon
   });
 });
