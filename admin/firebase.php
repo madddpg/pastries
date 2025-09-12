@@ -5,14 +5,18 @@ require __DIR__ . '/../vendor/autoload.php';
 use Dotenv\Dotenv;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 
-$root = dirname(__DIR__);
-if (is_file($root.'/.env')) {
+$root = dirname(__DIR__); // /public_html
+$envFile = $root.'/.env';
+if (is_file($envFile)) {
     Dotenv::createImmutable($root)->safeLoad();
 }
 
 $path = $_ENV['FIREBASE_SERVICE_ACCOUNT_PATH'] ?? getenv('FIREBASE_SERVICE_ACCOUNT_PATH') ?: '';
-if (!$path || !is_file($path)) {
-    throw new Exception('Service account file not found: '.$path);
+if (!$path) {
+    throw new Exception('FIREBASE_SERVICE_ACCOUNT_PATH not set. Create .env in web root.');
+}
+if (!is_file($path)) {
+    throw new Exception('Service account file not found at: '.$path);
 }
 
 $sa = json_decode(file_get_contents($path), true);
@@ -21,16 +25,14 @@ if (!is_array($sa) ||
     empty($sa['project_id']) ||
     empty($sa['private_key']) ||
     empty($sa['client_email'])) {
-    throw new Exception('Invalid service account JSON.');
+    throw new Exception('Invalid service account JSON structure.');
 }
 
 $scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
 $cred = new ServiceAccountCredentials($scopes, $sa);
 $tokenArr = $cred->fetchAuthToken();
 $token = $tokenArr['access_token'] ?? null;
-if (!$token) {
-    throw new Exception('Failed to obtain access token.');
-}
+if (!$token) throw new Exception('Failed to obtain access token.');
 
 return [
     'access_token' => $token,
