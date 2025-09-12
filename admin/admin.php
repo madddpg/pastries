@@ -1367,7 +1367,7 @@ function fetch_locations_pdo($con)
             }
 
             const config = {
-                apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
+                apiKey: "AIzaSyBrrSPfXUSCvL4ZHx4P8maqBcGjMAzTk8k",
                 authDomain: "coffeeshop-8ce2a.firebaseapp.com",
                 projectId: "coffeeshop-8ce2a",
                 storageBucket: "coffeeshop-8ce2a.appspot.com",
