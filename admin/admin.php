@@ -1350,98 +1350,98 @@ function fetch_locations_pdo($con)
         // expose super-admin flag to admin UI JS (used to show force-delete)
         window.IS_SUPER_ADMIN = <?php echo Database::isSuperAdmin() ? 'true' : 'false'; ?>;
     </script>
- <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 
-<script>
-(async function initAdminPush() {
-    if (!('Notification' in window)) {
-        console.warn('[FCM] Notifications not supported');
-        return;
-    }
-
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') {
-        console.warn('[FCM] Permission denied');
-        return;
-    }
-
-    const config = {
-        apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
-        authDomain: "coffeeshop-8ce2a.firebaseapp.com",
-        projectId: "coffeeshop-8ce2a",
-        storageBucket: "coffeeshop-8ce2a.appspot.com",
-        messagingSenderId: "398338296558",
-        appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
-    };
-
-    if (!firebase.apps.length) firebase.initializeApp(config);
-
-    const messaging = firebase.messaging();
-    // Register service worker from site root so scope covers entire application
-    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
-
-    async function registerToken(force = false) {
-        try {
-            const token = await messaging.getToken({
-                vapidKey,
-                serviceWorkerRegistration: swReg
-            });
-
-            if (!token) {
-                console.warn('[FCM] No token retrieved');
+    <script>
+        (async function initAdminPush() {
+            if (!('Notification' in window)) {
+                console.warn('[FCM] Notifications not supported');
                 return;
             }
 
-            if (!force && localStorage.getItem('last_fcm_token') === token) return;
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                console.warn('[FCM] Permission denied');
+                return;
+            }
 
-            const res = await fetch('saveAdminFcmToken.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token })
+            const config = {
+                apiKey: "AIzaSyDG0h8OdQy25MbONwuP-77p_F5rfRrmwZk",
+                authDomain: "coffeeshop-8ce2a.firebaseapp.com",
+                projectId: "coffeeshop-8ce2a",
+                storageBucket: "coffeeshop-8ce2a.appspot.com",
+                messagingSenderId: "398338296558",
+                appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
+            };
+
+            if (!firebase.apps.length) firebase.initializeApp(config);
+
+            const messaging = firebase.messaging();
+            // Register service worker from site root so scope covers entire application
+            const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
+
+            async function registerToken(force = false) {
+                try {
+                    const token = await messaging.getToken({
+                        vapidKey,
+                        serviceWorkerRegistration: swReg
+                    });
+
+                    if (!token) {
+                        console.warn('[FCM] No token retrieved');
+                        return;
+                    }
+
+                    if (!force && localStorage.getItem('last_fcm_token') === token) return;
+
+                    const res = await fetch('saveAdminFcmToken.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            token
+                        })
+                    });
+
+                    const js = await res.json();
+                    console.log('[FCM] register response', js);
+
+                    if (js.success) {
+                        localStorage.setItem('last_fcm_token', token);
+                    }
+                } catch (err) {
+                    console.error('[FCM] getToken error', err);
+                }
+            }
+
+            // Foreground notifications
+            messaging.onMessage(payload => {
+                const n = payload.notification || {};
+                const bar = document.createElement('div');
+                bar.style.cssText =
+                    'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;' +
+                    'padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
+                bar.textContent = (n.title || 'New Order') + (n.body ? (' - ' + n.body) : '');
+                bar.onclick = () => {
+                    document.querySelector('.nav-item[data-section="order-history"]')?.click();
+                    window.PickedUpOrders?.refresh();
+                };
+                document.body.appendChild(bar);
+                setTimeout(() => bar.remove(), 6000);
             });
 
-            const js = await res.json();
-            console.log('[FCM] register response', js);
-
-            if (js.success) {
-                localStorage.setItem('last_fcm_token', token);
-            }
-        } catch (err) {
-            console.error('[FCM] getToken error', err);
-        }
-    }
-
-    // Foreground notifications
-    messaging.onMessage(payload => {
-        const n = payload.notification || {};
-        const bar = document.createElement('div');
-        bar.style.cssText =
-          'position:fixed;top:12px;right:12px;z-index:99999;background:#059669;color:#fff;' +
-          'padding:12px 16px;border-radius:8px;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.18);cursor:pointer;';
-        bar.textContent = (n.title || 'New Order') + (n.body ? (' - ' + n.body) : '');
-        bar.onclick = () => {
-            document.querySelector('.nav-item[data-section="order-history"]')?.click();
-            window.PickedUpOrders?.refresh();
-        };
-        document.body.appendChild(bar);
-        setTimeout(() => bar.remove(), 6000);
-    });
-
-    await registerToken(true);
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') registerToken();
-    });
-})();
+            await registerToken(true);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') registerToken();
+            });
+        })();
     </script>
 
 
-<script>
-
-
-
-
+    <script>
         (function() {
             const tbody = document.getElementById('pickedup-orders-tbody');
             const pager = document.getElementById('pickedup-pagination');
