@@ -1352,6 +1352,7 @@ function fetch_locations_pdo($con)
     </script>
  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
+
 <script>
 (async function initAdminPush() {
     if (!('Notification' in window)) {
@@ -1372,16 +1373,12 @@ function fetch_locations_pdo($con)
         storageBucket: "coffeeshop-8ce2a.appspot.com",
         messagingSenderId: "398338296558",
         appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
-        measurementId: "G-5DGJCENLGV"
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(config);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(config);
 
     const messaging = firebase.messaging();
-    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-
+    const swReg = await navigator.serviceWorker.register('../firebase-messaging-sw.js');
     const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
 
     async function registerToken(force = false) {
@@ -1396,10 +1393,7 @@ function fetch_locations_pdo($con)
                 return;
             }
 
-            // avoid redundant DB writes
-            if (!force && localStorage.getItem('last_fcm_token') === token) {
-                return;
-            }
+            if (!force && localStorage.getItem('last_fcm_token') === token) return;
 
             const res = await fetch('saveAdminFcmToken.php', {
                 method: 'POST',
@@ -1418,7 +1412,7 @@ function fetch_locations_pdo($con)
         }
     }
 
-    // Foreground messages
+    // Foreground notifications
     messaging.onMessage(payload => {
         const n = payload.notification || {};
         const bar = document.createElement('div');
@@ -1434,17 +1428,15 @@ function fetch_locations_pdo($con)
         setTimeout(() => bar.remove(), 6000);
     });
 
-    // First registration
     await registerToken(true);
-
-    // Refresh when user comes back
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            registerToken();
-        }
+        if (document.visibilityState === 'visible') registerToken();
     });
-
 })();
+    </script>
+
+
+<script>
 
 
 

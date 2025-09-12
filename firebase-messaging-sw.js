@@ -7,8 +7,7 @@ firebase.initializeApp({
   projectId: "coffeeshop-8ce2a",
   storageBucket: "coffeeshop-8ce2a.appspot.com",
   messagingSenderId: "398338296558",
-  appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
-  measurementId: "G-5DGJCENLGV"
+  appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff"
 });
 
 const messaging = firebase.messaging();
