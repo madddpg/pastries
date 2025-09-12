@@ -1002,11 +1002,80 @@ class Database
         return isset($_SESSION['admin_role']) && $_SESSION['admin_role'] === 'admin';
     }
 
+    // Option C: store multiple device tokens as JSON array inside fcm_token (TEXT) column
     public function saveAdminFcmToken(int $admin_id, string $token): bool
     {
         $pdo = $this->opencon();
-        $stmt = $pdo->prepare("UPDATE admin_users SET fcm_token = ?, fcm_token_updated_at = NOW() WHERE admin_id = ?");
-        return $stmt->execute([$token, $admin_id]);
+        $token = trim($token);
+        if ($token === '') return false;
+        // Fetch existing raw value
+        $stmt = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE admin_id = ? LIMIT 1");
+        $stmt->execute([$admin_id]);
+        $raw = $stmt->fetch(PDO::FETCH_COLUMN);
+        $list = [];
+        if ($raw) {
+            if ($raw[0] === '[') { // JSON array
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) $list = $decoded;
+            } else {
+                // Legacy single token value; promote to list
+                $list = [$raw];
+            }
+        }
+        // Prepend new token if not already present
+        if (!in_array($token, $list, true)) {
+            array_unshift($list, $token);
+        } else {
+            // Move existing token to front (most recent)
+            $list = array_values(array_filter($list, fn($t) => $t !== $token));
+            array_unshift($list, $token);
+        }
+        // Cap list size to avoid unbounded growth (keep most recent 15)
+        if (count($list) > 15) $list = array_slice($list, 0, 15);
+        $json = json_encode($list, JSON_UNESCAPED_SLASHES);
+        $upd = $pdo->prepare("UPDATE admin_users SET fcm_token = ?, fcm_token_updated_at = NOW() WHERE admin_id = ?");
+        return $upd->execute([$json, $admin_id]);
+    }
+
+    public function getAdminFcmTokens(int $admin_id): array
+    {
+        $pdo = $this->opencon();
+        $stmt = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE admin_id = ? LIMIT 1");
+        $stmt->execute([$admin_id]);
+        $raw = $stmt->fetch(PDO::FETCH_COLUMN);
+        if (!$raw) return [];
+        if ($raw[0] === '[') {
+            $arr = json_decode($raw, true);
+            return is_array($arr) ? $arr : [];
+        }
+        return [$raw]; // legacy single value
+    }
+
+    public function pruneInvalidAdminToken(int $admin_id, string $token): void
+    {
+        $pdo = $this->opencon();
+        $stmt = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE admin_id = ? LIMIT 1");
+        $stmt->execute([$admin_id]);
+        $raw = $stmt->fetch(PDO::FETCH_COLUMN);
+        if (!$raw) return;
+        $token = trim($token);
+        if ($token === '') return;
+        $list = [];
+        if ($raw[0] === '[') {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) $list = $decoded; else return;
+            $new = array_values(array_filter($list, fn($t) => $t !== $token));
+            if (count($new) === count($list)) return; // nothing removed
+            $json = $new ? json_encode($new, JSON_UNESCAPED_SLASHES) : null;
+            $upd = $pdo->prepare("UPDATE admin_users SET fcm_token = ?, fcm_token_updated_at = NOW() WHERE admin_id = ?");
+            $upd->execute([$json, $admin_id]);
+        } else {
+            // Single token case
+            if ($raw === $token) {
+                $clr = $pdo->prepare("UPDATE admin_users SET fcm_token = NULL WHERE admin_id = ?");
+                $clr->execute([$admin_id]);
+            }
+        }
     }
 
 
