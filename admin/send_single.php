@@ -10,11 +10,11 @@ $url = "https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/message
 $payload = [
   'message'=>[
     'token'=>$token,
-    'notification'=>[
-      'title'=>'Direct Test',
-      'body'=>'Single token push'
-    ],
-    'data'=>['click_action'=>'/admin/']
+    'data'=>[
+      'title'=>'Direct Test (data)',
+      'body'=>'Single token push (data message)',
+      'click_action'=>'/admin/'
+    ]
   ]
 ];
 

@@ -1436,6 +1436,24 @@ function fetch_locations_pdo($con)
                 setTimeout(() => bar.remove(), 6000);
             });
 
+            if (firebase.messaging.isSupported()) {
+                const messaging = firebase.messaging();
+                messaging.onMessage(payload => {
+                    console.log('FCM foreground payload:', payload);
+                    const n = payload.notification || {};
+                    const d = payload.data || {};
+                    const title = n.title || d.title || 'Notification';
+                    const body = n.body || d.body || '';
+                    if (Notification.permission === 'granted') {
+                        new Notification(title, {
+                            body,
+                            data: d,
+                            icon: '/icon-192.png'
+                        });
+                    }
+                });
+            }
+
             await registerToken(true);
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState === 'visible') registerToken();

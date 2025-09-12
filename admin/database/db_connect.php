@@ -639,9 +639,7 @@ class Database
                 $pickup_location = isset($pickupInfo['name']) ? ($pickupInfo['name'] . (isset($pickupInfo['phone']) ? " ({$pickupInfo['phone']})" : "")) : '';
                 $con->prepare("INSERT INTO pickup_detail (transaction_id, pickup_location, pickup_time, special_instructions) VALUES (?, ?, ?, ?)")
                     ->execute([$transaction_id, $pickup_location, $pickupInfo['time'], $special]);
-            } else {
-                throw new Exception("No valid pickup or delivery info provided.");
-            }
+            } 
 
             // clear cart for user if applicable
             $con->prepare("DELETE FROM cart WHERE user_id = ?")->execute([$user_id]);
