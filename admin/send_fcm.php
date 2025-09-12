@@ -1,5 +1,5 @@
 <?php
-require __DIR__ . '/../firebase.php'; // loads service account + access token
+require __DIR__ . 'firebase.php'; // loads service account + access token
 
 $projectId   = $firebase['project_id'];
 $accessToken = $firebase['access_token'];
