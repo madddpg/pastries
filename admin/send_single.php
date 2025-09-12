@@ -7,15 +7,17 @@ $token = $_GET['token'] ?? '';
 if (!$token) { echo json_encode(['error'=>'token required']); exit; }
 
 $url = "https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/messages:send";
+
+// Use absolute paths valid on the deployed site (change /img/... if your images live elsewhere)
 $payload = [
   'message'=>[
     'token'=>$token,
     'data'=>[
-      'title'=>'Direct Test (data)',
-      'body'=>'Single token push (data message)',
-      'icon'=>'../img/kape.png',
-      'image'=>'../img/logo.png',
-      'click_action'=>'/admin/'
+      'title'        => 'Direct Test (data)',
+      'body'         => 'Single token push (data message)',
+      'icon'         => '/img/kape.png',   // absolute
+      'image'        => '/img/logo.png',   // absolute
+      'click_action' => '/admin/'
     ]
   ]
 ];

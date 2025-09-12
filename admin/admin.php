@@ -1435,20 +1435,24 @@ function fetch_locations_pdo($con)
                 document.body.appendChild(bar);
                 setTimeout(() => bar.remove(), 6000);
             });
-
+            
             if (firebase.messaging.isSupported()) {
                 const messaging = firebase.messaging();
                 messaging.onMessage(payload => {
                     console.log('FCM foreground payload:', payload);
-                    const n = payload.notification || {};
                     const d = payload.data || {};
-                    const title = n.title || d.title || 'Notification';
-                    const body = n.body || d.body || '';
+                    const n = payload.notification || {};
+                    const title = d.title || n.title || 'Notification';
+                    const body = d.body || n.body || '';
+                    const icon = d.icon || n.icon || '/img/kape.png';
+                    const image = d.image || n.image || undefined;
                     if (Notification.permission === 'granted') {
                         new Notification(title, {
                             body,
+                            icon,
+                            image,
                             data: d,
-                            icon: '../img/logo.png'
+                            badge: icon
                         });
                     }
                 });
