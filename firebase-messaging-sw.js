@@ -20,6 +20,6 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(n.title || 'Notification', {
     body: n.body || '',
     data: payload.data || {},
-    icon: '/cupscuddles/icon-192.png'
+    icon: '/icon-192.png'
   });
 });
