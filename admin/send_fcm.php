@@ -1,5 +1,20 @@
 <?php
-$firebase = require __DIR__ . '/firebase.php';
+header('Content-Type: application/json');
+
+$firebasePath = __DIR__ . '/firebase.php';
+if (!is_file($firebasePath)) {
+    http_response_code(500);
+    echo json_encode(['error'=>'firebase.php not found at '.$firebasePath]);
+    exit;
+}
+
+$firebase = require $firebasePath;
+
+if (empty($firebase['project_id']) || empty($firebase['access_token'])) {
+    http_response_code(500);
+    echo json_encode(['error'=>'Firebase credentials not loaded']);
+    exit;
+}
 
 $projectId   = $firebase['project_id'];
 $accessToken = $firebase['access_token'];
@@ -35,7 +50,6 @@ $error = curl_error($ch);
 $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
-header('Content-Type: application/json');
 echo json_encode([
     'httpCode' => $httpCode,
     'error'    => $error ?: null,
