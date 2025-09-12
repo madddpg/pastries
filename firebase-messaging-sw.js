@@ -12,24 +12,17 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+
 messaging.onBackgroundMessage(payload => {
   const n = payload.notification || {};
-  const title = n.title || (payload.data && payload.data.title) || 'New Order';
-  // Prefer provided icon, else attempt known app icons (ensure these exist in /img)
-  const candidateIcons = [
-    n.icon,
-    payload.data && payload.data.icon,
-    '/img/CC.png',
-    '/img/logo.png',
-    '/img/icon-192.png'
-  ].filter(Boolean);
-  const chosenIcon = candidateIcons[0];
-  const options = {
-    body: n.body || (payload.data && payload.data.body) || '',
-    icon: chosenIcon,
-    data: { click_action: (payload.data && payload.data.click_action) || '/' }
-  };
-  self.registration.showNotification(title, options);
+  self.registration.showNotification(
+    n.title || 'New Message',
+    {
+      body: n.body || '',
+      data: payload.data || {},
+      icon: '/icon-192.png'
+    }
+  );
 });
 
 self.addEventListener('notificationclick', e => {

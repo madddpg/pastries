@@ -2,20 +2,21 @@
 <?php
 header('Content-Type: application/json');
 
-$firebase = require __DIR__ . '/firebase.php';
+$firebase = require __DIR__.'/firebase.php';
 
-$projectId   = $firebase['project_id'];
-$accessToken = $firebase['access_token'];
+$token = $_GET['token'] ?? '';
+if (!$token) {
+    echo json_encode(['error'=>'token required (?token=DEVICE_FCM_TOKEN)']); exit;
+}
 
-$url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
+$url = "https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/messages:send";
 
-// Sends to topic "admin"
 $payload = [
     'message' => [
-        'topic' => 'admin',
+        'token' => $token,
         'notification' => [
-            'title' => 'Test Push',
-            'body'  => 'FCM v1 topic message delivered.'
+            'title' => 'Direct Test',
+            'body'  => 'Single token push'
         ],
         'data' => [
             'click_action' => '/admin/'
@@ -27,7 +28,7 @@ $ch = curl_init($url);
 curl_setopt_array($ch, [
     CURLOPT_POST => true,
     CURLOPT_HTTPHEADER => [
-        "Authorization: Bearer $accessToken",
+        "Authorization: Bearer {$firebase['access_token']}",
         "Content-Type: application/json"
     ],
     CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_SLASHES),
@@ -42,6 +43,6 @@ curl_close($ch);
 echo json_encode([
     'httpCode' => $code,
     'error' => $error ?: null,
-    'raw' => $response,
-    'parsed' => json_decode($response, true)
+    'resp' => json_decode($response, true),
+    'raw' => $response
 ]);
