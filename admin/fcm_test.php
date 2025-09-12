@@ -36,21 +36,20 @@
   const reg = await navigator.serviceWorker.ready;
   out('SW ready (state='+(reg.active && reg.active.state)+')');
 
-  const messaging = firebase.messaging();
-  try {
-    out('Calling getToken...');
+  
+// ...existing code...
     const token = await messaging.getToken({ serviceWorkerRegistration: reg, vapidKey });
     if (!token) { out('Token null'); return; }
-    out('TOKEN:\\n'+token);
-    const resp = await fetch('/cupscuddles/admin/saveAdminFcmToken.php',{
+    out('TOKEN:\n'+token);
+    // CHANGED: relative path
+    const resp = await fetch('saveAdminFcmToken.php', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({token})
     });
     out('Save status: '+resp.status);
-  } catch(e) {
-    out('getToken error: '+(e.message||e));
-  }
+    if (resp.status === 404) out('saveAdminFcmToken.php not found (upload or path mismatch).');
+// ...existing code...
 })();
 </script>
 </body>
