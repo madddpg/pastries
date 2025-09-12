@@ -6,8 +6,7 @@ use Dotenv\Dotenv;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 
 $root = dirname(__DIR__);
-$envPath = $root.'/.env';
-if (is_file($envPath)) {
+if (is_file($root.'/.env')) {
     Dotenv::createImmutable($root)->safeLoad();
 }
 
@@ -17,13 +16,11 @@ if (!$path || !is_file($path)) {
 }
 
 $sa = json_decode(file_get_contents($path), true);
-if (
-    !is_array($sa) ||
+if (!is_array($sa) ||
     ($sa['type'] ?? '') !== 'service_account' ||
     empty($sa['project_id']) ||
     empty($sa['private_key']) ||
-    empty($sa['client_email'])
-) {
+    empty($sa['client_email'])) {
     throw new Exception('Invalid service account JSON.');
 }
 
@@ -37,5 +34,5 @@ if (!$token) {
 
 return [
     'access_token' => $token,
-    'project_id' => $sa['project_id'],
+    'project_id'   => $sa['project_id'],
 ];

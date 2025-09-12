@@ -7,6 +7,7 @@ class Database
     private $user = "u778762049_cupsandcuddles";
     private $password = "CupS@1234";
     private $db = "u778762049_ordering";
+    private $pdo;
 
     public function opencon()
     {
@@ -105,17 +106,31 @@ class Database
         }
         return $orders;
     }
-public function getAdminFcmToken(int $adminId): ?array
-{
-    $pdo = $this->openPdo();
 
-    $stmt = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE id = ?");
-    $stmt->execute([$adminId]);
+      private function connect() {
+        if ($this->pdo) return $this->pdo;
+        $dsn = "mysql:host={$this->host};dbname={$this->db};charset=utf8mb4";
+        $this->pdo = new PDO($dsn, $this->user, $this->password, [
+            PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC
+        ]);
+        return $this->pdo;
+    }
 
-    $row = $stmt->fetch();
-    return $row ?: null;
-}
+   public function getAdminFcmToken(int $adminId): ?array {
+        $pdo = $this->connect();
+        $st = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE id = ? AND fcm_token <> ''");
+        $st->execute([$adminId]);
+        $row = $st->fetch();
+        return $row ?: null;
+    }
 
+    public function getAllAdminFcmTokens(): array {
+        $pdo = $this->connect();
+        $rows = $pdo->query("SELECT DISTINCT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''")
+                    ->fetchAll(PDO::FETCH_COLUMN);
+        return array_values(array_unique($rows ?: []));
+    }
 
     // Fetch all products with sales count 
     public function fetch_products_with_sales_pdo()
@@ -786,12 +801,7 @@ public function getAdminFcmToken(int $adminId): ?array
     }
 
 
-public function getAllAdminFcmTokens(): array
-    {
-        $pdo = $this->opencon();
-        $rows = $pdo->query("SELECT fcm_token FROM admin_users WHERE fcm_token IS NOT NULL AND fcm_token <> ''")->fetchAll(PDO::FETCH_COLUMN);
-        return array_values(array_unique($rows ?: []));
-    }
+
 
         // Clean invalid tokens
     private function getFcmAccessToken(): ?string

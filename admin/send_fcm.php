@@ -1,47 +1,45 @@
 
 <?php
 header('Content-Type: application/json');
+$firebase = require __DIR__.'/firebase.php';
 
-$firebase = require __DIR__ . '/firebase.php';
+$token = $_GET['token'] ?? '';
+if (!$token) { echo json_encode(['error'=>'token required (?token=DEVICE_FCM_TOKEN)']); exit; }
 
-$projectId   = $firebase['project_id'];
-$accessToken = $firebase['access_token'];
+$url = "https://fcm.googleapis.com/v1/projects/{$firebase['project_id']}/messages:send";
 
-$url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
-
-// Sends to topic "admin"
 $payload = [
-    'message' => [
-        'topic' => 'admin',
-        'notification' => [
-            'title' => 'Test Push',
-            'body'  => 'FCM v1 topic message delivered.'
-        ],
-        'data' => [
-            'click_action' => '/admin/'
-        ]
+  'message' => [
+    'token' => $token,
+    'notification' => [
+      'title' => 'Direct Test',
+      'body'  => 'Single token push'
+    ],
+    'data' => [
+      'click_action' => '/admin/'
     ]
+  ]
 ];
 
 $ch = curl_init($url);
 curl_setopt_array($ch, [
-    CURLOPT_POST => true,
-    CURLOPT_HTTPHEADER => [
-        "Authorization: Bearer $accessToken",
-        "Content-Type: application/json"
-    ],
-    CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_SLASHES),
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_TIMEOUT => 15
+  CURLOPT_POST => true,
+  CURLOPT_HTTPHEADER => [
+    "Authorization: Bearer {$firebase['access_token']}",
+    "Content-Type: application/json"
+  ],
+  CURLOPT_POSTFIELDS => json_encode($payload),
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_TIMEOUT => 15
 ]);
 $response = curl_exec($ch);
-$error = curl_error($ch);
+$err = curl_error($ch);
 $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 echo json_encode([
-    'httpCode' => $code,
-    'error' => $error ?: null,
-    'raw' => $response,
-    'parsed' => json_decode($response, true)
+  'httpCode'=>$code,
+  'error'=>$err?:null,
+  'resp'=>json_decode($response,true),
+  'raw'=>$response
 ]);
