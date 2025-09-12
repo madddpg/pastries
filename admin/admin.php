@@ -1379,7 +1379,10 @@ function fetch_locations_pdo($con)
 
             const messaging = firebase.messaging();
             // Register service worker from site root so scope covers entire application
-            const swReg = await navigator.serviceWorker.register('/cupscuddles/firebase-messaging-sw.js');
+            const swPath = (location.pathname.includes('/cupscuddles/')) ?
+                '/cupscuddles/firebase-messaging-sw.js' :
+                '/firebase-messaging-sw.js';
+            const swReg = await navigator.serviceWorker.register(swPath);
             const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
 
             async function registerToken(force = false) {

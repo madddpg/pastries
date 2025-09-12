@@ -117,13 +117,13 @@ class Database
         return $this->pdo;
     }
 
-   public function getAdminFcmToken(int $adminId): ?array {
-        $pdo = $this->connect();
-        $st = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE id = ? AND fcm_token <> ''");
-        $st->execute([$adminId]);
-        $row = $st->fetch();
-        return $row ?: null;
-    }
+public function getAdminFcmToken(int $adminId): ?array {
+    $pdo = $this->connect();
+    $st = $pdo->prepare("SELECT fcm_token FROM admin_users WHERE admin_id = ? AND fcm_token <> ''"); // FIXED COLUMN
+    $st->execute([$adminId]);
+    $row = $st->fetch();
+    return $row ?: null;
+}
 
     public function getAllAdminFcmTokens(): array {
         $pdo = $this->connect();
@@ -849,57 +849,60 @@ class Database
         $tok = $j['access_token']; $exp = $now + (int)($j['expires_in']??3600);
         return $tok;
     }
+private function sendDirectFcm(string $title, string $body, array $data = []): void
+{
+    $tokens = $this->getAllAdminFcmTokens();
+    if (!$tokens) { error_log('FCM v1: no tokens'); return; }
 
-    private function sendDirectFcm(string $title, string $body, array $data = []): void
-    {
-        $tokens = $this->getAllAdminFcmTokens();
-        if (!$tokens) { error_log('FCM v1: no tokens'); return; }
-        $access = $this->getFcmAccessToken();
-        if (!$access) { error_log('FCM v1: no access token'); return; }
+    // Obtain access via firebase.php style (reuse your external helper OR existing JWT)
+    $access = $this->getFcmAccessToken();
+    if (!$access) { error_log('FCM v1: no access token'); return; }
 
-        if (!isset($data['click_action'])) $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
-        $icon = '/images/CC.png';
-        $projectNumber = '398338296558';
-        $endpoint = "https://fcm.googleapis.com/v1/projects/{$projectNumber}/messages:send";
+    if (!isset($data['click_action'])) {
+        $data['click_action'] = 'https://cupsandcuddles.online/admin/admin.php';
+    }
+    $icon = '/images/CC.png';
+    $projectId = 'coffeeshop-8ce2a'; // use project_id
+    $endpoint = "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send";
 
-        foreach ($tokens as $t) {
-            $payload = [
-                'message'=>[
-                    'token'=>$t,
-                    'notification'=>['title'=>$title,'body'=>$body],
-                    'data'=>$data,
-                    'webpush'=>[
-                        'notification'=>['icon'=>$icon],
-                        'fcm_options'=>['link'=>$data['click_action']]
-                    ]
+    foreach ($tokens as $t) {
+        $payload = [
+            'message'=>[
+                'token'=>$t,
+                'notification'=>['title'=>$title,'body'=>$body],
+                'data'=>$data,
+                'webpush'=>[
+                    'notification'=>['icon'=>$icon],
+                    'fcm_options'=>['link'=>$data['click_action']]
                 ]
-            ];
-            $ch = curl_init($endpoint);
-            curl_setopt_array($ch, [
-                CURLOPT_POST=>true,
-                CURLOPT_HTTPHEADER=>[
-                    "Authorization: Bearer $access",
-                    "Content-Type: application/json"
-                ],
-                CURLOPT_POSTFIELDS=>json_encode($payload),
-                CURLOPT_RETURNTRANSFER=>true,
-                CURLOPT_TIMEOUT=>15
-            ]);
-            $resp = curl_exec($ch);
-            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if ($resp===false || $code>=300) {
-                error_log("FCM v1 send fail ($code) token=".substr($t,0,24)." body=$resp");
-                if (strpos($resp,'UNREGISTERED')!==false) {
-                    $pdo = $this->opencon();
-                    $stmt=$pdo->prepare("UPDATE admin_users SET fcm_token=NULL WHERE fcm_token=?");
-                    $stmt->execute([$t]);
-                }
-            } else {
-                error_log("FCM v1 OK $resp");
+            ]
+        ];
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [
+            CURLOPT_POST=>true,
+            CURLOPT_HTTPHEADER=>[
+                "Authorization: Bearer $access",
+                "Content-Type: application/json"
+            ],
+            CURLOPT_POSTFIELDS=>json_encode($payload),
+            CURLOPT_RETURNTRANSFER=>true,
+            CURLOPT_TIMEOUT=>15
+        ]);
+        $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($resp===false || $code>=300) {
+            error_log("FCM v1 send fail ($code) token=".substr($t,0,24)." body=$resp");
+            if (strpos($resp,'UNREGISTERED')!==false) {
+                $pdo = $this->opencon();
+                $stmt=$pdo->prepare("UPDATE admin_users SET fcm_token=NULL WHERE fcm_token=?");
+                $stmt->execute([$t]);
             }
+        } else {
+            error_log("FCM v1 OK $resp");
         }
     }
+}
 
       public function pushAdminNotification(string $title, string $body, ?string $reference = null, array $data = []): bool
     {
