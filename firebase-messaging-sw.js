@@ -16,8 +16,8 @@ messaging.onBackgroundMessage(payload => {
   const d = payload.data || {};
   const title = d.title || 'Notification';
   const body  = d.body  || '';
-  const icon  = d.icon  || '../img/kape.png';
-  const image = d.image || '../img/logo.png';
+  const icon  = d.icon  || '/img/kape.png';
+  const image = d.image || '/img/logo.png';
   self.registration.showNotification(title, {
     body,
     icon,
