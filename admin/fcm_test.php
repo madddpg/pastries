@@ -18,38 +18,41 @@
     measurementId: "G-5DGJCENLGV"
   };
   const vapidKey = "BBD435Y3Qib-8dPJ_-eEs2ScDyXZ2WhWzFzS9lmuKv_xQ4LSPcDnZZVqS7FHBtinlM_tNNQYsocQMXCptrchO68";
-  const logEl = document.getElementById('out');
-  const out = m => { console.log(m); logEl.textContent += '\\n'+m; };
+  const outEl = document.getElementById('out');
+  const log = m => { console.log(m); outEl.textContent += '\n'+m; };
 
   firebase.initializeApp(cfg);
-  if (!firebase.messaging.isSupported()) { out('Messaging not supported'); return; }
+
+  if (!firebase.messaging.isSupported()) { log('Messaging not supported'); return; }
+
+  // Define messaging BEFORE using it
+  const messaging = firebase.messaging();
 
   if (Notification.permission === 'default') {
-    out('Requesting permission...');
+    log('Requesting permission...');
     await Notification.requestPermission();
   }
-  if (Notification.permission !== 'granted') { out('Permission not granted'); return; }
+  if (Notification.permission !== 'granted') { log('Permission not granted'); return; }
 
-  out('Registering SW at root...');
-  await navigator.serviceWorker.register('/firebase-messaging-sw.js'); // CHANGED
-  out('Waiting for active worker...');
+  log('Registering SW (root)...');
+  await navigator.serviceWorker.register('/firebase-messaging-sw.js');
   const reg = await navigator.serviceWorker.ready;
-  out('SW ready (state='+(reg.active && reg.active.state)+')');
+  log('SW ready (state='+(reg.active && reg.active.state)+')');
 
-  
-// ...existing code...
+  try {
+    log('Calling getToken...');
     const token = await messaging.getToken({ serviceWorkerRegistration: reg, vapidKey });
-    if (!token) { out('Token null'); return; }
-    out('TOKEN:\n'+token);
-    // CHANGED: relative path
+    if (!token) { log('Token null'); return; }
+    log('TOKEN:\n'+token);
     const resp = await fetch('saveAdminFcmToken.php', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({token})
     });
-    out('Save status: '+resp.status);
-    if (resp.status === 404) out('saveAdminFcmToken.php not found (upload or path mismatch).');
-// ...existing code...
+    log('Save status: '+resp.status);
+  } catch(e) {
+    log('getToken error: '+(e.message||e));
+  }
 })();
 </script>
 </body>
