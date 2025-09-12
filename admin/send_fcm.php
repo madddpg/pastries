@@ -11,8 +11,8 @@ $baseData = [
   'title'        => $token ? 'Direct Test (data)' : 'Topic Test (data)',
   'body'         => $token ? 'Single token push' : 'Admin topic test',
   'click_action' => '/admin/',
-  'icon'         => '/img/kape.png',
-  'image'        => '/img/logo.png'
+  'icon'         => '../img/kape.png',
+  'image'        => '../img/logo.png'
 ];
 
 $message = $token

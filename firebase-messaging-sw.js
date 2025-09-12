@@ -21,7 +21,7 @@ messaging.onBackgroundMessage(payload => {
   const n = payload.notification || {};
   const title = d.title || n.title || 'Notification';
   const body  = d.body  || n.body  || '';
-  const icon  = d.icon  || n.icon  || '/img/kape.png';
+  const icon  = d.icon  || n.icon  || '../img/kape.png';
   const image = d.image || n.image || undefined;
   self.registration.showNotification(title, {
     body,
