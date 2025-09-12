@@ -19,6 +19,7 @@ messaging.onBackgroundMessage(payload => {
   self.registration.showNotification(n.title || 'Notification', {
     body: n.body || '',
     data: payload.data || {},
-    icon: '/icon-192.png'
+    image: n.image || '/img/logo.png',
+    icon: n.icon || '/img/kape.png'
   });
 });
