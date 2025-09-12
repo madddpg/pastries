@@ -6,7 +6,7 @@ use Dotenv\Dotenv;
 use Google\Auth\Credentials\ServiceAccountCredentials;
 
 $root = dirname(__DIR__); // /public_html
-$envFile = $root.'/.env';
+$envFile = $root.'/.env.example';
 if (is_file($envFile)) {
     Dotenv::createImmutable($root)->safeLoad();
 }
