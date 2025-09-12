@@ -13,9 +13,7 @@ firebase.initializeApp({
   appId: "1:398338296558:web:8c44c2b36eccad9fbdc1ff",
   measurementId: "G-5DGJCENLGV"
 });
-
 const messaging = firebase.messaging();
-
 messaging.onBackgroundMessage(payload => {
   const n = payload.notification || {};
   self.registration.showNotification(n.title || 'Notification', {
