@@ -1448,7 +1448,7 @@ function fetch_locations_pdo($con)
                         new Notification(title, {
                             body,
                             data: d,
-                            icon: '..img/logo.png'
+                            icon: '/icon-192.png'
                         });
                     }
                 });
