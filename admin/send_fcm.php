@@ -8,7 +8,7 @@ $url = "https://fcm.googleapis.com/v1/projects/$projectId/messages:send";
 
 $message = [
     'message' => [
-        'topic' => 'admins', // send to all admins
+        'topic' => 'admin', // send to all admins
         'notification' => [
             'title' => 'New Order',
             'body'  => 'You have a new coffee order!'
