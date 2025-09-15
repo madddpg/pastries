@@ -270,7 +270,10 @@ document.body.addEventListener('click', async function(e){
 
   if (target.matches('.btn-delete-topping')) {
     const id = target.dataset.id;
-    if (!confirm('Delete this topping?')) return;
+    const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
+    const name = row ? row.children[1].textContent.trim() : ('ID ' + id);
+    if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
+
     const body = new URLSearchParams();
     body.append('action','delete');
     body.append('id', id);
@@ -280,17 +283,24 @@ document.body.addEventListener('click', async function(e){
       if (data.success) {
         fetchToppings();
         await loadActiveToppings();
+        showNotification(`Deleted topping: ${name}`);
       } else {
         if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
-          if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
+          const msg = data.message + "\n\nIt is referenced in past orders. Mark it INACTIVE instead?";
+          if (confirm(msg)) {
             const body2 = new URLSearchParams();
             body2.append('action','toggle_status');
             body2.append('id', id);
             body2.append('status','0'); // numeric inactive
             const r2 = await fetch(API, { method: 'POST', body: body2 });
             const d2 = await r2.json();
-            if (d2.success) { fetchToppings(); await loadActiveToppings(); }
-            else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
+            if (d2.success) {
+              fetchToppings();
+              await loadActiveToppings();
+              showNotification(`Marked inactive: ${name}`);
+            } else {
+              alert('Failed to set inactive: ' + (d2.message || 'unknown'));
+            }
           }
         } else {
           alert('Delete failed: ' + (data.message || 'unknown'));
@@ -298,7 +308,7 @@ document.body.addEventListener('click', async function(e){
       }
     } catch (err) {
       console.error('delete topping error', err);
-      alert('Delete request failed');
+      alert('Delete request failed: ' + (err.message || 'network error'));
     }
     return;
   }
