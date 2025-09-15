@@ -790,7 +790,6 @@ img, svg, picture, video {
   box-sizing: border-box;
   display:flex;
   flex-direction: column;
-  overflow: hidden; /* contain internal scroll */
 }
 
 /* Enhanced responsive modal handling */
@@ -819,13 +818,10 @@ html.no-scroll, body.no-scroll {
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   position: relative;
   animation: productModalIn .35s cubic-bezier(.16,.84,.44,1);
-}
-/* Inner scroll area to avoid double scrollbars and keep header/buttons fixed */
-.product-modal-content .product-modal-grid {
-  overflow-y: auto;
+  overflow-y: auto; /* full content scrolls */
   -webkit-overflow-scrolling: touch;
-  padding-right: 4px; /* minor gutter so scrollbar not cover content */
 }
+/* Remove inner scroll override so entire modal scrolls */
 
 @keyframes productModalIn {
   0% { transform: translateY(28px) scale(.975); opacity:0; }
@@ -852,7 +848,7 @@ html.no-scroll, body.no-scroll {
     padding: clamp(16px,4vw,32px) clamp(18px,4vw,32px) 48px;
     box-shadow:none;
   }
-  .product-modal-content .product-modal-grid { flex:1 1 auto; max-height: none; }
+  .product-modal-content .product-modal-grid { flex: 0 0 auto; }
   .product-modal-close-yellow { top:14px !important; right:14px !important; }
   .product-modal-image img { max-width:70%; height:auto; }
   .product-modal-title { font-size:1.75rem; }
