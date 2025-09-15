@@ -790,6 +790,66 @@ img, svg, picture, video {
   box-sizing: border-box;
 }
 
+/* Enhanced responsive modal handling */
+.product-modal.product-modal-open {
+  background: rgba(0,0,0,0.35); /* slightly darker for contrast */
+  backdrop-filter: blur(2px);
+}
+
+html.no-scroll, body.no-scroll {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+/* Base positioning (desktop/tablet) */
+.product-modal {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+
+.product-modal.active .product-modal-content {
+  background: #fff;
+  border-radius: 28px;
+  max-height: min(92vh, 980px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  position: relative;
+}
+
+/* Mobile first adjustments */
+@media (max-width: 780px) {
+  .product-modal {
+    align-items: flex-start;
+    padding: env(safe-area-inset-top) 0 0 0; /* support iOS notch */
+  }
+  .product-modal.active .product-modal-content {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh; /* full height sheet */
+    border-radius: 0;  /* edge-to-edge */
+    padding: clamp(16px, 4vw, 32px) clamp(18px, 4vw, 32px) 48px;
+    box-shadow: none;
+  }
+  .product-modal-close-yellow {
+    top: 14px !important;
+    right: 14px !important;
+  }
+  /* ensure image scales nicely */
+  .product-modal-image img { max-width: 70%; height: auto; }
+  .product-modal-title { font-size: 1.75rem; }
+  .product-modal-price { font-size: 1.25rem; }
+}
+
+/* Very small devices */
+@media (max-width: 420px) {
+  .product-modal.active .product-modal-content { padding: 20px 18px 42px; }
+  .product-modal-title { font-size: 1.55rem; }
+  .product-modal-image img { max-width: 78%; }
+}
+
 /* Cap testimonial hover scale to avoid overflow on mobile */
 .testimonial:hover { transform: scale(1.08); }
 
