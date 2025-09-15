@@ -101,17 +101,7 @@ function recalcModalTotal() {
 
 // ...existing code...
 
-document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProduct);
-});
-function handleViewProduct(event) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  // proceed to open product modal
-  openProductModal(event.target.dataset.productId);
-}
+// (Removed early simple handleViewProduct; a richer unified version appears later.)
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
@@ -149,17 +139,7 @@ function openProductModal(id, name, price, description, image) {
 }
 // ...existing code...
 
-document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProduct);
-});
-function handleViewProduct(event) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  // proceed to open product modal
-  openProductModal(event.target.dataset.productId);
-}
+// (Removed duplicate listener & function to avoid double-trigger.)
 
 // Close modal helper
 function closeProductModal() {
@@ -2061,6 +2041,11 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     console.log("handleViewProduct called", { id, name, price, dataType, variants });
     // Require login
     if (!isLoggedIn) { showLoginModal(); return; }
+    // Re-entry guard: if modal is already open and showing same product, do nothing
+    const existingModal = document.getElementById('productModal');
+    if (existingModal && existingModal.classList.contains('active') && currentProduct && currentProduct.id === id) {
+      return;
+    }
 
     dataType = (dataType || 'cold').toString().toLowerCase();
 
@@ -2176,21 +2161,13 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       newBtn.onclick = (e) => { e.stopPropagation(); addProductToCart(); closeProductModal(); };
     }
 
-    // Open modal
+    // Open modal (class-based styling only)
     const modal = document.getElementById("productModal");
     if (modal) {
-      modal.classList.add("active");
-      modal.style.display = "flex";
-      modal.style.alignItems = "center";
-      modal.style.justifyContent = "center";
-      modal.style.position = "fixed";
-      modal.style.top = "0";
-      modal.style.left = "0";
-      modal.style.width = "100vw";
-      modal.style.height = "100vh";
-      modal.style.background = "rgba(0,0,0,0.15)";
-      modal.style.zIndex = "3000";
-      document.body.style.overflow = "hidden";
+      modal.classList.add("active","product-modal-open");
+      modal.removeAttribute('aria-hidden');
+      document.documentElement.classList.add('no-scroll');
+      document.body.classList.add('no-scroll');
       const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
       if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
     }
