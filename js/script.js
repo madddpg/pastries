@@ -45,8 +45,6 @@ let currentProduct = null
 let lastDrinkType = 'cold';
 let modalSelectedToppings = {};
 let __lastFocusedBeforePaymentModal = null;
-let __lastFocusBeforeProductModal = null; // a11y: track focus to restore after closing product modal
-let __scrollLockY = 0; // remember scroll position before opening product modal
 
 const TOPPINGS = [
   { key: 'extra_shot', name: 'Extra shot (coffee)', price: 40 },
@@ -103,48 +101,75 @@ function recalcModalTotal() {
 
 // ...existing code...
 
-// (Removed early simple handleViewProduct; a richer unified version appears later.)
+document.querySelectorAll('.view-btn').forEach(button => {
+  button.addEventListener('click', handleViewProduct);
+});
+function handleViewProduct(event) {
+  if (!isLoggedIn) {
+    showLoginModal();
+    return;
+  }
+  // proceed to open product modal
+  openProductModal(event.target.dataset.productId);
+}
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
-  // Delegates to the unified handleViewProduct so we have a single path.
-  // Accept either positional args or an object.
-  if (typeof id === 'object' && id !== null) {
-    const p = id; // object with fields
-    return handleViewProduct(p.id, p.name, p.price, p.description, p.image, p.dataType, p.variants);
+  if (!isLoggedIn) {
+    showLoginModal();
+    return;
   }
-  return handleViewProduct(id, name, price, description, image);
+  currentProduct = { id, name, price, description, image };
+  document.getElementById("modalProductName").textContent = name;
+  document.getElementById("modalProductPrice").textContent = `Php ${price}`;
+  document.getElementById("modalProductDescription").textContent = description;
+  document.getElementById("modalProductImage").src = image;
+  document.getElementById("modalProductImage").alt = name;
+  selectedSize = "Grande";
+  document.querySelectorAll(".size-btn").forEach((btn) => btn.classList.remove("active"));
+  document.querySelector(".size-btn").classList.add("active");
+  const modal = document.getElementById("productModal");
+  // Instead of forcing inline styles (which break responsiveness on some devices),
+  // rely on CSS classes. We only toggle the active class and a helper class
+  // that lets CSS handle full-screen vs centered layout.
+  modal.classList.add("active");
+  modal.classList.add("product-modal-open");
+  // prevent body scroll while open
+  document.documentElement.classList.add('no-scroll');
+  document.body.classList.add('no-scroll');
+
+  // Ensure the yellow close button closes the modal
+  const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
+  if (yellowCloseBtn) {
+    yellowCloseBtn.onclick = function (e) {
+      e.stopPropagation();
+      closeProductModal();
+    };
+  }
 }
 // ...existing code...
 
-// (Removed duplicate listener & function to avoid double-trigger.)
+document.querySelectorAll('.view-btn').forEach(button => {
+  button.addEventListener('click', handleViewProduct);
+});
+function handleViewProduct(event) {
+  if (!isLoggedIn) {
+    showLoginModal();
+    return;
+  }
+  // proceed to open product modal
+  openProductModal(event.target.dataset.productId);
+}
 
 // Close modal helper
 function closeProductModal() {
   const modal = document.getElementById('productModal');
   if (modal) {
-    if (!modal.classList.contains('active')) return; // already closed
-    modal.classList.add('closing');
-    // If focus is inside the modal, move it out BEFORE we aria-hide the modal to avoid warnings.
-    if (modal.contains(document.activeElement)) {
-      const restore = (__lastFocusBeforeProductModal && document.contains(__lastFocusBeforeProductModal))
-        ? __lastFocusBeforeProductModal
-        : document.querySelector('.view-btn') || document.body;
-      try { restore.focus(); } catch(_) { /* ignore */ }
-    }
-    // allow animation to play then fully close
-    setTimeout(() => {
-      modal.classList.remove('active','product-modal-open','closing');
-      modal.setAttribute('aria-hidden','true');
-      document.documentElement.classList.remove('no-scroll');
-      document.body.classList.remove('no-scroll');
-      // Restore scroll position if we locked it
-      if (document.body.classList.contains('modal-scroll-lock')) {
-        document.body.classList.remove('modal-scroll-lock');
-        document.body.style.top = '';
-        window.scrollTo(0, __scrollLockY || 0);
-      }
-    }, 260);
+    modal.classList.remove('active','product-modal-open');
+    // Hide via CSS instead of inline to allow transitions
+    modal.setAttribute('aria-hidden','true');
+    document.documentElement.classList.remove('no-scroll');
+    document.body.classList.remove('no-scroll');
   }
 }
 
@@ -835,16 +860,6 @@ setPromoActive(14, 0).then(d => console.log(d));
   });
 })();
 
-// Accessibility: close product modal with ESC
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    const modal = document.getElementById('productModal');
-    if (modal && modal.classList.contains('active')) {
-      closeProductModal();
-    }
-  }
-});
-
 function showReferenceModal(ref) {
   // Remove old modal if present
   let existing = document.getElementById('orderReferenceModal');
@@ -1467,10 +1482,12 @@ function closeOtpModal() {
   if (otpState.countdownTimer) clearInterval(otpState.countdownTimer);
   if (otpState.cooldownTimer) clearInterval(otpState.cooldownTimer);
 }
+
 function updateOtpCountdown() {
   const el = document.getElementById('otpCountdown');
   if (!el) return;
   const now = Math.floor(Date.now() / 1000);
+
   // Expiry text
   if (otpState.expiresAt && now < otpState.expiresAt) {
     const remain = otpState.expiresAt - now;
@@ -2044,35 +2061,17 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     console.log("handleViewProduct called", { id, name, price, dataType, variants });
     // Require login
     if (!isLoggedIn) { showLoginModal(); return; }
-    // Re-entry guard: if modal is already open and showing same product, do nothing
-    const existingModal = document.getElementById('productModal');
-    if (existingModal && existingModal.classList.contains('active') && currentProduct && currentProduct.id === id) {
-      return;
-    }
 
     dataType = (dataType || 'cold').toString().toLowerCase();
 
 
-  // Get UI elements
-  const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
-  const sizeButtons = document.querySelector(".size-buttons");
-  const nameEl = document.getElementById("modalProductName");
-  const descEl = document.getElementById("modalProductDescription");
-  const imgEl = document.getElementById("modalProductImage");
-  const priceEl = document.getElementById("modalProductPrice");
-
-  // --- RESET any previous product state so an older product does not still show ---
-  if (sizeButtons) sizeButtons.innerHTML = '';
-  if (nameEl) nameEl.textContent = '';
-  if (descEl) descEl.textContent = '';
-  if (imgEl) { imgEl.src = ''; imgEl.alt = ''; }
-  if (priceEl) priceEl.textContent = '';
-  // Clear sugar selection UI
-  document.querySelectorAll('.sugar-btn').forEach(btn => btn.classList.remove('active'));
-  window.selectedSugar = 'Less Sweet';
-  // Clear toppings active state (in case previous left-over classes)
-  document.querySelectorAll('.add-on-btn.active').forEach(btn => btn.classList.remove('active'));
-  // ------------------------------------------------------------------------------
+    // Get UI elements
+    const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
+    const sizeButtons = document.querySelector(".size-buttons");
+    const nameEl = document.getElementById("modalProductName");
+    const descEl = document.getElementById("modalProductDescription");
+    const imgEl = document.getElementById("modalProductImage");
+    const priceEl = document.getElementById("modalProductPrice");
 
     // Set default prices based on type
     let grandePrice = 140, supremePrice = 170;
@@ -2177,33 +2176,23 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       newBtn.onclick = (e) => { e.stopPropagation(); addProductToCart(); closeProductModal(); };
     }
 
-    // Open modal (class-based styling only)
+    // Open modal
     const modal = document.getElementById("productModal");
     if (modal) {
-      // Save previously focused element if it's outside the modal
-      if (!modal.contains(document.activeElement)) {
-        __lastFocusBeforeProductModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      }
-      // Preserve current scroll position & lock body without jumping to top
-      __scrollLockY = window.scrollY || window.pageYOffset || 0;
-      if (!document.body.classList.contains('modal-scroll-lock')) {
-        document.body.classList.add('modal-scroll-lock');
-        document.body.style.top = `-${__scrollLockY}px`;
-      }
-      // Activate modal instantly (no animation) and ensure legacy no-scroll classes are removed
-      modal.classList.add("active","product-modal-open","no-anim");
-      modal.removeAttribute('aria-hidden');
-      modal.setAttribute('role','dialog');
-      modal.setAttribute('aria-modal','true');
-      document.documentElement.classList.remove('no-scroll');
-      document.body.classList.remove('no-scroll');
+      modal.classList.add("active");
+      modal.style.display = "flex";
+      modal.style.alignItems = "center";
+      modal.style.justifyContent = "center";
+      modal.style.position = "fixed";
+      modal.style.top = "0";
+      modal.style.left = "0";
+      modal.style.width = "100vw";
+      modal.style.height = "100vh";
+      modal.style.background = "rgba(0,0,0,0.15)";
+      modal.style.zIndex = "3000";
+      document.body.style.overflow = "hidden";
       const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
       if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
-      // Focus first interactive control for accessibility
-      const focusTarget = modal.querySelector('.product-modal-close-yellow, .size-btn, .product-modal-add-cart, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (focusTarget && typeof focusTarget.focus === 'function') {
-        setTimeout(() => { try { focusTarget.focus(); } catch(_){} }, 15);
-      }
     }
 
     document.querySelectorAll('.topping-checkbox').forEach(cb => {

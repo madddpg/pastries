@@ -788,8 +788,6 @@ img, svg, picture, video {
   max-width: 1100px;
   padding: clamp(12px, 4vw, 48px);
   box-sizing: border-box;
-  display:flex;
-  flex-direction: column;
 }
 
 /* Enhanced responsive modal handling */
@@ -803,86 +801,46 @@ html.no-scroll, body.no-scroll {
   touch-action: none;
 }
 
-/* New scroll lock technique: prevent body jump while keeping background at same position */
-body.modal-scroll-lock {
-  position: fixed;
-  left: 0; right:0;
-  width: 100%;
-  overflow: hidden; /* extra safety */
-}
-
 /* Base positioning (desktop/tablet) */
 .product-modal {
   display: none;
-  /* Align to top so modal appears higher on screen instead of perfectly centered */
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  /* Slightly smaller top padding so it's closer to the top but still spaced */
-  padding: 24px 24px 32px;
+  padding: 32px 24px;
 }
 
 .product-modal.active .product-modal-content {
   background: #fff;
   border-radius: 28px;
-  max-height: none; /* allow natural height on desktop */
+  max-height: min(92vh, 980px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   position: relative;
-  animation: productModalIn .35s cubic-bezier(.16,.84,.44,1);
-  /* No internal scrolling on desktop; page stays at locked background position */
-  overflow: visible;
-  /* Nudge down a bit to avoid touching very top edge, adjustable */
-  margin-top: clamp(12px, 4vh, 48px);
-}
-
-/* Mobile-only: constrain height and allow internal scroll */
-@media (max-width: 780px) {
-  .product-modal.active .product-modal-content {
-    max-height: min(92vh, 980px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Disable animation when .no-anim present (added for instant view) */
-.product-modal.no-anim .product-modal-content,
-.product-modal .product-modal-content.no-anim,
-.product-modal-content.no-anim {
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
-}
-/* Remove inner scroll override so entire modal scrolls */
-
-@keyframes productModalIn {
-  0% { transform: translateY(28px) scale(.975); opacity:0; }
-  60% { transform: translateY(-4px) scale(1.002); opacity:1; }
-  100% { transform: translateY(0) scale(1); opacity:1; }
-}
-
-.product-modal.closing .product-modal-content {
-  animation: productModalOut .28s ease forwards;
-}
-@keyframes productModalOut {
-  0% { transform: translateY(0) scale(1); opacity:1; }
-  100% { transform: translateY(20px) scale(.975); opacity:0; }
 }
 
 /* Mobile first adjustments */
 @media (max-width: 780px) {
-  .product-modal { align-items: flex-start; padding: env(safe-area-inset-top) 0 0 0; }
-  .product-modal.active .product-modal-content {
-    width:100%;
-    max-width:100%;
-    min-height:100vh;
-    border-radius:0;
-    padding: clamp(16px,4vw,32px) clamp(18px,4vw,32px) 48px;
-    box-shadow:none;
+  .product-modal {
+    align-items: flex-start;
+    padding: env(safe-area-inset-top) 0 0 0; /* support iOS notch */
   }
-  .product-modal-content .product-modal-grid { flex: 0 0 auto; }
-  .product-modal-close-yellow { top:14px !important; right:14px !important; }
-  .product-modal-image img { max-width:70%; height:auto; }
-  .product-modal-title { font-size:1.75rem; }
-  .product-modal-price { font-size:1.25rem; }
+  .product-modal.active .product-modal-content {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh; /* full height sheet */
+    border-radius: 0;  /* edge-to-edge */
+    padding: clamp(16px, 4vw, 32px) clamp(18px, 4vw, 32px) 48px;
+    box-shadow: none;
+  }
+  .product-modal-close-yellow {
+    top: 14px !important;
+    right: 14px !important;
+  }
+  /* ensure image scales nicely */
+  .product-modal-image img { max-width: 70%; height: auto; }
+  .product-modal-title { font-size: 1.75rem; }
+  .product-modal-price { font-size: 1.25rem; }
 }
 
 /* Very small devices */
@@ -2553,8 +2511,24 @@ label[for="acceptTerms"] { white-space: nowrap; }
   .add-ons-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* Remove conflicting alternate modal overrides to keep unified behavior */
-/* (Previously reset display/layout which caused scroll inconsistencies) */
+.product-modal.active {
+  display: block;
+}
+
+.product-modal-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 60px 24px 24px;
+  position: relative;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  display: block;
+  flex-direction: unset;
+  gap: unset;
+  align-items: unset;
+  width: unset;
+}
 
 .product-modal-grid {
   display: grid;
