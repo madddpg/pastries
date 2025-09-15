@@ -171,7 +171,8 @@ async function fetchToppings() {
 
 async function loadActiveToppings() {
   try {
-    const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
+    // Use same API base to avoid broken relative path (previously 'admin/AJAX/...')
+    const res = await fetch(`${API}?action=active`, { cache: 'no-store', credentials: 'same-origin' });
     const data = await res.json();
     if (!data.success || !Array.isArray(data.toppings)) return;
     const container = document.getElementById('toppingsList');
@@ -179,12 +180,12 @@ async function loadActiveToppings() {
     container.innerHTML = data.toppings.map(t => {
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<label style="display:block;margin-bottom:6px;">
-        <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}">
+        <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> 
         ${safeName} — ₱${Number(t.price).toFixed(2)}
       </label>`;
     }).join('');
     bindToppingCheckboxes();
-    recalcModalTotal();
+    if (typeof recalcModalTotal === 'function') recalcModalTotal();
   } catch (err) {
     console.error('loadActiveToppings error', err);
   }
@@ -257,7 +258,10 @@ document.body.addEventListener('click', async function(e){
     try {
       const res = await fetch(API, { method: 'POST', body });
       const data = await res.json();
-      if (data.success) fetchToppings();
+      if (data.success) {
+        fetchToppings();
+        await loadActiveToppings(); // refresh selectable toppings for order modal
+      }
     } catch (err) {
       console.error('toggle topping error', err);
     }
@@ -275,6 +279,7 @@ document.body.addEventListener('click', async function(e){
       const data = await res.json();
       if (data.success) {
         fetchToppings();
+        await loadActiveToppings();
       } else {
         if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
           if (confirm(data.message + "\n\nMark it INACTIVE instead?")) {
@@ -284,7 +289,7 @@ document.body.addEventListener('click', async function(e){
             body2.append('status','0'); // numeric inactive
             const r2 = await fetch(API, { method: 'POST', body: body2 });
             const d2 = await r2.json();
-            if (d2.success) fetchToppings();
+            if (d2.success) { fetchToppings(); await loadActiveToppings(); }
             else alert('Failed to set inactive: ' + (d2.message || 'unknown'));
           }
         } else {
@@ -350,25 +355,10 @@ if (form) {
       const res = await fetch(API, { method: 'POST', body });
       const data = await res.json();
       if (data.success) {
-    if (addModal) addModal.style.display = 'none';
-    fetchToppings(); // refresh admin table
-
-    // If topping is active, also update checkboxes without reload
-    if (data.topping && data.topping.status === 'active') {
-        const container = document.getElementById('toppingsList');
-        if (container) {
-            const t = data.topping;
-            const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const html = `<label style="display:block;margin-bottom:6px;">
-                <input type="checkbox" class="topping-checkbox" 
-                    data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> 
-                ${safeName} — ₱${Number(t.price).toFixed(2)}
-            </label>`;
-            container.insertAdjacentHTML('beforeend', html);
-            bindToppingCheckboxes(); // rebind new checkbox
-        }
-    }
-} else {
+        if (addModal) addModal.style.display = 'none';
+        fetchToppings(); // refresh admin table
+        await loadActiveToppings(); // refresh selection list (adds/updates/removes)
+      } else {
         if (resultEl) resultEl.textContent = data.message || 'Failed';
       }
     } catch (err) {
