@@ -814,9 +814,11 @@ body.modal-scroll-lock {
 /* Base positioning (desktop/tablet) */
 .product-modal {
   display: none;
-  align-items: center;
+  /* Align to top so modal appears higher on screen instead of perfectly centered */
+  align-items: flex-start;
   justify-content: center;
-  padding: 32px 24px;
+  /* Slightly smaller top padding so it's closer to the top but still spaced */
+  padding: 24px 24px 32px;
 }
 
 .product-modal.active .product-modal-content {
@@ -828,6 +830,8 @@ body.modal-scroll-lock {
   animation: productModalIn .35s cubic-bezier(.16,.84,.44,1);
   overflow-y: auto; /* full content scrolls */
   -webkit-overflow-scrolling: touch;
+  /* Nudge down a bit to avoid touching very top edge, adjustable */
+  margin-top: clamp(12px, 4vh, 64px);
 }
 
 /* Disable animation when .no-anim present (added for instant view) */
