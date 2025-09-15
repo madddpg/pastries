@@ -105,37 +105,13 @@ function recalcModalTotal() {
 
 // Product Modal Functions
 function openProductModal(id, name, price, description, image) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
+  // Delegates to the unified handleViewProduct so we have a single path.
+  // Accept either positional args or an object.
+  if (typeof id === 'object' && id !== null) {
+    const p = id; // object with fields
+    return handleViewProduct(p.id, p.name, p.price, p.description, p.image, p.dataType, p.variants);
   }
-  currentProduct = { id, name, price, description, image };
-  document.getElementById("modalProductName").textContent = name;
-  document.getElementById("modalProductPrice").textContent = `Php ${price}`;
-  document.getElementById("modalProductDescription").textContent = description;
-  document.getElementById("modalProductImage").src = image;
-  document.getElementById("modalProductImage").alt = name;
-  selectedSize = "Grande";
-  document.querySelectorAll(".size-btn").forEach((btn) => btn.classList.remove("active"));
-  document.querySelector(".size-btn").classList.add("active");
-  const modal = document.getElementById("productModal");
-  // Instead of forcing inline styles (which break responsiveness on some devices),
-  // rely on CSS classes. We only toggle the active class and a helper class
-  // that lets CSS handle full-screen vs centered layout.
-  modal.classList.add("active");
-  modal.classList.add("product-modal-open");
-  // prevent body scroll while open
-  document.documentElement.classList.add('no-scroll');
-  document.body.classList.add('no-scroll');
-
-  // Ensure the yellow close button closes the modal
-  const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
-  if (yellowCloseBtn) {
-    yellowCloseBtn.onclick = function (e) {
-      e.stopPropagation();
-      closeProductModal();
-    };
-  }
+  return handleViewProduct(id, name, price, description, image);
 }
 // ...existing code...
 
@@ -145,11 +121,15 @@ function openProductModal(id, name, price, description, image) {
 function closeProductModal() {
   const modal = document.getElementById('productModal');
   if (modal) {
-    modal.classList.remove('active','product-modal-open');
-    // Hide via CSS instead of inline to allow transitions
-    modal.setAttribute('aria-hidden','true');
-    document.documentElement.classList.remove('no-scroll');
-    document.body.classList.remove('no-scroll');
+    if (!modal.classList.contains('active')) return; // already closed
+    modal.classList.add('closing');
+    // allow animation to play then fully close
+    setTimeout(() => {
+      modal.classList.remove('active','product-modal-open','closing');
+      modal.setAttribute('aria-hidden','true');
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('no-scroll');
+    }, 260);
   }
 }
 
@@ -839,6 +819,16 @@ setPromoActive(14, 0).then(d => console.log(d));
     }
   });
 })();
+
+// Accessibility: close product modal with ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('productModal');
+    if (modal && modal.classList.contains('active')) {
+      closeProductModal();
+    }
+  }
+});
 
 function showReferenceModal(ref) {
   // Remove old modal if present
