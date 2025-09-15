@@ -803,6 +803,14 @@ html.no-scroll, body.no-scroll {
   touch-action: none;
 }
 
+/* New scroll lock technique: prevent body jump while keeping background at same position */
+body.modal-scroll-lock {
+  position: fixed;
+  left: 0; right:0;
+  width: 100%;
+  overflow: hidden; /* extra safety */
+}
+
 /* Base positioning (desktop/tablet) */
 .product-modal {
   display: none;
@@ -820,6 +828,15 @@ html.no-scroll, body.no-scroll {
   animation: productModalIn .35s cubic-bezier(.16,.84,.44,1);
   overflow-y: auto; /* full content scrolls */
   -webkit-overflow-scrolling: touch;
+}
+
+/* Disable animation when .no-anim present (added for instant view) */
+.product-modal.no-anim .product-modal-content,
+.product-modal .product-modal-content.no-anim,
+.product-modal-content.no-anim {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 /* Remove inner scroll override so entire modal scrolls */
 

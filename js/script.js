@@ -46,6 +46,7 @@ let lastDrinkType = 'cold';
 let modalSelectedToppings = {};
 let __lastFocusedBeforePaymentModal = null;
 let __lastFocusBeforeProductModal = null; // a11y: track focus to restore after closing product modal
+let __scrollLockY = 0; // remember scroll position before opening product modal
 
 const TOPPINGS = [
   { key: 'extra_shot', name: 'Extra shot (coffee)', price: 40 },
@@ -137,6 +138,12 @@ function closeProductModal() {
       modal.setAttribute('aria-hidden','true');
       document.documentElement.classList.remove('no-scroll');
       document.body.classList.remove('no-scroll');
+      // Restore scroll position if we locked it
+      if (document.body.classList.contains('modal-scroll-lock')) {
+        document.body.classList.remove('modal-scroll-lock');
+        document.body.style.top = '';
+        window.scrollTo(0, __scrollLockY || 0);
+      }
     }, 260);
   }
 }
@@ -1460,12 +1467,19 @@ function closeOtpModal() {
   if (otpState.countdownTimer) clearInterval(otpState.countdownTimer);
   if (otpState.cooldownTimer) clearInterval(otpState.cooldownTimer);
 }
+      // Preserve current scroll position & lock body without jumping to top
+      __scrollLockY = window.scrollY || window.pageYOffset || 0;
+      if (!document.body.classList.contains('modal-scroll-lock')) {
+        document.body.classList.add('modal-scroll-lock');
+        document.body.style.top = `-${__scrollLockY}px`;
+      }
 
 function updateOtpCountdown() {
   const el = document.getElementById('otpCountdown');
   if (!el) return;
-  const now = Math.floor(Date.now() / 1000);
-
+      // Remove previous no-scroll approach; using position lock instead to avoid scroll jump
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('no-scroll');
   // Expiry text
   if (otpState.expiresAt && now < otpState.expiresAt) {
     const remain = otpState.expiresAt - now;
