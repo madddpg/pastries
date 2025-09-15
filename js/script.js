@@ -129,14 +129,18 @@ function openProductModal(id, name, price, description, image) {
   document.querySelectorAll(".size-btn").forEach((btn) => btn.classList.remove("active"));
   document.querySelector(".size-btn").classList.add("active");
   const modal = document.getElementById("productModal");
-  // Instead of forcing inline styles (which break responsiveness on some devices),
-  // rely on CSS classes. We only toggle the active class and a helper class
-  // that lets CSS handle full-screen vs centered layout.
   modal.classList.add("active");
-  modal.classList.add("product-modal-open");
-  // prevent body scroll while open
-  document.documentElement.classList.add('no-scroll');
-  document.body.classList.add('no-scroll');
+  modal.style.display = "flex";
+  modal.style.alignItems = "center";
+  modal.style.justifyContent = "center";
+  modal.style.position = "fixed";
+  modal.style.top = "0";
+  modal.style.left = "0";
+  modal.style.width = "100vw";
+  modal.style.height = "100vh";
+  modal.style.background = "rgba(0,0,0,0.15)";
+  modal.style.zIndex = "3000";
+  document.body.style.overflow = "hidden";
 
   // Ensure the yellow close button closes the modal
   const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
@@ -165,11 +169,9 @@ function handleViewProduct(event) {
 function closeProductModal() {
   const modal = document.getElementById('productModal');
   if (modal) {
-    modal.classList.remove('active','product-modal-open');
-    // Hide via CSS instead of inline to allow transitions
-    modal.setAttribute('aria-hidden','true');
-    document.documentElement.classList.remove('no-scroll');
-    document.body.classList.remove('no-scroll');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
   }
 }
 
