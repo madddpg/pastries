@@ -2048,13 +2048,26 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     dataType = (dataType || 'cold').toString().toLowerCase();
 
 
-    // Get UI elements
-    const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
-    const sizeButtons = document.querySelector(".size-buttons");
-    const nameEl = document.getElementById("modalProductName");
-    const descEl = document.getElementById("modalProductDescription");
-    const imgEl = document.getElementById("modalProductImage");
-    const priceEl = document.getElementById("modalProductPrice");
+  // Get UI elements
+  const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
+  const sizeButtons = document.querySelector(".size-buttons");
+  const nameEl = document.getElementById("modalProductName");
+  const descEl = document.getElementById("modalProductDescription");
+  const imgEl = document.getElementById("modalProductImage");
+  const priceEl = document.getElementById("modalProductPrice");
+
+  // --- RESET any previous product state so an older product does not still show ---
+  if (sizeButtons) sizeButtons.innerHTML = '';
+  if (nameEl) nameEl.textContent = '';
+  if (descEl) descEl.textContent = '';
+  if (imgEl) { imgEl.src = ''; imgEl.alt = ''; }
+  if (priceEl) priceEl.textContent = '';
+  // Clear sugar selection UI
+  document.querySelectorAll('.sugar-btn').forEach(btn => btn.classList.remove('active'));
+  window.selectedSugar = 'Less Sweet';
+  // Clear toppings active state (in case previous left-over classes)
+  document.querySelectorAll('.add-on-btn.active').forEach(btn => btn.classList.remove('active'));
+  // ------------------------------------------------------------------------------
 
     // Set default prices based on type
     let grandePrice = 140, supremePrice = 170;
