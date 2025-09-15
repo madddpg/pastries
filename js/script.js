@@ -45,6 +45,7 @@ let currentProduct = null
 let lastDrinkType = 'cold';
 let modalSelectedToppings = {};
 let __lastFocusedBeforePaymentModal = null;
+let __lastFocusBeforeProductModal = null; // a11y: track focus to restore after closing product modal
 
 const TOPPINGS = [
   { key: 'extra_shot', name: 'Extra shot (coffee)', price: 40 },
@@ -123,6 +124,13 @@ function closeProductModal() {
   if (modal) {
     if (!modal.classList.contains('active')) return; // already closed
     modal.classList.add('closing');
+    // If focus is inside the modal, move it out BEFORE we aria-hide the modal to avoid warnings.
+    if (modal.contains(document.activeElement)) {
+      const restore = (__lastFocusBeforeProductModal && document.contains(__lastFocusBeforeProductModal))
+        ? __lastFocusBeforeProductModal
+        : document.querySelector('.view-btn') || document.body;
+      try { restore.focus(); } catch(_) { /* ignore */ }
+    }
     // allow animation to play then fully close
     setTimeout(() => {
       modal.classList.remove('active','product-modal-open','closing');
@@ -2154,12 +2162,23 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     // Open modal (class-based styling only)
     const modal = document.getElementById("productModal");
     if (modal) {
+      // Save previously focused element if it's outside the modal
+      if (!modal.contains(document.activeElement)) {
+        __lastFocusBeforeProductModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      }
       modal.classList.add("active","product-modal-open");
       modal.removeAttribute('aria-hidden');
+      modal.setAttribute('role','dialog');
+      modal.setAttribute('aria-modal','true');
       document.documentElement.classList.add('no-scroll');
       document.body.classList.add('no-scroll');
       const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
       if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
+      // Focus first interactive control for accessibility
+      const focusTarget = modal.querySelector('.product-modal-close-yellow, .size-btn, .product-modal-add-cart, button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+      if (focusTarget && typeof focusTarget.focus === 'function') {
+        setTimeout(() => { try { focusTarget.focus(); } catch(_){} }, 15);
+      }
     }
 
     document.querySelectorAll('.topping-checkbox').forEach(cb => {
