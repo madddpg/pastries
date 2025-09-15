@@ -824,14 +824,23 @@ body.modal-scroll-lock {
 .product-modal.active .product-modal-content {
   background: #fff;
   border-radius: 28px;
-  max-height: min(92vh, 980px);
+  max-height: none; /* allow natural height on desktop */
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   position: relative;
   animation: productModalIn .35s cubic-bezier(.16,.84,.44,1);
-  overflow-y: auto; /* full content scrolls */
-  -webkit-overflow-scrolling: touch;
+  /* No internal scrolling on desktop; page stays at locked background position */
+  overflow: visible;
   /* Nudge down a bit to avoid touching very top edge, adjustable */
-  margin-top: clamp(12px, 4vh, 64px);
+  margin-top: clamp(12px, 4vh, 48px);
+}
+
+/* Mobile-only: constrain height and allow internal scroll */
+@media (max-width: 780px) {
+  .product-modal.active .product-modal-content {
+    max-height: min(92vh, 980px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Disable animation when .no-anim present (added for instant view) */
