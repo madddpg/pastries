@@ -1467,19 +1467,10 @@ function closeOtpModal() {
   if (otpState.countdownTimer) clearInterval(otpState.countdownTimer);
   if (otpState.cooldownTimer) clearInterval(otpState.cooldownTimer);
 }
-      // Preserve current scroll position & lock body without jumping to top
-      __scrollLockY = window.scrollY || window.pageYOffset || 0;
-      if (!document.body.classList.contains('modal-scroll-lock')) {
-        document.body.classList.add('modal-scroll-lock');
-        document.body.style.top = `-${__scrollLockY}px`;
-      }
-
 function updateOtpCountdown() {
   const el = document.getElementById('otpCountdown');
   if (!el) return;
-      // Remove previous no-scroll approach; using position lock instead to avoid scroll jump
-      document.documentElement.classList.remove('no-scroll');
-      document.body.classList.remove('no-scroll');
+  const now = Math.floor(Date.now() / 1000);
   // Expiry text
   if (otpState.expiresAt && now < otpState.expiresAt) {
     const remain = otpState.expiresAt - now;
@@ -2193,12 +2184,19 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       if (!modal.contains(document.activeElement)) {
         __lastFocusBeforeProductModal = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       }
-      modal.classList.add("active","product-modal-open");
+      // Preserve current scroll position & lock body without jumping to top
+      __scrollLockY = window.scrollY || window.pageYOffset || 0;
+      if (!document.body.classList.contains('modal-scroll-lock')) {
+        document.body.classList.add('modal-scroll-lock');
+        document.body.style.top = `-${__scrollLockY}px`;
+      }
+      // Activate modal instantly (no animation) and ensure legacy no-scroll classes are removed
+      modal.classList.add("active","product-modal-open","no-anim");
       modal.removeAttribute('aria-hidden');
       modal.setAttribute('role','dialog');
       modal.setAttribute('aria-modal','true');
-      document.documentElement.classList.add('no-scroll');
-      document.body.classList.add('no-scroll');
+      document.documentElement.classList.remove('no-scroll');
+      document.body.classList.remove('no-scroll');
       const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
       if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
       // Focus first interactive control for accessibility
