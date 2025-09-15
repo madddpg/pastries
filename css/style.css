@@ -812,9 +812,9 @@ html.no-scroll, body.no-scroll {
 .product-modal.active .product-modal-content {
   background: #fff;
   border-radius: 28px;
-  max-height: min(92vh, 980px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Desktop: allow natural height; no internal scroll (mobile will override) */
+  max-height: none;
+  overflow: visible;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   position: relative;
 }
@@ -829,6 +829,9 @@ html.no-scroll, body.no-scroll {
     width: 100%;
     max-width: 100%;
     min-height: 100vh; /* full height sheet */
+    max-height: 100vh; /* constrain to viewport */
+    overflow-y: auto; /* enable internal scroll only on mobile */
+    -webkit-overflow-scrolling: touch;
     border-radius: 0;  /* edge-to-edge */
     padding: clamp(16px, 4vw, 32px) clamp(18px, 4vw, 32px) 48px;
     box-shadow: none;
