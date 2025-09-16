@@ -63,7 +63,7 @@ try {
             $itemStmt = $con->prepare(
                 "SELECT ti.transaction_id, ti.quantity, ti.size, ti.price, p.name
                  FROM transaction_items ti
-                 JOIN products p ON ti.product_id = p.id
+                 JOIN products p ON ti.product_id = p.product_id
                  WHERE ti.transaction_id = ?"
             );
             foreach ($orders as &$o) {

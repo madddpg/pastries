@@ -46,7 +46,7 @@ try {
         }
 
         // safe to delete
-        $del = $con->prepare("DELETE FROM products WHERE id = ?");
+        $del = $con->prepare("DELETE FROM products WHERE product_id = ?");
         $del->execute([$id]);
         if ($del->rowCount() > 0) {
             echo json_encode(['success' => true, 'message' => 'Product deleted']);
@@ -68,7 +68,7 @@ try {
             $delItems = $con->prepare("DELETE FROM transaction_items WHERE product_id = ?");
             $delItems->execute([$id]);
 
-            $del = $con->prepare("DELETE FROM products WHERE id = ?");
+            $del = $con->prepare("DELETE FROM products WHERE product_id = ?");
             $del->execute([$id]);
 
             if ($del->rowCount() > 0) {

@@ -62,7 +62,7 @@ class Database
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
                 FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.id 
+                JOIN products p ON ti.product_id = p.product_id 
                 WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -99,7 +99,7 @@ class Database
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
             FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.id 
+            JOIN products p ON ti.product_id = p.product_id 
             WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -169,11 +169,11 @@ class Database
     public function fetch_products_with_sales_pdo()
     {
         $con = $this->opencon();
-        $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
+        $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
-                LEFT JOIN transaction_items ti ON p.id = ti.product_id
-                GROUP BY p.id";
+                LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+                GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -203,7 +203,7 @@ class Database
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
                 FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.id 
+                JOIN products p ON ti.product_id = p.product_id 
                 WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -241,7 +241,7 @@ class Database
         foreach ($orders as &$order) {
             $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
             FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.id 
+            JOIN products p ON ti.product_id = p.product_id 
             WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -265,11 +265,11 @@ class Database
     public function fetch_products_with_sales()
     {
         $con = $this->opencon();
-        $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
+        $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
-                LEFT JOIN transaction_items ti ON p.id = ti.product_id
-                GROUP BY p.id";
+                LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+                GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -413,7 +413,7 @@ class Database
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$order) return null;
         // Fetch items for this order
-        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name FROM transaction_items ti JOIN products p ON ti.product_id = p.id WHERE ti.transaction_id = ?");
+        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name FROM transaction_items ti JOIN products p ON ti.product_id = p.product_id WHERE ti.transaction_id = ?");
         $itemStmt->execute([$transac_id]);
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         return $order;
@@ -781,11 +781,11 @@ public function createPickupOrder(
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
         $sql = "SELECT ti.product_id, p.name, p.image, p.description, COUNT(ti.product_id) AS sales_count
                 FROM transaction_items ti
-                JOIN products p ON ti.product_id = p.id
+                JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
                 WHERE p.status = 'active' AND t.status != 'cancelled'
                   AND p.name != '__placeholder__'
-                  AND (LOWER(p.category_id) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.id) LIKE ?)
+                  AND (LOWER(p.category_id) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.product_id) LIKE ?)
                 GROUP BY ti.product_id
                 ORDER BY sales_count DESC
                 LIMIT $limit";
@@ -819,7 +819,7 @@ public function createPickupOrder(
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
         $sql = "SELECT ti.product_id, p.name, p.image, p.description, p.data_type, COUNT(ti.product_id) AS sales_count
                 FROM transaction_items ti
-                JOIN products p ON ti.product_id = p.id
+                JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
                 WHERE p.status = 'active' AND t.status != 'cancelled' AND LOWER(p.data_type) = ?
                   AND p.name != '__placeholder__'

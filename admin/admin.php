@@ -46,7 +46,7 @@ function fetch_pickedup_orders_pdo($con)
     foreach ($orders as &$order) {
         $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
             FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.id 
+            JOIN products p ON ti.product_id = p.product_id 
             WHERE ti.transaction_id = ?");
         $itemStmt->execute([$order['transac_id']]);
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -76,7 +76,7 @@ function fetch_live_orders_pdo($con, $status = '')
     foreach ($orders as &$order) {
         $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
             FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.id 
+            JOIN products p ON ti.product_id = p.product_id 
             WHERE ti.transaction_id = ?");
         $itemStmt->execute([$order['transac_id']]);
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -86,11 +86,11 @@ function fetch_live_orders_pdo($con, $status = '')
 
 function fetch_products_with_sales_pdo($con)
 {
-    $sql = "SELECT p.id, p.name, p.category_id, p.price, p.status, p.created_at,
+    $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
                    COALESCE(SUM(ti.quantity), 0) AS sales
             FROM products p
-            LEFT JOIN transaction_items ti ON p.id = ti.product_id
-            GROUP BY p.id";
+            LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+            GROUP BY p.product_id";
     $stmt = $con->prepare($sql);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

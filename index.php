@@ -584,7 +584,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     isset($product['category_id']) && $product['category_id'] == 5 // Premium Coffee category_id
                     && $product['status'] === 'active'
                 ) {
-                    $shownIds[] = $product['id'];
+                    $shownIds[] = $product['product_id'];
                     $imgSrc = $product['image'];
                     if (strpos($imgSrc, 'img/') !== 0) {
                         $imgSrc = 'img/' . ltrim($imgSrc, '/');
@@ -770,47 +770,48 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <span>Grande - Php 150</span> &nbsp;|&nbsp; <span>Supreme - Php 180</span>
             </div>
         </div>
-        <div class="product-list">
-            <?php
-            $shownIds = [];
-            foreach ($allProducts as $product) {
-                if (
-                    isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
-                    && $product['status'] === 'active'
-                ) {
-                    $shownIds[] = $product['id'];
-                    $imgSrc = $product['image'];
-                    if (strpos($imgSrc, 'img/') !== 0) {
-                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
-                    }
-                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-            ?>
-
-                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="6">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-                        </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Specialty Coffee</span>
-                            <p><?= htmlspecialchars($product['description']) ?></p>
-                            <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
-                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-                                View
-                            </button>
-                        </div>
-                    </div>
-            <?php
-                    $premiumIndex++;
-                }
+ <div class="product-list">
+    <?php
+    $shownIds = [];
+    foreach ($allProducts as $product) {
+        if (
+            isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
+            && $product['status'] === 'active'
+        ) {
+            $shownIds[] = $product['product_id']; // changed here
+            $imgSrc = $product['image'];
+            if (strpos($imgSrc, 'img/') !== 0) {
+                $imgSrc = 'img/' . ltrim($imgSrc, '/');
             }
-            ?>
-        </div>
+            $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+    ?>
+
+            <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="6">
+                <div class="product-image">
+                    <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                </div>
+                <div class="product-info">
+                    <h3><?= htmlspecialchars($product['name']) ?></h3>
+                    <span class="badge bg-success mb-2">Specialty Coffee</span>
+                    <p><?= htmlspecialchars($product['description']) ?></p>
+                    <button type="button" class="view-btn"
+                        data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
+                        data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                        data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                        data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                        data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                        data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                        View
+                    </button>
+                </div>
+            </div>
+    <?php
+            $premiumIndex++;
+        }
+    }
+    ?>
+</div>
+
 
         <!-- Chocolate Overload Section -->
         <div class="products-header">
@@ -827,7 +828,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     isset($product['category_id']) && $product['category_id'] == 2 // Premium Coffee category_id
                     && $product['status'] === 'active'
                 ) {
-                    $shownIds[] = $product['id'];
+                    $shownIds[] = $product['product_id'];
                     $imgSrc = $product['image'];
                     if (strpos($imgSrc, 'img/') !== 0) {
                         $imgSrc = 'img/' . ltrim($imgSrc, '/');
@@ -843,7 +844,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">Chocolate Overload</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
@@ -875,7 +876,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     isset($product['category_id']) && $product['category_id'] == 3 // Premium Coffee category_id
                     && $product['status'] === 'active'
                 ) {
-                    $shownIds[] = $product['id'];
+                    $shownIds[] = $product['product_id'];
                     $imgSrc = $product['image'];
                     if (strpos($imgSrc, 'img/') !== 0) {
                         $imgSrc = 'img/' . ltrim($imgSrc, '/');
@@ -891,7 +892,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">Matcha Series</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
@@ -923,7 +924,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     isset($product['category_id']) && $product['category_id'] == 4 // Premium Coffee category_id
                     && $product['status'] === 'active'
                 ) {
-                    $shownIds[] = $product['id'];
+                    $shownIds[] = $product['product_id'];
                     $imgSrc = $product['image'];
                     if (strpos($imgSrc, 'img/') !== 0) {
                         $imgSrc = 'img/' . ltrim($imgSrc, '/');
@@ -939,7 +940,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">Milk Based</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
@@ -971,7 +972,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     isset($product['category_id']) && $product['category_id'] == 1 // Premium Coffee category_id
                     && $product['status'] === 'active'
                 ) {
-                    $shownIds[] = $product['id'];
+                    $shownIds[] = $product['product_id'];
                     $imgSrc = $product['image'];
                     if (strpos($imgSrc, 'img/') !== 0) {
                         $imgSrc = 'img/' . ltrim($imgSrc, '/');
@@ -987,7 +988,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">All Time Fav</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
