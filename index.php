@@ -299,10 +299,10 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php
                 if (!empty($activePromos)) {
                     foreach ($activePromos as $promo) {
-                        $id = intval($promo['id']);
+                        $id = intval($promo['promo_id']);
                         // use created_at as cache-buster when available
                         $ver = isset($promo['created_at']) ? (int) strtotime($promo['created_at']) : time();
-                        $src = 'admin/serve_promo.php?id=' . $id . '&v=' . $ver;
+                        $src = 'admin/serve_promo.php?promo_id=' . $id . '&v=' . $ver;
 
                         $title = htmlspecialchars($promo['title'] ?? 'Promo');
                         echo '<div class="testimonial"><div class="testimonial-header">';
