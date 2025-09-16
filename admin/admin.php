@@ -98,7 +98,7 @@ function fetch_products_with_sales_pdo($con)
 
 function fetch_locations_pdo($con)
 {
-    $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
+    $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }

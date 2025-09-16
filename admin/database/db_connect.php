@@ -183,8 +183,7 @@ class Database
     public function fetch_locations_pdo()
     {
         $con = $this->opencon();
-        // id column renamed to location_id
-        $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
+        $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -279,7 +278,7 @@ class Database
     public function fetch_locations()
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
+        $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
@@ -484,8 +483,7 @@ class Database
             // If you need to resolve topping names to IDs dynamically:
             $findTopping = $con->prepare("SELECT id FROM toppings WHERE id = ? LIMIT 1");
 
-            // overall_sugar deprecated (pickup_detail.sugar_level removed)
-            $overall_sugar = null; // retained placeholder
+            $overall_sugar = null;
 
             foreach ($cart_items as $item) {
                 $product_id = $item['product_id'] ?? $item['id'] ?? null;
@@ -496,7 +494,9 @@ class Database
                 $size       = $item['size'] ?? '';
                 $item_sugar = isset($item['sugar']) && $item['sugar'] !== '' ? trim($item['sugar']) : null;
 
-                // no overall_sugar aggregation needed
+                if ($overall_sugar === null && $item_sugar) {
+                    $overall_sugar = $item_sugar;
+                }
 
                 // Derive stored item price: base + toppings (already accounted in total, replicate calculation)
                 $basePrice = (float)($item['basePrice'] ?? $item['price'] ?? 0);
@@ -542,16 +542,17 @@ class Database
                 }
             }
 
-            // Insert pickup_detail (sugar_level column removed)
+            // Insert pickup_detail
             $con->prepare("
-            INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions, sugar_level)
+            VALUES (?, ?, ?, ?, ?, ?)
         ")->execute([
                 $transaction_id,
                 $pickup_name,
                 $pickup_location,
                 $pickup_datetime,
-                $special_instructions
+                $special_instructions,
+                $overall_sugar
             ]);
 
             $con->commit();
@@ -580,7 +581,7 @@ class Database
     }
 
 
-    public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null)
+    public function createTransaction($user_id, $items, $total, $method, $pickupInfo = null, $deliveryInfo = null)
     {
         $con = $this->opencon();
         $con->beginTransaction();

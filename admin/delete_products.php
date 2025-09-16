@@ -62,7 +62,7 @@ try {
         $con->beginTransaction();
         try {
             // remove references (transaction_items and related transaction_toppings)
-            $delToppings = $con->prepare("DELETE tt FROM transaction_toppings tt JOIN transaction_items ti ON tt.transaction_item_id = ti.ts_itm_id WHERE ti.product_id = ?");
+            $delToppings = $con->prepare("DELETE tt FROM transaction_toppings tt JOIN transaction_items ti ON tt.transaction_item_id = ti.id WHERE ti.product_id = ?");
             $delToppings->execute([$id]); // if fails, it's ok to continue
 
             $delItems = $con->prepare("DELETE FROM transaction_items WHERE product_id = ?");
