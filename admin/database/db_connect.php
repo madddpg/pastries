@@ -483,7 +483,7 @@ public function createPickupOrder(
             VALUES (?, ?, ?, ?, ?, ?)
         ");
 
-        $findTopping = $con->prepare("SELECT id FROM toppings WHERE id = ? LIMIT 1");
+        $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -521,7 +521,7 @@ public function createPickupOrder(
             // Save toppings if exist
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
-                    $topping_id = $t['id'] ?? null;
+                    $topping_id = $t['topping_id'] ?? null;
                     if (!$topping_id || !ctype_digit((string)$topping_id)) {
                         continue;
                     }
@@ -596,7 +596,7 @@ public function createPickupOrder(
             $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
             // helper: find topping by name (if not numeric id), and insert if missing
-            $findTopping = $con->prepare("SELECT id FROM toppings WHERE name = ? LIMIT 1");
+            $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE name = ? LIMIT 1");
             $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
             // Insert items and their toppings (if any)
@@ -687,14 +687,14 @@ public function createPickupOrder(
         $con = $this->opencon();
         $stmt = $con->prepare("
             SELECT 
-                id,
+                topping_id,
                 name,
                 price,
                 CASE WHEN COALESCE(status,1)=1 THEN 'active' ELSE 'inactive' END AS status,
                 created_at,
                 updated_at
             FROM toppings
-            ORDER BY id DESC
+            ORDER BY topping_id DESC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -705,12 +705,12 @@ public function createPickupOrder(
         $con = $this->opencon();
         $stmt = $con->prepare("
             SELECT 
-                id,
+                topping_id,
                 name,
                 price
             FROM toppings
             WHERE COALESCE(status,1) = 1
-            ORDER BY id ASC
+            ORDER BY topping_id ASC
         ");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -728,7 +728,7 @@ public function createPickupOrder(
     public function update_topping($id, $name, $price)
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE id = ?");
+        $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE topping_id = ?");
         return $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), intval($id)]);
     }
 
@@ -736,7 +736,7 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $st = ($status === 'active') ? 1 : 0;
-        $stmt = $con->prepare("UPDATE toppings SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt = $con->prepare("UPDATE toppings SET status = ?, updated_at = NOW() WHERE topping_id = ?");
         return $stmt->execute([$st, intval($id)]);
     }
 

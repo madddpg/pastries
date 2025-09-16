@@ -1,4 +1,3 @@
-
 <?php
 header('Content-Type: application/json');
 session_start();
@@ -55,36 +54,36 @@ try {
             ? 'inactive' : 'active';
         if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
 
-        $id = $db->add_topping($name, $price, $status);
-        $stmt = $con->prepare("SELECT id, name, price, status FROM toppings WHERE id = ?");
-        $stmt->execute([$id]);
+        $topping_id = $db->add_topping($name, $price, $status);
+        $stmt = $con->prepare("SELECT topping_id, name, price, status FROM toppings WHERE topping_id = ?");
+        $stmt->execute([$topping_id]);
         $newTopping = $stmt->fetch(PDO::FETCH_ASSOC);
         send_json(['success' => true, 'topping' => $newTopping]);
     }
 
     // Admin: update
     if ($method === 'POST' && $action === 'update') {
-        $id = intval($_POST['id'] ?? 0);
+        $topping_id = intval($_POST['id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
-        if ($id <= 0 || $name === '') send_json(['success' => false, 'message' => 'Invalid data'], 400);
-        $ok = $db->update_topping($id, $name, $price);
+        if ($topping_id <= 0 || $name === '') send_json(['success' => false, 'message' => 'Invalid data'], 400);
+        $ok = $db->update_topping($topping_id, $name, $price);
         send_json(['success' => (bool)$ok]);
     }
 
     // Admin: toggle status
     if ($method === 'POST' && $action === 'toggle_status') {
-        $id = intval($_POST['id'] ?? 0);
+        $topping_id = intval($_POST['id'] ?? 0);
         $status = ($_POST['status'] ?? '') === 'active' ? 'active' : 'inactive';
-        if ($id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
-        $ok = $db->update_topping_status($id, $status);
+        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
+        $ok = $db->update_topping_status($topping_id, $status);
         send_json(['success' => (bool)$ok]);
     }
 
     // Admin: delete
     if ($method === 'POST' && $action === 'delete') {
-        $id = intval($_POST['id'] ?? 0);
-        if ($id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
+        $topping_id = intval($_POST['id'] ?? 0);
+        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
 
         $checkExists = $con->prepare(
             "SELECT COUNT(*) FROM information_schema.tables 
@@ -95,7 +94,7 @@ try {
 
         if ($hasTransactionToppings) {
             $checkStmt = $con->prepare("SELECT COUNT(*) FROM transaction_toppings WHERE topping_id = ?");
-            $checkStmt->execute([$id]);
+            $checkStmt->execute([$topping_id]);
             $count = (int)$checkStmt->fetchColumn();
             if ($count > 0 && !Database::isSuperAdmin()) {
                 send_json([
@@ -108,9 +107,9 @@ try {
         if (Database::isSuperAdmin() && $hasTransactionToppings) {
             $con->beginTransaction();
             try {
-                $con->prepare("DELETE FROM transaction_toppings WHERE topping_id = ?")->execute([$id]);
-                $del = $con->prepare("DELETE FROM toppings WHERE id = ?");
-                $del->execute([$id]);
+                $con->prepare("DELETE FROM transaction_toppings WHERE topping_id = ?")->execute([$topping_id]);
+                $del = $con->prepare("DELETE FROM toppings WHERE topping_id = ?");
+                $del->execute([$topping_id]);
                 if ($del->rowCount() > 0) {
                     $con->commit();
                     send_json(['success' => true, 'message' => 'Deleted (references removed)']);
@@ -123,8 +122,8 @@ try {
                 send_json(['success' => false, 'message' => $e->getMessage()], 500);
             }
         } else {
-            $stmt = $con->prepare("DELETE FROM toppings WHERE id = ?");
-            $stmt->execute([$id]);
+            $stmt = $con->prepare("DELETE FROM toppings WHERE topping_id = ?");
+            $stmt->execute([$topping_id]);
             if ($stmt->rowCount() > 0) {
                 send_json(['success' => true, 'message' => 'Deleted']);
             } else {
