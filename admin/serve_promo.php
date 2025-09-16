@@ -1,5 +1,5 @@
 <?php
-if (!isset($_GET['id']) || !($id = intval($_GET['id'])) ) {
+if (!isset($_GET['promo_id']) || !($id = intval($_GET['promo_id'])) ) {
     http_response_code(400);
     exit;
 }

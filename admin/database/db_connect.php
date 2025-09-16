@@ -476,7 +476,7 @@ class Database
         ");
 
             $insertTopping = $con->prepare("
-            INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level)
+            INSERT INTO transaction_toppings (transaction_id, transaction_item_id, topping_id, quantity, unit_price, sugar_level)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
