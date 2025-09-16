@@ -354,12 +354,12 @@ function fetch_locations_pdo($con)
                                 <?php
                                 $products = $db->fetch_products_with_sales_pdo();
                                 foreach ($products as $product): ?>
-                                    <tr data-product-id="<?= htmlspecialchars($product['id']) ?>"
+                                    <tr data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                         data-product-name="<?= htmlspecialchars($product['name']) ?>"
                                         data-product-category="<?= htmlspecialchars($product['category_id']) ?>"
                                         data-product-price="<?= htmlspecialchars($product['price']) ?>"
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
-                                        <td><?= htmlspecialchars($product['id']) ?></td>
+                                        <td><?= htmlspecialchars($product['product_id']) ?></td>
                                         <td><?= htmlspecialchars($product['category_id']) ?></td>
                                         <td>₱<?= number_format($product['price'], 2) ?></td>
                                         <td class="<?= $product['status'] === 'active' ? 'stock-good' : 'stock-out' ?>">
@@ -389,7 +389,7 @@ function fetch_locations_pdo($con)
                                                     <button
                                                         type="button"
                                                         class="btn-toggle-product"
-                                                        data-id="<?= htmlspecialchars($product['id']) ?>"
+                                                        data-id="<?= htmlspecialchars($product['product_id']) ?>"
                                                         data-status="<?= htmlspecialchars($product['status']) ?>"
                                                         style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer; white-space: nowrap;">
                                                         Set <?= $product['status'] === 'active' ? 'Inactive' : 'Active' ?>
@@ -579,11 +579,11 @@ function fetch_locations_pdo($con)
             <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
             <div style='display:flex;gap:6px;'>
               <form method='post' action='delete_promo.php' style='margin:0;'>
-                <input type='hidden' name='id' value='{$pr['id']}'>
+                <input type='hidden' name='id' value='{$pr['promo_id']}'>
                 <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
               </form>
               <form method='post' action='update_promos.php' style='margin:0;'>
-                <input type='hidden' name='id' value='{$pr['id']}'>
+                <input type='hidden' name='id' value='{$pr['promo_id']}'>
                 <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
                 <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
               </form>
