@@ -16,7 +16,7 @@ foreach ($allProducts as $row) {
     $productStatuses[$row['id']] = $row['status'];
 }
 
-$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
+$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY id ASC");
 $promoStmt->execute();
 $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -31,11 +31,10 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cups & Cuddles Nigga Cafe</title>
+    <title>Cups & Cuddles </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 
@@ -1030,7 +1029,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         $pdo = $db->opencon();
         $locations = [];
         // Only show locations that are open to the public (case-insensitive)
-    $stmt = $pdo->prepare("SELECT * FROM locations WHERE LOWER(status) = 'open' ORDER BY location_id ASC");
+        $stmt = $pdo->prepare("SELECT * FROM locations WHERE LOWER(status) = 'open' ORDER BY id ASC");
         $stmt->execute();
         $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         ?>
