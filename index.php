@@ -13,7 +13,7 @@ $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
 $stmt->execute();
 $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($allProducts as $row) {
-    $productStatuses[$row['id']] = $row['status'];
+    $productStatuses[$row['product_id']] = $row['status'];
 }
 
 $promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
