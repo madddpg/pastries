@@ -1,4 +1,3 @@
-
 <?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -115,11 +114,11 @@ try {
     $stmt->bindParam(3, $image_mime);
     $stmt->bindParam(4, $blob, PDO::PARAM_LOB);
     $stmt->execute();
-    $insertId = $con->lastInsertId();
+    $promo_id = $con->lastInsertId();
 
     if ($ajax) {
         header('Content-Type: application/json', true, 201);
-        echo json_encode(['success' => true, 'id' => $insertId, 'image' => $imagePath, 'title' => $title_db]);
+        echo json_encode(['success' => true, 'promo_id' => $promo_id, 'image' => $imagePath, 'title' => $title_db]);
     } else {
         header('Location: admin.php?promo_success=1');
     }
@@ -129,7 +128,7 @@ try {
     if (file_exists($targetPath)) @unlink($targetPath);
     if ($ajax) {
         header('Content-Type: application/json', true, 500);
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage() ]);
     } else {
         header('Location: admin.php?promo_error=DBError');
     }
@@ -143,11 +142,11 @@ $title_db = !empty($title) ? $title : null;
 try {
     $stmt = $con->prepare("INSERT INTO promos (title, image, active, created_at) VALUES (?, ?, 1, NOW())");
     $stmt->execute([$title_db, $imagePath]);
-    $insertId = $con->lastInsertId();
+    $promo_id = $con->lastInsertId();
 
     if ($ajax) {
         header('Content-Type: application/json', true, 201);
-        echo json_encode(['success' => true, 'id' => $insertId, 'image' => $imagePath, 'title' => $title_db]);
+        echo json_encode(['success' => true, 'promo_id' => $promo_id, 'image' => $imagePath, 'title' => $title_db]);
     } else {
         header('Location: admin.php?promo_success=1');
     }

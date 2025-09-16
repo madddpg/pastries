@@ -38,11 +38,11 @@ if ($id <= 0) {
 
 try {
     // fetch image path info
-    $stmt = $con->prepare("SELECT image FROM promos WHERE id = ? LIMIT 1");
+    $stmt = $con->prepare("SELECT image FROM promos WHERE promo_id = ? LIMIT 1");
     $stmt->execute([$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $del = $con->prepare("DELETE FROM promos WHERE id = ?");
+    $del = $con->prepare("DELETE FROM promos WHERE promo_id = ?");
     $del->execute([$id]);
 
     if ($del->rowCount() > 0) {

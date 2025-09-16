@@ -8,7 +8,7 @@ $db = new Database();
 $pdo = $db->opencon();
 
 try {
-    $stmt = $pdo->prepare("SELECT image, image_mime, image_blob, created_at FROM promos WHERE id = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT image, image_mime, image_blob, created_at FROM promos WHERE promo_id = ? LIMIT 1");
     $stmt->execute([$id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) { http_response_code(404); exit; }

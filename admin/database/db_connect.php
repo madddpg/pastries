@@ -183,7 +183,7 @@ class Database
     public function fetch_locations_pdo()
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
+        $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -278,7 +278,7 @@ class Database
     public function fetch_locations()
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
+        $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
@@ -544,7 +544,7 @@ class Database
 
             // Insert pickup_detail
             $con->prepare("
-            INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions, sugar_level)
+            INSERT INTO pickup_detail (transaction_id, pickup_name, pickup_location, pickup_time, special_instructions)
             VALUES (?, ?, ?, ?, ?, ?)
         ")->execute([
                 $transaction_id,

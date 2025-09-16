@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) session_start();
+
 require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $con = $db->opencon();
@@ -33,13 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // parse inputs
-$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-if ($id <= 0) {
+$promo_id = isset($_POST['promo_id']) ? intval($_POST['promo_id']) : 0;
+if ($promo_id <= 0) {
     if ($ajax) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid id']);
+        echo json_encode(['success' => false, 'message' => 'Invalid promo_id']);
     } else {
-        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Invalid promo id'];
+        $_SESSION['flash'] = ['type' => 'error', 'message' => 'Invalid promo ID'];
         header('Location: admin.php');
     }
     exit;
@@ -53,12 +54,17 @@ if (isset($_POST['active'])) {
 
 try {
     if ($requested === null) {
-        $s = $con->prepare("SELECT active FROM promos WHERE id = ? LIMIT 1");
-        $s->execute([$id]);
+        $s = $con->prepare("SELECT active FROM promos WHERE promo_id = ? LIMIT 1");
+        $s->execute([$promo_id]);
         $row = $s->fetch(PDO::FETCH_ASSOC);
         if (!$row) {
-            if ($ajax) { http_response_code(404); echo json_encode(['success'=>false,'message'=>'Promo not found']); }
-            else { $_SESSION['flash'] = ['type'=>'error','message'=>'Promo not found']; header('Location: admin.php'); }
+            if ($ajax) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Promo not found']);
+            } else {
+                $_SESSION['flash'] = ['type' => 'error', 'message' => 'Promo not found'];
+                header('Location: admin.php');
+            }
             exit;
         }
         $new = $row['active'] ? 0 : 1;
@@ -66,11 +72,19 @@ try {
         $new = (int)$requested;
     }
 
-    $u = $con->prepare("UPDATE promos SET active = ? WHERE id = ?");
-    $u->execute([$new, $id]);
+    $u = $con->prepare("UPDATE promos SET active = ? WHERE promo_id = ?");
+    $u->execute([$new, $promo_id]);
+
+    $message = $new ? "Promo activated" : "Promo deactivated";
 
     if ($ajax) {
-        echo json_encode(['success' => true, 'id' => $id, 'active' => $new, 'message' => $message, 'redirect' => 'admin.php']);
+        echo json_encode([
+            'success' => true,
+            'promo_id' => $promo_id,
+            'active' => $new,
+            'message' => $message,
+            'redirect' => 'admin.php'
+        ]);
         exit;
     } else {
         $_SESSION['flash'] = ['type' => 'success', 'message' => $message];

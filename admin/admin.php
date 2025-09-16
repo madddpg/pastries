@@ -98,7 +98,7 @@ function fetch_products_with_sales_pdo($con)
 
 function fetch_locations_pdo($con)
 {
-    $stmt = $con->prepare("SELECT * FROM locations ORDER BY id DESC");
+    $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -622,7 +622,7 @@ function fetch_locations_pdo($con)
                                     echo '<tr><td colspan="4" style="text-align:center;">No locations found.</td></tr>';
                                 } else {
                                     foreach ($locations as $loc): ?>
-                                        <tr data-location-id="<?= $loc['id'] ?>"
+                                        <tr data-location-id="<?= $loc['location_id'] ?>"
                                             data-location-name="<?= htmlspecialchars($loc['name']) ?>"
                                             data-location-status="<?= htmlspecialchars($loc['status']) ?>">
                                             <td><?= htmlspecialchars($loc['name']) ?></td>

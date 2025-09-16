@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-
-     if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['id'], $_POST['status'])) {
+    // Toggle status
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_status' && isset($_POST['location_id'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
@@ -47,24 +47,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $id = intval($_POST['id']);
+        $location_id = intval($_POST['location_id']);
         $status = $_POST['status'];
         $allowed = ['open', 'closed'];
-        if ($id <= 0 || !in_array($status, $allowed)) {
+
+        if ($location_id <= 0 || !in_array($status, $allowed)) {
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Invalid parameters.']);
             exit;
         }
 
-     try {
-            // remove updated_at (column doesn't exist in your table)
-            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE id = ?");
-            $ok = $stmt->execute([$status, $admin_id, $id]);
+        try {
+            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE location_id = ?");
+            $ok = $stmt->execute([$status, $admin_id, $location_id]);
 
             if ($ok && $stmt->rowCount() > 0) {
                 echo json_encode(['success' => true, 'message' => 'Status updated.']);
             } else {
-                // If execute succeeded but no row matched, return helpful message
                 echo json_encode(['success' => false, 'message' => 'No location updated (not found or same status).']);
             }
         } catch (PDOException $e) {
@@ -73,8 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     }
-    
-if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id'], $_POST['name'], $_POST['status'])) {
+
+    // Edit location
+    if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['location_id'], $_POST['name'], $_POST['status'])) {
         $admin_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : null;
         if ($admin_id === null) {
             http_response_code(403);
@@ -82,7 +82,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
             exit;
         }
 
-        $id = intval($_POST['id']);
+        $location_id = intval($_POST['location_id']);
         $name = trim($_POST['name']);
         $status = $_POST['status'];
 
@@ -113,11 +113,11 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         }
 
         if ($imagePath) {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE id=?");
-            $success = $stmt->execute([$name, $status, $imagePath, $admin_id, $id]);
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE location_id=?");
+            $success = $stmt->execute([$name, $status, $imagePath, $admin_id, $location_id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, admin_id=? WHERE id=?");
-            $success = $stmt->execute([$name, $status, $admin_id, $id]);
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, admin_id=? WHERE location_id=?");
+            $success = $stmt->execute([$name, $status, $admin_id, $location_id]);
         }
 
         echo json_encode([
@@ -127,26 +127,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         exit;
     }
 
+    // Delete location
+    if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['location_id'])) {
+        $location_id = intval($_POST['location_id']);
 
-    if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['id'])) {
-        $id = intval($_POST['id']);
-
-        // require super-admin for hard delete
         if (!Database::isSuperAdmin()) {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Forbidden: super-admin required to delete locations.']);
             exit;
         }
 
-        // check for references in candidate tables (only if they exist)
         $refs = [];
         try {
-            // products.location_id
             $check = $pdo->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'products'");
             $check->execute();
             if ((int)$check->fetchColumn() > 0) {
                 $stmt = $pdo->prepare("SELECT COUNT(*) FROM products WHERE location_id = ?");
-                $stmt->execute([$id]);
+                $stmt->execute([$location_id]);
                 $cnt = (int)$stmt->fetchColumn();
                 if ($cnt > 0) $refs[] = "products ({$cnt})";
             }
@@ -163,9 +160,8 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
             exit;
         }
 
-        // safe to delete
-        $stmt = $pdo->prepare("DELETE FROM locations WHERE id=?");
-        $success = $stmt->execute([$id]);
+        $stmt = $pdo->prepare("DELETE FROM locations WHERE location_id=?");
+        $success = $stmt->execute([$location_id]);
 
         echo json_encode([
             'success' => $success,
@@ -174,9 +170,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         exit;
     }
 
-    // Force delete (super-admin): dissociate references then delete
-    if (isset($_POST['action']) && $_POST['action'] === 'force_delete' && isset($_POST['id'])) {
-        $id = intval($_POST['id']);
+    // Force delete
+    if (isset($_POST['action']) && $_POST['action'] === 'force_delete' && isset($_POST['location_id'])) {
+        $location_id = intval($_POST['location_id']);
 
         if (!Database::isSuperAdmin()) {
             http_response_code(403);
@@ -187,16 +183,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         try {
             $pdo->beginTransaction();
 
-            // best-effort: dissociate products by nulling location_id
             try {
                 $u = $pdo->prepare("UPDATE products SET location_id = NULL WHERE location_id = ?");
-                $u->execute([$id]);
+                $u->execute([$location_id]);
             } catch (PDOException $e) {
                 // ignore if products table/column missing
             }
 
-            $del = $pdo->prepare("DELETE FROM locations WHERE id = ?");
-            $del->execute([$id]);
+            $del = $pdo->prepare("DELETE FROM locations WHERE location_id = ?");
+            $del->execute([$location_id]);
 
             if ($del->rowCount() > 0) {
                 $pdo->commit();
@@ -214,6 +209,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         exit;
     }
 }
+
 echo json_encode(['success' => false, 'message' => 'Invalid request.']);
 exit;
 ?>
