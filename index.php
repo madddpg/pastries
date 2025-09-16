@@ -16,7 +16,7 @@ foreach ($allProducts as $row) {
     $productStatuses[$row['id']] = $row['status'];
 }
 
-$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY id ASC");
+$promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
 $promoStmt->execute();
 $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1029,7 +1029,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         $pdo = $db->opencon();
         $locations = [];
         // Only show locations that are open to the public (case-insensitive)
-        $stmt = $pdo->prepare("SELECT * FROM locations WHERE LOWER(status) = 'open' ORDER BY id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM locations WHERE LOWER(status) = 'open' ORDER BY location_id ASC");
         $stmt->execute();
         $locations = $stmt->fetchAll(PDO::FETCH_ASSOC);
         ?>

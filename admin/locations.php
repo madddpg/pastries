@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
      try {
             // remove updated_at (column doesn't exist in your table)
-            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE locations SET status = ?, admin_id = ? WHERE location_id = ?");
             $ok = $stmt->execute([$status, $admin_id, $id]);
 
             if ($ok && $stmt->rowCount() > 0) {
@@ -113,10 +113,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         }
 
         if ($imagePath) {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE id=?");
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, image=?, admin_id=? WHERE location_id=?");
             $success = $stmt->execute([$name, $status, $imagePath, $admin_id, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, admin_id=? WHERE id=?");
+            $stmt = $pdo->prepare("UPDATE locations SET name=?, status=?, admin_id=? WHERE location_id=?");
             $success = $stmt->execute([$name, $status, $admin_id, $id]);
         }
 
@@ -164,7 +164,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
         }
 
         // safe to delete
-        $stmt = $pdo->prepare("DELETE FROM locations WHERE id=?");
+    $stmt = $pdo->prepare("DELETE FROM locations WHERE location_id=?");
         $success = $stmt->execute([$id]);
 
         echo json_encode([
@@ -195,7 +195,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'edit' && isset($_POST['id']
                 // ignore if products table/column missing
             }
 
-            $del = $pdo->prepare("DELETE FROM locations WHERE id = ?");
+            $del = $pdo->prepare("DELETE FROM locations WHERE location_id = ?");
             $del->execute([$id]);
 
             if ($del->rowCount() > 0) {

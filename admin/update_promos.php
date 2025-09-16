@@ -53,7 +53,7 @@ if (isset($_POST['active'])) {
 
 try {
     if ($requested === null) {
-        $s = $con->prepare("SELECT active FROM promos WHERE id = ? LIMIT 1");
+    $s = $con->prepare("SELECT active FROM promos WHERE promo_id = ? LIMIT 1");
         $s->execute([$id]);
         $row = $s->fetch(PDO::FETCH_ASSOC);
         if (!$row) {
@@ -66,7 +66,7 @@ try {
         $new = (int)$requested;
     }
 
-    $u = $con->prepare("UPDATE promos SET active = ? WHERE id = ?");
+    $u = $con->prepare("UPDATE promos SET active = ? WHERE promo_id = ?");
     $u->execute([$new, $id]);
 
     if ($ajax) {
