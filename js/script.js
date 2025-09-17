@@ -1228,20 +1228,30 @@ function handleRegister(event) {
         startOtpTimers();
         return;
       }
-      if (data.success) {
-        showNotification("Registration successful! You can now log in.", "success");
-        setTimeout(() => window.location.reload(), 1500);
-      } else {
-        showNotification(data.message || "Registration failed. Please try again.", "error");
-      }
+     if (data.success) {
+  // Auto-login after successful registration
+  fetch("login.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      user_email: email.value,   // 👈 match login.php keys
+      password: password.value
     })
-    .catch(() => {
-      showNotification("Registration failed. Please try again.", "error");
-    })
-    .finally(() => {
-      registerBtn.classList.remove("loading");
-      registerBtn.disabled = false;
-    });
+  })
+  .then(res => res.json())
+  .then(loginData => {
+    if (loginData.success) {
+      showNotification("Welcome " + loginData.firstName + "! Redirecting...", "success");
+      setTimeout(() => window.location.href = loginData.redirect, 1200);
+    } else {
+      showNotification("Registered, but login failed. Please log in manually.", "error");
+    }
+  })
+  .catch(() => {
+    showNotification("Registered, but auto-login failed.", "error");
+  });
+}
+});
 }
 
 
