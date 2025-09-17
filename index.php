@@ -163,12 +163,18 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="email" name="registerEmail" id="registerEmail" placeholder="Enter your Email" required>
                     <div id="emailError" class="text-danger small"></div>
                 </div>
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label>Password</label>
-                    <input type="password" name="registerPassword" id="registerPassword" class="password-field" placeholder="Create a secure password" required>
+                    <input type="password" name="registerPassword" id="registerPassword"
+                        class="password-field" placeholder="Create a secure password" required>
+                    <button type="button" id="qtogglePassword"
+                        class="password-toggle-btn persist">
+                        <i class="fas fa-eye"></i>
+                    </button>
                     <label>Note: Capital Letter, Special Character and a Number is required</label>
                     <div id="passwordError" class="text-danger small"></div>
                 </div>
+
                 <div class="form-group">
                     <label>Confirm Password</label>
                     <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
@@ -773,47 +779,47 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <span>Grande - Php 150</span> &nbsp;|&nbsp; <span>Supreme - Php 180</span>
             </div>
         </div>
- <div class="product-list">
-    <?php
-    $shownIds = [];
-    foreach ($allProducts as $product) {
-        if (
-            isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
-            && $product['status'] === 'active'
-        ) {
-            $shownIds[] = $product['product_id']; // changed here
-            $imgSrc = $product['image'];
-            if (strpos($imgSrc, 'img/') !== 0) {
-                $imgSrc = 'img/' . ltrim($imgSrc, '/');
-            }
-            $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
-    ?>
+        <div class="product-list">
+            <?php
+            $shownIds = [];
+            foreach ($allProducts as $product) {
+                if (
+                    isset($product['category_id']) && $product['category_id'] == 6 // Premium Coffee category_id
+                    && $product['status'] === 'active'
+                ) {
+                    $shownIds[] = $product['product_id']; // changed here
+                    $imgSrc = $product['image'];
+                    if (strpos($imgSrc, 'img/') !== 0) {
+                        $imgSrc = 'img/' . ltrim($imgSrc, '/');
+                    }
+                    $dataType = isset($product['data_type']) ? $product['data_type'] : 'cold';
+            ?>
 
-            <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="6">
-                <div class="product-image">
-                    <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-                </div>
-                <div class="product-info">
-                    <h3><?= htmlspecialchars($product['name']) ?></h3>
-                    <span class="badge bg-success mb-2">Specialty Coffee</span>
-                    <p><?= htmlspecialchars($product['description']) ?></p>
-                    <button type="button" class="view-btn"
-                        data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
-                        data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                        data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
-                        data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
-                        data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                        data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
-                        View
-                    </button>
-                </div>
-            </div>
-    <?php
-            $premiumIndex++;
-        }
-    }
-    ?>
-</div>
+                    <div class="product-item card-premium-<?= $premiumIndex ?>" data-type="<?= $dataType ?>" data-category="6">
+                        <div class="product-image">
+                            <img src="<?= htmlspecialchars($imgSrc) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                        </div>
+                        <div class="product-info">
+                            <h3><?= htmlspecialchars($product['name']) ?></h3>
+                            <span class="badge bg-success mb-2">Specialty Coffee</span>
+                            <p><?= htmlspecialchars($product['description']) ?></p>
+                            <button type="button" class="view-btn"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
+                                data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
+                                data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                View
+                            </button>
+                        </div>
+                    </div>
+            <?php
+                    $premiumIndex++;
+                }
+            }
+            ?>
+        </div>
 
 
         <!-- Chocolate Overload Section -->
@@ -1063,18 +1069,18 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 
 
- <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
-    <div class="payment-modal-backdrop" data-close="backdrop"></div>
-    <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
-        <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
-        <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Confirm payment</h3>
-        <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
-            <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;"
-                onclick="handlePaymentChoice('cash')">Place Order (Cash)</button>
+    <div id="paymentMethodModal" class="payment-modal" aria-hidden="true">
+        <div class="payment-modal-backdrop" data-close="backdrop"></div>
+        <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+            <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
+            <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Confirm payment</h3>
+            <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
+                <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;"
+                    onclick="handlePaymentChoice('cash')">Place Order (Cash)</button>
+            </div>
+            <!-- Removed GCash button / QR preview -->
         </div>
-        <!-- Removed GCash button / QR preview -->
     </div>
-</div>
 
 
 
@@ -1382,148 +1388,3 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<script>
-(function(){
-  const form = document.getElementById('registerForm');
-  if(!form) return;
-  const fn = document.getElementById('registerName');
-  const ln = document.getElementById('registerLastName');
-  const em = document.getElementById('registerEmail');
-  const pw = document.getElementById('registerPassword');
-  const cpw = document.getElementById('confirmPassword');
-  const btn = document.getElementById('registerBtn');
-  const errFN = document.getElementById('firstnameError');
-  const errLN = document.getElementById('lastnameError');
-  const errEM = document.getElementById('emailError');
-  const errPW = document.getElementById('passwordError');
-  const errCPW = document.getElementById('confirmPasswordError');
-
-  const state = { fn:false, ln:false, em:false, pw:false, cpw:false };
-  let emailTimer = null;
-
-  function setValid(el, ok){
-    if(!el) return;
-    el.classList.toggle('is-valid', !!ok);
-    el.classList.toggle('is-invalid', !ok);
-  }
-  function nameRules(val){
-    if(!val) return 'Required';
-    if(val.length < 2) return 'Too short';
-    if(!/^[a-zA-Z\s'.-]+$/.test(val)) return 'Invalid characters';
-    return '';
-  }
-  function validateFN(){
-    const msg = nameRules(fn.value.trim());
-    if(msg){ errFN.textContent = msg; setValid(fn,false); state.fn=false; }
-    else { errFN.textContent=''; setValid(fn,true); state.fn=true; }
-    updateButton();
-  }
-  function validateLN(){
-    const msg = nameRules(ln.value.trim());
-    if(msg){ errLN.textContent = msg; setValid(ln,false); state.ln=false; }
-    else { errLN.textContent=''; setValid(ln,true); state.ln=true; }
-    updateButton();
-  }
-  function validateEmailFormat(v){
-    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
-  }
-  function checkEmail(){
-    const v = em.value.trim();
-    if(!v){ errEM.textContent='Required'; setValid(em,false); state.em=false; updateButton(); return; }
-    if(!validateEmailFormat(v)){ errEM.textContent='Invalid format'; setValid(em,false); state.em=false; updateButton(); return; }
-    errEM.textContent='Checking...';
-    setValid(em,true); // tentative
-    // debounce
-    if(emailTimer) clearTimeout(emailTimer);
-    emailTimer = setTimeout(()=>{
-      fetch('AJAX/check_duplicates.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({ field:'user_email', value:v }) })
-        .then(r=>r.json())
-        .then(data=>{
-          if(data.exists){ errEM.textContent='Email already registered'; setValid(em,false); state.em=false; }
-          else { errEM.textContent=''; setValid(em,true); state.em=true; }
-          updateButton();
-        })
-        .catch(()=>{ errEM.textContent='Server error'; setValid(em,false); state.em=false; updateButton(); });
-    }, 450);
-  }
-  function passwordStrength(p){
-    let score = 0;
-    if(p.length >= 8) score++;
-    if(/[A-Z]/.test(p)) score++;
-    if(/[a-z]/.test(p)) score++;
-    if(/[0-9]/.test(p)) score++;
-    if(/[^A-Za-z0-9]/.test(p)) score++;
-    return score; // 0..5
-  }
-  function validatePW(){
-    const v = pw.value;
-    if(!v){ errPW.textContent='Required'; setValid(pw,false); state.pw=false; updateButton(); return; }
-    if(v.length < 8){ errPW.textContent='At least 8 characters'; setValid(pw,false); state.pw=false; updateButton(); return; }
-    const s = passwordStrength(v);
-    if(s < 3){ errPW.textContent='Add upper, number & symbol'; setValid(pw,false); state.pw=false; }
-    else { errPW.innerHTML = 'Strength: <span style="color:#15803d;">'+(s<=3?'Medium':s==4?'Strong':'Very Strong')+'</span>'; setValid(pw,true); state.pw=true; }
-    validateCPW();
-    updateButton();
-  }
-  function validateCPW(){
-    if(!cpw.value){ errCPW.textContent='Required'; setValid(cpw,false); state.cpw=false; }
-    else if(cpw.value !== pw.value){ errCPW.textContent='Passwords do not match'; setValid(cpw,false); state.cpw=false; }
-    else { errCPW.textContent=''; setValid(cpw,true); state.cpw=true; }
-    updateButton();
-  }
-  function updateButton(){
-    const allOk = Object.values(state).every(Boolean);
-    btn.disabled = !allOk;
-  }
-
-  fn.addEventListener('input', validateFN);
-  ln.addEventListener('input', validateLN);
-  em.addEventListener('input', checkEmail);
-  pw.addEventListener('input', validatePW);
-  cpw.addEventListener('input', validateCPW);
-  cpw.addEventListener('blur', validateCPW);
-
-  // Initial disable until valid
-  btn.disabled = true;
-})();
-
-// Password visibility toggles (registration & login)
-(function(){
-
-    const toggleButtons = document.querySelectorAll('.password-toggle-btn'); // applies to both password fields
-    toggleButtons.forEach(btn=>{
-        const targetId = btn.getAttribute('data-target');
-        const input = document.getElementById(targetId);
-        if(!input) return;
-
-        function syncState(){
-            if(input.type === 'password'){
-                btn.innerHTML = '<i class="fas fa-eye"></i>';
-                btn.setAttribute('aria-label','Show password');
-            } else {
-                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                btn.setAttribute('aria-label','Hide password');
-            }
-            // Always show if focused or has any value (persist when user typed something)
-            if(document.activeElement === input || input.value.length > 0){
-                btn.classList.add('visible','persist');
-            } else if(!input.value){
-                btn.classList.remove('visible','persist');
-            }
-        }
-
-        btn.addEventListener('click', ()=>{
-            input.type = input.type === 'password' ? 'text' : 'password';
-            syncState();
-            input.focus();
-        });
-        input.addEventListener('focus', syncState);
-        input.addEventListener('blur', ()=>{
-            // Keep visible if it has value; just resync
-            setTimeout(syncState, 80);
-        });
-        input.addEventListener('input', syncState);
-        syncState();
-    });
-})();
-</script>

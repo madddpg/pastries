@@ -1132,30 +1132,87 @@ function logout(event) {
 
 
 // Modify the handleRegister function (around line 340-375)
-
 function handleRegister(event) {
   event.preventDefault();
-  const name = document.getElementById("registerName").value;
-  const lastName = document.getElementById("registerLastName").value;
-  const email = document.getElementById("registerEmail").value;
-  const password = document.getElementById("registerPassword").value;
-  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  const name = document.getElementById("registerName");
+  const lastName = document.getElementById("registerLastName");
+  const email = document.getElementById("registerEmail");
+  const password = document.getElementById("registerPassword");
+  const confirmPassword = document.getElementById("confirmPassword");
   const registerBtn = document.getElementById("registerBtn");
 
-  if (password !== confirmPassword) {
-    alert("Passwords do not match!");
+  const errFN = document.getElementById('firstnameError');
+  const errLN = document.getElementById('lastnameError');
+  const errEM = document.getElementById('emailError');
+  const errPW = document.getElementById('passwordError');
+  const errCPW = document.getElementById('confirmPasswordError');
+
+  // ✅ Inline validation (instead of separate functions)
+  if (!name.value.trim()) {
+    errFN.textContent = "First name required";
+    return;
+  }
+  if (!lastName.value.trim()) {
+    errLN.textContent = "Last name required";
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value)) {
+    errEM.textContent = "Invalid email format";
+    return;
+  }
+  if (password.value.length < 8) {
+    errPW.textContent = "At least 8 characters required";
+    return;
+  }
+  if (password.value !== confirmPassword.value) {
+    errCPW.textContent = "Passwords do not match!";
     return;
   }
 
+  // ✅ Password toggle logic (moved inside here)
+  document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+    const targetId = btn.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    if (!input) return;
+
+    function syncState() {
+      if (input.type === 'password') {
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+        btn.setAttribute('aria-label', 'Show password');
+      } else {
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        btn.setAttribute('aria-label', 'Hide password');
+      }
+      if (document.activeElement === input || input.value.length > 0) {
+        btn.classList.add('visible', 'persist');
+      } else if (!input.value) {
+        btn.classList.remove('visible', 'persist');
+      }
+    }
+
+    btn.addEventListener('click', () => {
+      input.type = input.type === 'password' ? 'text' : 'password';
+      syncState();
+      input.focus();
+    });
+    input.addEventListener('focus', syncState);
+    input.addEventListener('blur', () => setTimeout(syncState, 80));
+    input.addEventListener('input', syncState);
+
+    syncState();
+  });
+
+  // ✅ Continue with registration request
   registerBtn.classList.add("loading");
   registerBtn.disabled = true;
 
   const formData = new FormData();
-  formData.append('registerName', name);
-  formData.append('registerLastName', lastName);
-  formData.append('registerEmail', email);
-  formData.append('registerPassword', password);
-  formData.append('confirmPassword', confirmPassword);
+  formData.append('registerName', name.value);
+  formData.append('registerLastName', lastName.value);
+  formData.append('registerEmail', email.value);
+  formData.append('registerPassword', password.value);
+  formData.append('confirmPassword', confirmPassword.value);
 
   fetch('register.php', {
     method: 'POST',
@@ -1163,24 +1220,14 @@ function handleRegister(event) {
   })
     .then(response => response.json())
     .then(data => {
-      // If backend signals that verification is required, start OTP flow
       if (data.success && (data.requires_verification || data.pending_verification)) {
         showNotification("Verification sent! Please check your email.", "success");
-
-        // Show OTP modal WITHOUT sending another email
-        showOtpModal(data.email || email);
-
-        // REMOVE THIS LINE - it's causing the second email:
-        // setTimeout(() => sendOTP(data.email || email), 150);
-
-        // Instead, just set up the OTP state with the data from the server
-        otpState.email = data.email || email;
+        showOtpModal(data.email || email.value);
+        otpState.email = data.email || email.value;
         otpState.expiresAt = data.expires_at || 0;
         startOtpTimers();
-
-        return; // do not reload yet
+        return;
       }
-
       if (data.success) {
         showNotification("Registration successful! You can now log in.", "success");
         setTimeout(() => window.location.reload(), 1500);
