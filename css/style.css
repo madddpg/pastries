@@ -577,29 +577,32 @@ img, svg, picture, video {
 .form-group input::placeholder {
   color: #94a3b8;
 }
+
 .input-with-toggle {
-  position: relative;
-  display: flex;
-  align-items: center;
+  position: relative;      /* make wrapper relative */
+  width: 100%;
 }
 
 .input-with-toggle input.password-field {
   width: 100%;
-  padding-right: 40px; /* make room for the eye icon */
+  padding-right: 40px;     /* space for the eye icon */
+  box-sizing: border-box;  /* ensures padding is respected */
 }
 
 .input-with-toggle .password-toggle-btn {
-  position: absolute;
-  right: 12px;
+  position: absolute !important;  /* force absolute positioning */
   top: 50%;
+  right: 12px;
   transform: translateY(-50%);
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #64748b;
-  font-size: 1rem;
   padding: 0;
+  margin: 0;
+  font-size: 1.1rem;
   line-height: 1;
+  height: auto;
+  width: auto;
 }
 
 
