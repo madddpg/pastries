@@ -172,7 +172,6 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-group">
                     <label>Confirm Password</label>
                     <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
-                    <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
@@ -1490,7 +1489,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Password visibility toggles (registration & login)
 (function(){
-    const toggleButtons = document.querySelectorAll('.password-toggle-btn');
+        const toggleButtons = document.querySelectorAll('.password-toggle-btn'); // now only on primary password field
     toggleButtons.forEach(btn=>{
         const targetId = btn.getAttribute('data-target');
         const input = document.getElementById(targetId);
