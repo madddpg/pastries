@@ -165,35 +165,43 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" name="registerPassword" id="registerPassword" class="password-field" placeholder="Create a secure password" required>
-                        <button type="button" class="password-toggle-btn" data-target="registerPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    <div class="form-group password-wrapper">
+                        <label>Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="registerPassword" id="registerPassword"
+                                class="password-field" placeholder="Create a secure password" required>
+                            <button type="button" class="password-toggle-btn persist" data-target="registerPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <label>Note: Capital Letter, Special Character and a Number is required</label>
+                        <div id="passwordError" class="text-danger small"></div>
                     </div>
-                    <div class="password-hint">Capital letter, number & special character required.</div>
-                    <div id="passwordError" class="text-danger small"></div>
-                </div>
-                <div class="form-group">
-                    <label>Confirm Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
-                        <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
-                    </div>
-                    <div id="confirmPasswordError" class="text-danger small"></div>
-                </div>
 
-                <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
-                    <label for="acceptTerms" style="font-size: 0.97em; display: flex; align-items: center; gap: 3px; margin-bottom: 0;">
-                        <input type="checkbox" id="acceptTerms" required>
-                        I accept the
-                        <button type="button" id="showTermsBtn" style="background: none; border: none; color: #40534b; text-decoration: underline; cursor: pointer; padding: 0; font-size: 1em; margin: 0;">
-                            Terms and Conditions
-                        </button>
-                    </label>
-                </div>
-                <button type="submit" class="auth-btn" id="registerBtn">
-                    <i class="fas fa-user-plus"></i>
-                    Create Account
-                </button>
+                    <div class="form-group password-wrapper">
+                        <label>Confirm Password</label>
+                        <div class="input-with-toggle">
+                            <input type="password" name="confirmPassword" id="confirmPassword"
+                                class="password-field" placeholder="Confirm your password" required>
+                            <button type="button" class="password-toggle-btn persist" data-target="confirmPassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div id="confirmPasswordError" class="text-danger small"></div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
+                        <label for="acceptTerms" style="font-size: 0.97em; display: flex; align-items: center; gap: 3px; margin-bottom: 0;">
+                            <input type="checkbox" id="acceptTerms" required>
+                            I accept the
+                            <button type="button" id="showTermsBtn" style="background: none; border: none; color: #40534b; text-decoration: underline; cursor: pointer; padding: 0; font-size: 1em; margin: 0;">
+                                Terms and Conditions
+                            </button>
+                        </label>
+                    </div>
+                    <button type="submit" class="auth-btn" id="registerBtn">
+                        <i class="fas fa-user-plus"></i>
+                        Create Account
+                    </button>
             </form>
             <div class="auth-switch">
                 <p>Already have an account? <a onclick="switchToLogin()">Sign in here</a></p>
@@ -1387,31 +1395,5 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
 </div>
-<script>
-// Ensure password toggle works for both fields (in case previous script was removed)
-(function(){
-    const buttons = document.querySelectorAll('.password-toggle-btn');
-    buttons.forEach(btn=>{
-        const target = document.getElementById(btn.getAttribute('data-target'));
-        if(!target) return;
-        function update(){
-            if(target.type === 'password'){
-                btn.innerHTML = '<i class="fas fa-eye"></i>';
-                btn.setAttribute('aria-label','Show password');
-            } else {
-                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                btn.setAttribute('aria-label','Hide password');
-            }
-            if(document.activeElement === target || target.value){
-                btn.classList.add('visible');
-            } else {
-                btn.classList.remove('visible');
-            }
-        }
-        btn.addEventListener('click',()=>{ target.type = target.type==='password'?'text':'password'; update(); target.focus(); });
-        ['focus','blur','input'].forEach(ev=>target.addEventListener(ev,()=>setTimeout(update, ev==='blur'?80:0)));
-        update();
-    });
-})();
-</script>
 
+    
