@@ -170,6 +170,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-group">
                     <label>Confirm Password</label>
                     <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm your password" required>
+                    <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
@@ -1378,3 +1379,109 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
 </div>
+
+<script>
+(function(){
+  const form = document.getElementById('registerForm');
+  if(!form) return;
+  const fn = document.getElementById('registerName');
+  const ln = document.getElementById('registerLastName');
+  const em = document.getElementById('registerEmail');
+  const pw = document.getElementById('registerPassword');
+  const cpw = document.getElementById('confirmPassword');
+  const btn = document.getElementById('registerBtn');
+  const errFN = document.getElementById('firstnameError');
+  const errLN = document.getElementById('lastnameError');
+  const errEM = document.getElementById('emailError');
+  const errPW = document.getElementById('passwordError');
+  const errCPW = document.getElementById('confirmPasswordError');
+
+  const state = { fn:false, ln:false, em:false, pw:false, cpw:false };
+  let emailTimer = null;
+
+  function setValid(el, ok){
+    if(!el) return;
+    el.classList.toggle('is-valid', !!ok);
+    el.classList.toggle('is-invalid', !ok);
+  }
+  function nameRules(val){
+    if(!val) return 'Required';
+    if(val.length < 2) return 'Too short';
+    if(!/^[a-zA-Z\s'.-]+$/.test(val)) return 'Invalid characters';
+    return '';
+  }
+  function validateFN(){
+    const msg = nameRules(fn.value.trim());
+    if(msg){ errFN.textContent = msg; setValid(fn,false); state.fn=false; }
+    else { errFN.textContent=''; setValid(fn,true); state.fn=true; }
+    updateButton();
+  }
+  function validateLN(){
+    const msg = nameRules(ln.value.trim());
+    if(msg){ errLN.textContent = msg; setValid(ln,false); state.ln=false; }
+    else { errLN.textContent=''; setValid(ln,true); state.ln=true; }
+    updateButton();
+  }
+  function validateEmailFormat(v){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  }
+  function checkEmail(){
+    const v = em.value.trim();
+    if(!v){ errEM.textContent='Required'; setValid(em,false); state.em=false; updateButton(); return; }
+    if(!validateEmailFormat(v)){ errEM.textContent='Invalid format'; setValid(em,false); state.em=false; updateButton(); return; }
+    errEM.textContent='Checking...';
+    setValid(em,true); // tentative
+    // debounce
+    if(emailTimer) clearTimeout(emailTimer);
+    emailTimer = setTimeout(()=>{
+      fetch('AJAX/check_duplicates.php', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body: new URLSearchParams({ field:'user_email', value:v }) })
+        .then(r=>r.json())
+        .then(data=>{
+          if(data.exists){ errEM.textContent='Email already registered'; setValid(em,false); state.em=false; }
+          else { errEM.textContent=''; setValid(em,true); state.em=true; }
+          updateButton();
+        })
+        .catch(()=>{ errEM.textContent='Server error'; setValid(em,false); state.em=false; updateButton(); });
+    }, 450);
+  }
+  function passwordStrength(p){
+    let score = 0;
+    if(p.length >= 8) score++;
+    if(/[A-Z]/.test(p)) score++;
+    if(/[a-z]/.test(p)) score++;
+    if(/[0-9]/.test(p)) score++;
+    if(/[^A-Za-z0-9]/.test(p)) score++;
+    return score; // 0..5
+  }
+  function validatePW(){
+    const v = pw.value;
+    if(!v){ errPW.textContent='Required'; setValid(pw,false); state.pw=false; updateButton(); return; }
+    if(v.length < 8){ errPW.textContent='At least 8 characters'; setValid(pw,false); state.pw=false; updateButton(); return; }
+    const s = passwordStrength(v);
+    if(s < 3){ errPW.textContent='Add upper, number & symbol'; setValid(pw,false); state.pw=false; }
+    else { errPW.innerHTML = 'Strength: <span style="color:#15803d;">'+(s<=3?'Medium':s==4?'Strong':'Very Strong')+'</span>'; setValid(pw,true); state.pw=true; }
+    validateCPW();
+    updateButton();
+  }
+  function validateCPW(){
+    if(!cpw.value){ errCPW.textContent='Required'; setValid(cpw,false); state.cpw=false; }
+    else if(cpw.value !== pw.value){ errCPW.textContent='Passwords do not match'; setValid(cpw,false); state.cpw=false; }
+    else { errCPW.textContent=''; setValid(cpw,true); state.cpw=true; }
+    updateButton();
+  }
+  function updateButton(){
+    const allOk = Object.values(state).every(Boolean);
+    btn.disabled = !allOk;
+  }
+
+  fn.addEventListener('input', validateFN);
+  ln.addEventListener('input', validateLN);
+  em.addEventListener('input', checkEmail);
+  pw.addEventListener('input', validatePW);
+  cpw.addEventListener('input', validateCPW);
+  cpw.addEventListener('blur', validateCPW);
+
+  // Initial disable until valid
+  btn.disabled = true;
+})();
+</script>
