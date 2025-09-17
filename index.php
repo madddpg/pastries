@@ -1350,6 +1350,144 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 });
             }
         });
+
+
+
+
+
+
+        // ---------------- VALIDATION ----------------
+(function() {
+    const fn = document.getElementById('registerName');
+    const ln = document.getElementById('registerLastName');
+    const em = document.getElementById('registerEmail');
+    const pw = document.getElementById('registerPassword');
+    const cpw = document.getElementById('confirmPassword');
+    const btn = document.getElementById('registerBtn');
+
+    const errFN = document.getElementById('firstnameError');
+    const errLN = document.getElementById('lastnameError');
+    const errEM = document.getElementById('emailError');
+    const errPW = document.getElementById('passwordError');
+    const errCPW = document.getElementById('confirmPasswordError');
+
+    const state = { fn: false, ln: false, em: false, pw: false, cpw: false };
+    let emailTimer = null;
+
+    function setValid(el, ok) {
+        el.classList.toggle('is-valid', !!ok);
+        el.classList.toggle('is-invalid', !ok);
+    }
+
+    function nameRules(val) {
+        if (!val) return 'Required';
+        if (val.length < 2) return 'Too short';
+        if (!/^[a-zA-Z\s'.-]+$/.test(val)) return 'Invalid characters';
+        return '';
+    }
+
+    function validateFN() {
+        const msg = nameRules(fn.value.trim());
+        errFN.textContent = msg;
+        setValid(fn, !msg);
+        state.fn = !msg;
+        updateButton();
+    }
+    function validateLN() {
+        const msg = nameRules(ln.value.trim());
+        errLN.textContent = msg;
+        setValid(ln, !msg);
+        state.ln = !msg;
+        updateButton();
+    }
+
+    function validateEmailFormat(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+    function checkEmail() {
+        const v = em.value.trim();
+        if (!v) { errEM.textContent = 'Required'; setValid(em, false); state.em = false; updateButton(); return; }
+        if (!validateEmailFormat(v)) { errEM.textContent = 'Invalid format'; setValid(em, false); state.em = false; updateButton(); return; }
+
+        errEM.textContent = 'Checking...';
+        setValid(em, true);
+        if (emailTimer) clearTimeout(emailTimer);
+        emailTimer = setTimeout(() => {
+            fetch('AJAX/check_duplicates.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ field: 'user_email', value: v })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.exists) { errEM.textContent = 'Email already registered'; setValid(em, false); state.em = false; }
+                else { errEM.textContent = ''; setValid(em, true); state.em = true; }
+                updateButton();
+            })
+            .catch(() => { errEM.textContent = 'Server error'; setValid(em, false); state.em = false; updateButton(); });
+        }, 400);
+    }
+
+    function validatePW() {
+        const v = pw.value;
+        if (!v) { errPW.textContent = 'Required'; setValid(pw, false); state.pw = false; updateButton(); return; }
+        if (v.length < 8) { errPW.textContent = 'At least 8 characters'; setValid(pw, false); state.pw = false; updateButton(); return; }
+        if (!/[A-Z]/.test(v) || !/[0-9]/.test(v) || !/[^A-Za-z0-9]/.test(v)) {
+            errPW.textContent = 'Must contain uppercase, number & special character';
+            setValid(pw, false); state.pw = false;
+        } else {
+            errPW.textContent = '';
+            setValid(pw, true); state.pw = true;
+        }
+        validateCPW();
+        updateButton();
+    }
+
+    function validateCPW() {
+        if (!cpw.value) { errCPW.textContent = 'Required'; setValid(cpw, false); state.cpw = false; }
+        else if (cpw.value !== pw.value) { errCPW.textContent = 'Passwords do not match'; setValid(cpw, false); state.cpw = false; }
+        else { errCPW.textContent = ''; setValid(cpw, true); state.cpw = true; }
+        updateButton();
+    }
+
+    function updateButton() { btn.disabled = !Object.values(state).every(Boolean); }
+
+    fn.addEventListener('input', validateFN);
+    ln.addEventListener('input', validateLN);
+    em.addEventListener('input', checkEmail);
+    pw.addEventListener('input', validatePW);
+    cpw.addEventListener('input', validateCPW);
+    cpw.addEventListener('blur', validateCPW);
+    btn.disabled = true;
+})();
+
+// ---------------- PASSWORD TOGGLE ----------------
+(function() {
+    document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if (!input) return;
+
+        function syncState() {
+            if (input.type === 'password') {
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+            } else {
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            }
+            btn.style.display = input.value.length > 0 ? 'block' : 'none';
+        }
+
+        btn.addEventListener('click', () => {
+            input.type = input.type === 'password' ? 'text' : 'password';
+            syncState();
+            input.focus();
+        });
+
+        input.addEventListener('input', syncState);
+        input.addEventListener('focus', syncState);
+        input.addEventListener('blur', syncState);
+        syncState();
+    });
+})();
+
     </script>
 </body>
 
