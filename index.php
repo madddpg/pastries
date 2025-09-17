@@ -165,12 +165,14 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" name="registerPassword" id="registerPassword" placeholder="Create a secure password" required>
+                    <input type="password" name="registerPassword" id="registerPassword" class="password-field" placeholder="Create a secure password" required>
+                    <button type="button" class="password-toggle-btn" data-target="registerPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
                     <div id="passwordError" class="text-danger small"></div>
                 </div>
                 <div class="form-group">
                     <label>Confirm Password</label>
-                    <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm your password" required>
+                    <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
+                    <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
@@ -1484,5 +1486,44 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
   // Initial disable until valid
   btn.disabled = true;
+})();
+
+// Password visibility toggles (registration & login)
+(function(){
+    const toggleButtons = document.querySelectorAll('.password-toggle-btn');
+    toggleButtons.forEach(btn=>{
+        const targetId = btn.getAttribute('data-target');
+        const input = document.getElementById(targetId);
+        if(!input) return;
+
+        function syncState(){
+            if(input.type === 'password'){
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+                btn.setAttribute('aria-label','Show password');
+            } else {
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                btn.setAttribute('aria-label','Hide password');
+            }
+            // Show button when focused or has value
+            if(document.activeElement === input || input.value){
+                btn.classList.add('visible');
+            } else {
+                btn.classList.remove('visible');
+            }
+        }
+
+        btn.addEventListener('click', ()=>{
+            input.type = input.type === 'password' ? 'text' : 'password';
+            syncState();
+            input.focus();
+        });
+        input.addEventListener('focus', syncState);
+        input.addEventListener('blur', ()=>{
+            // Delay so click can register before hiding
+            setTimeout(syncState, 120);
+        });
+        input.addEventListener('input', syncState);
+        syncState();
+    });
 })();
 </script>

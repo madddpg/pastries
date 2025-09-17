@@ -578,6 +578,24 @@ img, svg, picture, video {
   color: #94a3b8;
 }
 
+/* Password toggle */
+.password-toggle-btn {
+  position: absolute;
+  top: 40px; /* below label (label ~8px margin + input padding) */
+  right: 14px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: none;
+  font-size: 1rem;
+  line-height: 1;
+}
+.password-toggle-btn.visible { display: block; }
+.password-toggle-btn:hover { color: var(--primary-purple); }
+.form-group input.password-field { padding-right: 44px; }
+
 .auth-btn {
   background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
   color: white;
