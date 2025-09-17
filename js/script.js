@@ -5,6 +5,12 @@ window.toggleProfileDropdown = function (event) {
     menu.classList.toggle("show");
   }
 };
+
+
+let __pendingRegistration = null;
+let __otpVerified = false;
+let __registrationCompleted = false;
+
 function showSection(sectionName) {
   try {
     document.querySelectorAll('.section-content').forEach(s => {
@@ -1131,11 +1137,11 @@ function logout(event) {
 }
 
 
-// Modify the handleRegister function (around line 340-375)
+// REPLACE your old handleRegister with this one
 function handleRegister(event) {
   event.preventDefault();
 
-  const name = document.getElementById("registerName");
+  const firstName = document.getElementById("registerName");
   const lastName = document.getElementById("registerLastName");
   const email = document.getElementById("registerEmail");
   const password = document.getElementById("registerPassword");
@@ -1148,112 +1154,45 @@ function handleRegister(event) {
   const errPW = document.getElementById('passwordError');
   const errCPW = document.getElementById('confirmPasswordError');
 
-  // ✅ Inline validation (instead of separate functions)
-  if (!name.value.trim()) {
-    errFN.textContent = "First name required";
-    return;
-  }
-  if (!lastName.value.trim()) {
-    errLN.textContent = "Last name required";
-    return;
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value)) {
-    errEM.textContent = "Invalid email format";
-    return;
-  }
-  if (password.value.length < 8) {
-    errPW.textContent = "At least 8 characters required";
-    return;
-  }
-  if (password.value !== confirmPassword.value) {
-    errCPW.textContent = "Passwords do not match!";
-    return;
-  }
+  // reset error messages
+  [errFN, errLN, errEM, errPW, errCPW].forEach(e => e.textContent = '');
 
-  // ✅ Password toggle logic (moved inside here)
-  document.querySelectorAll('.password-toggle-btn').forEach(btn => {
-    const targetId = btn.getAttribute('data-target');
-    const input = document.getElementById(targetId);
-    if (!input) return;
+  // basic validation
+  if (!firstName.value.trim()) { errFN.textContent = "First name required"; return; }
+  if (!lastName.value.trim()) { errLN.textContent = "Last name required"; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value)) { errEM.textContent = "Invalid email"; return; }
+  if (password.value.length < 8) { errPW.textContent = "At least 8 characters required"; return; }
+  if (password.value !== confirmPassword.value) { errCPW.textContent = "Passwords do not match"; return; }
 
-    function syncState() {
-      if (input.type === 'password') {
-        btn.innerHTML = '<i class="fas fa-eye"></i>';
-        btn.setAttribute('aria-label', 'Show password');
-      } else {
-        btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-        btn.setAttribute('aria-label', 'Hide password');
-      }
-      if (document.activeElement === input || input.value.length > 0) {
-        btn.classList.add('visible', 'persist');
-      } else if (!input.value) {
-        btn.classList.remove('visible', 'persist');
-      }
-    }
+  // store pending registration (not sending yet until OTP is verified)
+  __pendingRegistration = {
+    firstName: firstName.value.trim(),
+    lastName: lastName.value.trim(),
+    email: email.value.trim(),
+    password: password.value,
+    confirmPassword: confirmPassword.value
+  };
+  __otpVerified = false;
+  __registrationCompleted = false;
 
-    btn.addEventListener('click', () => {
-      input.type = input.type === 'password' ? 'text' : 'password';
-      syncState();
-      input.focus();
-    });
-    input.addEventListener('focus', syncState);
-    input.addEventListener('blur', () => setTimeout(syncState, 80));
-    input.addEventListener('input', syncState);
-
-    syncState();
-  });
-
-  // ✅ Continue with registration request
-  registerBtn.classList.add("loading");
   registerBtn.disabled = true;
+  registerBtn.classList.add("loading");
 
-  const formData = new FormData();
-  formData.append('registerName', name.value);
-  formData.append('registerLastName', lastName.value);
-  formData.append('registerEmail', email.value);
-  formData.append('registerPassword', password.value);
-  formData.append('confirmPassword', confirmPassword.value);
-
-  fetch('register.php', {
-    method: 'POST',
-    body: formData
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success && (data.requires_verification || data.pending_verification)) {
-        showNotification("Verification sent! Please check your email.", "success");
-        showOtpModal(data.email || email.value);
-        otpState.email = data.email || email.value;
-        otpState.expiresAt = data.expires_at || 0;
-        startOtpTimers();
-        return;
-      }
-     if (data.success) {
-  // Auto-login after successful registration
-  fetch("login.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      user_email: email.value,   // 👈 match login.php keys
-      password: password.value
+  // send OTP before final registration
+  sendOTP(__pendingRegistration.email)
+    .then(() => {
+      showNotification("OTP sent. Please verify to finish account creation.", "success");
+      showOtpModal(__pendingRegistration.email);
     })
-  })
-  .then(res => res.json())
-  .then(loginData => {
-    if (loginData.success) {
-      showNotification("Welcome " + loginData.firstName + "! Redirecting...", "success");
-      setTimeout(() => window.location.href = loginData.redirect, 1200);
-    } else {
-      showNotification("Registered, but login failed. Please log in manually.", "error");
-    }
-  })
-  .catch(() => {
-    showNotification("Registered, but auto-login failed.", "error");
-  });
+    .catch(() => {
+      showNotification("Failed to send OTP. Try again.", "error");
+      __pendingRegistration = null;
+    })
+    .finally(() => {
+      registerBtn.disabled = false;
+      registerBtn.classList.remove("loading");
+    });
 }
-});
-}
-
 
 // Add this right after your other document.addEventListener blocks (around line 600)
 // (before the window.addEventListener("scroll") blocks)
