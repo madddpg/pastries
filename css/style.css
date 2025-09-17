@@ -581,7 +581,8 @@ img, svg, picture, video {
 /* Password toggle */
 .password-toggle-btn {
   position: absolute;
-  top: 40px; /* below label (label ~8px margin + input padding) */
+  top: 50%;
+  transform: translateY(-50%);
   right: 14px;
   border: none;
   background: transparent;

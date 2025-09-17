@@ -1489,7 +1489,8 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Password visibility toggles (registration & login)
 (function(){
-        const toggleButtons = document.querySelectorAll('.password-toggle-btn'); // now only on primary password field
+
+    const toggleButtons = document.querySelectorAll('.password-toggle-btn'); // now only on primary password field
     toggleButtons.forEach(btn=>{
         const targetId = btn.getAttribute('data-target');
         const input = document.getElementById(targetId);
