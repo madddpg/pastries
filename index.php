@@ -628,7 +628,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
             }
             $premiumProducts = [
                 [
-                    'id' => 'ameri',
+                    'product_id' => 'ameri',
                     'name' => 'Americano',
                     'cold_img' => 'img/ameri.jpg',
                     'hot_img' => 'img/HOT MARI.jpg',
@@ -638,7 +638,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     'pastries_desc' => 'A delicious egg pie pastry, perfect for pairing with your coffee.',
                 ],
                 [
-                    'id' => 'caramel-macchiato',
+                    'product_id' => 'caramel-macchiato',
                     'name' => 'Caramel Macchiato',
                     'cold_img' => 'img/caramel.jpg',
                     'hot_img' => 'img/HOT MARI.jpg',
@@ -648,7 +648,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
             ];
             foreach ($premiumProducts as $p) {
-                if (!in_array($p['id'], $shownIds) && (!isset($productStatuses[$p['id']]) || $productStatuses[$p['id']] === 'active')) {
+                if (!in_array($p['product_id'], $shownIds) && (!isset($productStatuses[$p['product_id']]) || $productStatuses[$p['product_id']] === 'active')) {
                 ?>
                     <div class="product-item" data-type="cold" data-category="5">
                         <div class="product-image">
@@ -660,7 +660,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <p><?= htmlspecialchars($p['cold_desc']) ?></p>
                             <div class="product-footer">
                                 <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
                                     data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
@@ -682,7 +682,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <p><?= htmlspecialchars($p['hot_desc']) ?></p>
                             <div class="product-footer">
                                 <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>"
+                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
                                     data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
@@ -754,7 +754,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                                     $imgSrc = isset($imgSrc) ? $imgSrc : '';
                                     ?>
                                     <button type="button" class="view-btn"
-                                        data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                        data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                         data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                         data-price="<?= htmlspecialchars($basePrice, ENT_QUOTES) ?>"
                                         data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
