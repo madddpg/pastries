@@ -163,21 +163,21 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="email" name="registerEmail" id="registerEmail" placeholder="Enter your Email" required>
                     <div id="emailError" class="text-danger small"></div>
                 </div>
-                <div class="form-group" style="position: relative;">
+                <div class="form-group">
                     <label>Password</label>
-                    <input type="password" name="registerPassword" id="registerPassword"
-                        class="password-field" placeholder="Create a secure password" required>
-                    <button type="button" id="qtogglePassword"
-                        class="password-toggle-btn persist">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <label>Note: Capital Letter, Special Character and a Number is required</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="registerPassword" id="registerPassword" class="password-field" placeholder="Create a secure password" required>
+                        <button type="button" class="password-toggle-btn" data-target="registerPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
+                    <div class="password-hint">Capital letter, number & special character required.</div>
                     <div id="passwordError" class="text-danger small"></div>
                 </div>
-
                 <div class="form-group">
                     <label>Confirm Password</label>
-                    <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
+                    <div class="password-wrapper">
+                        <input type="password" name="confirmPassword" id="confirmPassword" class="password-field" placeholder="Confirm your password" required>
+                        <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
@@ -1387,4 +1387,31 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
 </div>
+<script>
+// Ensure password toggle works for both fields (in case previous script was removed)
+(function(){
+    const buttons = document.querySelectorAll('.password-toggle-btn');
+    buttons.forEach(btn=>{
+        const target = document.getElementById(btn.getAttribute('data-target'));
+        if(!target) return;
+        function update(){
+            if(target.type === 'password'){
+                btn.innerHTML = '<i class="fas fa-eye"></i>';
+                btn.setAttribute('aria-label','Show password');
+            } else {
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                btn.setAttribute('aria-label','Hide password');
+            }
+            if(document.activeElement === target || target.value){
+                btn.classList.add('visible');
+            } else {
+                btn.classList.remove('visible');
+            }
+        }
+        btn.addEventListener('click',()=>{ target.type = target.type==='password'?'text':'password'; update(); target.focus(); });
+        ['focus','blur','input'].forEach(ev=>target.addEventListener(ev,()=>setTimeout(update, ev==='blur'?80:0)));
+        update();
+    });
+})();
+</script>
 

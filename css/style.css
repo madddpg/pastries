@@ -578,7 +578,6 @@ img, svg, picture, video {
   color: #94a3b8;
 }
 
-/* Password toggle */
 .password-toggle-btn {
   position: absolute;
   top: 50%;
@@ -589,12 +588,19 @@ img, svg, picture, video {
   color: #64748b;
   cursor: pointer;
   padding: 4px;
-  display: none;
+  display: none;  /* <-- this is hiding it by default */
   font-size: 1rem;
   line-height: 1;
 }
 .password-toggle-btn.visible { display: block; }
 .password-toggle-btn.persist { display: block; }
+
+
+/* Wrapper to keep icon inside input without shifting layout */
+.password-wrapper { position: relative; display: flex; align-items: center; }
+.password-wrapper .password-field { width: 100%; }
+.password-wrapper .password-toggle-btn { top: 50%; transform: translateY(-50%); right: 14px; }
+.password-hint { font-size: 0.7rem; margin-top: 4px; color: #475569; }
 .password-toggle-btn:hover { color: var(--primary-purple); }
 .form-group input.password-field { padding-right: 44px; }
 
