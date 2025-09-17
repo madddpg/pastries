@@ -163,45 +163,44 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="email" name="registerEmail" id="registerEmail" placeholder="Enter your Email" required>
                     <div id="emailError" class="text-danger small"></div>
                 </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <div class="form-group password-wrapper">
-                        <label>Password</label>
-                        <div class="input-with-toggle">
-                            <input type="password" name="registerPassword" id="registerPassword"
-                                class="password-field" placeholder="Create a secure password" required>
-                            <button type="button" class="password-toggle-btn persist" data-target="registerPassword">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <label>Note: Capital Letter, Special Character and a Number is required</label>
-                        <div id="passwordError" class="text-danger small"></div>
+                <div class="form-group password-wrapper">
+                    <label for="registerPassword">Password</label>
+                    <div class="input-with-toggle">
+                        <input type="password" name="registerPassword" id="registerPassword"
+                            class="password-field" placeholder="Create a secure password" required>
+                        <button type="button" class="password-toggle-btn persist" data-target="registerPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
+                    <label class="note">Note: Capital Letter, Special Character and a Number is required</label>
+                    <div id="passwordError" class="text-danger small"></div>
+                </div>
 
-                    <div class="form-group password-wrapper">
-                        <label>Confirm Password</label>
-                        <div class="input-with-toggle">
-                            <input type="password" name="confirmPassword" id="confirmPassword"
-                                class="password-field" placeholder="Confirm your password" required>
-                            <button type="button" class="password-toggle-btn persist" data-target="confirmPassword">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                        <div id="confirmPasswordError" class="text-danger small"></div>
+                <div class="form-group password-wrapper">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="input-with-toggle">
+                        <input type="password" name="confirmPassword" id="confirmPassword"
+                            class="password-field" placeholder="Confirm your password" required>
+                        <button type="button" class="password-toggle-btn persist" data-target="confirmPassword">
+                            <i class="fas fa-eye"></i>
+                        </button>
                     </div>
-                    <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
-                        <label for="acceptTerms" style="font-size: 0.97em; display: flex; align-items: center; gap: 3px; margin-bottom: 0;">
-                            <input type="checkbox" id="acceptTerms" required>
-                            I accept the
-                            <button type="button" id="showTermsBtn" style="background: none; border: none; color: #40534b; text-decoration: underline; cursor: pointer; padding: 0; font-size: 1em; margin: 0;">
-                                Terms and Conditions
-                            </button>
-                        </label>
-                    </div>
-                    <button type="submit" class="auth-btn" id="registerBtn">
-                        <i class="fas fa-user-plus"></i>
-                        Create Account
-                    </button>
+                    <div id="confirmPasswordError" class="text-danger small"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
+                    <label for="acceptTerms" style="font-size: 0.97em; display: flex; align-items: center; gap: 3px; margin-bottom: 0;">
+                        <input type="checkbox" id="acceptTerms" required>
+                        I accept the
+                        <button type="button" id="showTermsBtn" style="background: none; border: none; color: #40534b; text-decoration: underline; cursor: pointer; padding: 0; font-size: 1em; margin: 0;">
+                            Terms and Conditions
+                        </button>
+                    </label>
+                </div>
+                <button type="submit" class="auth-btn" id="registerBtn">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
             </form>
             <div class="auth-switch">
                 <p>Already have an account? <a onclick="switchToLogin()">Sign in here</a></p>
@@ -1395,5 +1394,3 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
 </div>
-
-    
