@@ -1558,13 +1558,13 @@ async function resendOTP(e) {
 
   await sendOTP(otpState.email);
 }
-
 async function verifyOTP() {
   const input = document.getElementById('otpInput');
   const errorEl = document.getElementById('otpError');
   const code = (input?.value || '').replace(/\D+/g, '');
-  if (!code || code.length < 4) {
-    errorEl.textContent = "Enter a valid code.";
+
+  if (!code || code.length !== 6) {   // ✅ must be 6 digits
+    errorEl.textContent = "Enter a valid 6-digit code.";
     return;
   }
 
@@ -1575,44 +1575,38 @@ async function verifyOTP() {
   try {
     const res = await fetch('AJAX/verify_otp.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ otp: code })
     });
-    const dataText = await res.text();
-    let data;
-    try { data = JSON.parse(dataText); } catch { data = {}; }
+
+    const data = await res.json().catch(() => ({}));
 
     if (data.success) {
-      // Show a more prominent notification about successful verification
-      showNotification("Verification successful! Your account has been created.", "success");
+      // ✅ OTP verified, account created, session set
+      showNotification("Welcome " + (data.user?.user_name || "") + "! Redirecting...", "success");
 
-      // Display verification status in the modal before closing it
+      // Optional modal message
       const modalMsg = document.getElementById('otpModalMsg');
       if (modalMsg) {
         modalMsg.innerHTML = '<div style="color:#10B981;font-weight:bold;margin:10px 0;"><i class="fas fa-check-circle"></i> Verification successful!</div>';
       }
 
-      // Set a short delay to allow the user to see the success message
       setTimeout(() => {
         closeOtpModal();
-        // Update in-memory login state (if such globals exist)
-        if (typeof window !== 'undefined') {
-          window.isLoggedIn = true;
-          window.currentUser = data.user || null;
-        }
-        // Try to update any header/user UI without full reload
-        const authModal = document.getElementById('registerModal');
-        if (authModal) authModal.style.display = 'none';
-        const loginModal = document.getElementById('loginModal');
-        if (loginModal) loginModal.style.display = 'none';
-        // If a redirect is provided, navigate; otherwise fallback to reload to pull server-rendered logged-in view.
+        closeAuthModal();
+        // update in-memory state if needed
+        window.isLoggedIn = true;
+        window.currentUser = data.user || null;
+
+        // redirect if backend provides, else fallback
         if (data.redirect) {
           window.location.href = data.redirect;
         } else {
           window.location.reload();
         }
-      }, 1500);
+      }, 1200);
+
     } else {
       errorEl.textContent = data.message || "Incorrect code.";
       if (typeof data.locked_for === 'number' && data.locked_for > 0) {
@@ -1622,6 +1616,7 @@ async function verifyOTP() {
         otpState.expiresAt = data.expires_at;
       }
     }
+
   } catch {
     errorEl.textContent = "Network error. Please try again.";
   } finally {
@@ -1629,8 +1624,7 @@ async function verifyOTP() {
     btn.textContent = 'Verify';
   }
 }
-// Add this function to handle order status notifications
-// ...existing code...
+
 let previousOrderStatuses = {};
 let initialLoadComplete = false;
 const shownOrderNotifs = new Set(); // prevents duplicate ref+status notifications
