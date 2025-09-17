@@ -1558,6 +1558,8 @@ async function resendOTP(e) {
 
   await sendOTP(otpState.email);
 }
+
+
 async function verifyOTP() {
   const input = document.getElementById('otpInput');
   const errorEl = document.getElementById('otpError');

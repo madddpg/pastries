@@ -9,17 +9,13 @@ if (!isset($_SESSION['pending_registration']) || !isset($_SESSION['otp'])) {
     exit;
 }
 
-// Config
 $MAX_ATTEMPTS = 5;
 $LOCKOUT_MIN = 15;
 
-// Parse request
 $raw = file_get_contents('php://input');
 $data = json_decode($raw, true);
 $otp = isset($data['otp']) ? preg_replace('/\D+/', '', $data['otp']) : '';
 
-// Validation
-$errors = [];
 $now = time();
 
 // Lockout check
@@ -30,7 +26,7 @@ if (!empty($_SESSION['otp_locked_until']) && $now < $_SESSION['otp_locked_until'
 }
 
 // Basic validation
-if ($otp === '' || strlen($otp) < 6 || strlen($otp) > 6) {
+if ($otp === '' || strlen($otp) !== 6) {
     echo json_encode(['success' => false, 'message' => 'Enter a valid 6-digit code.']);
     exit;
 }
@@ -44,18 +40,16 @@ if (empty($_SESSION['otp_expires'])) {
     exit;
 }
 
-// Attempts tracking
 $_SESSION['otp_attempts'] = $_SESSION['otp_attempts'] ?? 0;
 
 // Verify OTP
 $verified = hash_equals((string)$_SESSION['otp'], $otp);
 
 if ($verified) {
-    // Success! Now register the user
     try {
         $db = new Database();
         $pdo = $db->opencon();
-        
+
         // Insert the user from pending registration
         $stmt = $pdo->prepare("INSERT INTO users (user_FN, user_LN, user_email, user_password) VALUES (?, ?, ?, ?)");
         $inserted = $stmt->execute([
@@ -64,15 +58,23 @@ if ($verified) {
             $_SESSION['pending_registration']['user_email'],
             $_SESSION['pending_registration']['user_password']
         ]);
-        
+
         if ($inserted) {
             $userId = $pdo->lastInsertId();
-            
+
             // Set user session
-            $_SESSION['user_id'] = $userId;
-            $_SESSION['user_email'] = $_SESSION['pending_registration']['user_email'];
-            $_SESSION['user_name'] = $_SESSION['pending_registration']['user_FN'] . ' ' . $_SESSION['pending_registration']['user_LN'];
-            
+            $_SESSION['user'] = [
+                'user_id'   => $userId,
+                'user_FN'   => $_SESSION['pending_registration']['user_FN'],
+                'user_LN'   => $_SESSION['pending_registration']['user_LN'],
+                'user_email'=> $_SESSION['pending_registration']['user_email'],
+                'is_admin'  => 0
+            ];
+
+            $fullName = $_SESSION['user']['user_FN'] . ' ' . $_SESSION['user']['user_LN'];
+            $firstName = $_SESSION['user']['user_FN'];
+            $initials = strtoupper(substr($firstName, 0, 1));
+
             // Clean up OTP and pending registration
             unset(
                 $_SESSION['otp'],
@@ -81,16 +83,16 @@ if ($verified) {
                 $_SESSION['otp_locked_until'],
                 $_SESSION['pending_registration']
             );
-            
+
             echo json_encode([
-                'success' => true,
-                'message' => 'Registration successful! You are now logged in.',
-                'redirect' => 'index.php', // front-end will follow or update UI
-                'user' => [
-                    'user_id' => $userId,
-                    'user_email' => $_SESSION['user_email'],
-                    'user_name' => $_SESSION['user_name']
-                ]
+                'success'   => true,
+                'message'   => 'Registration successful! You are now logged in.',
+                'redirect'  => 'index.php',
+                'fullname'  => $fullName,
+                'firstName' => $firstName,
+                'initials'  => $initials,
+                'user_id'   => $userId,
+                'is_admin'  => 0
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to create account. Please try again.']);
@@ -102,7 +104,6 @@ if ($verified) {
 } else {
     // Failed verification
     $_SESSION['otp_attempts']++;
-    
     if ($_SESSION['otp_attempts'] >= $MAX_ATTEMPTS) {
         $_SESSION['otp_locked_until'] = $now + ($LOCKOUT_MIN * 60);
         echo json_encode(['success' => false, 'message' => 'Too many incorrect attempts. Try again later.']);
