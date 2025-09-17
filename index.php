@@ -600,7 +600,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
