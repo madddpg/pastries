@@ -188,6 +188,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
+
                 <div class="form-group" style="margin-bottom: 8px; display: flex; align-items: flex-start; justify-content: flex-start;">
                     <label for="acceptTerms" style="font-size: 0.97em; display: flex; align-items: center; gap: 3px; margin-bottom: 0;">
                         <input type="checkbox" id="acceptTerms" required>
