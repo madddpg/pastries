@@ -117,7 +117,10 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <div class="password-wrapper" id="loginPasswordWrapper">
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
                 </div>
                 <button type="submit" class="auth-btn" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i>
@@ -164,12 +167,18 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="form-group">
                     <label>Password</label>
-                    <input type="password" name="registerPassword" id="registerPassword" placeholder="Create a secure password" required>
+                    <div class="password-wrapper" id="registerPasswordWrapper">
+                        <input type="password" name="registerPassword" id="registerPassword" placeholder="Create a secure password" required>
+                        <button type="button" class="toggle-password" data-target="registerPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
                     <div id="passwordError" class="text-danger small"></div>
                 </div>
                 <div class="form-group">
                     <label>Confirm Password</label>
-                    <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm your password" required>
+                    <div class="password-wrapper" id="confirmPasswordWrapper">
+                        <input type="password" name="confirmPassword" id="confirmPassword" placeholder="Confirm your password" required>
+                        <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                    </div>
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
 
@@ -1369,7 +1378,10 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
             </div>
             <div class="form-group">
                 <label for="editProfilePassword">New Password <span style="font-weight:400;font-size:0.95em;">(leave blank to keep current)</span></label>
-                <input type="password" id="editProfilePassword" name="user_password" minlength="8" autocomplete="new-password" />
+                <div class="password-wrapper" id="editProfilePasswordWrapper">
+                    <input type="password" id="editProfilePassword" name="user_password" minlength="8" autocomplete="new-password" />
+                    <button type="button" class="toggle-password" data-target="editProfilePassword" aria-label="Show password"><i class="fas fa-eye"></i></button>
+                </div>
             </div>
             <button type="submit" class="auth-btn" id="editProfileBtn">
                 <i class="fas fa-save"></i> Save Changes
