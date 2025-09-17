@@ -85,7 +85,12 @@ if ($verified) {
             echo json_encode([
                 'success' => true,
                 'message' => 'Registration successful! You are now logged in.',
-                'redirect' => 'index.php' // Adjust as needed
+                'redirect' => 'index.php', // front-end will follow or update UI
+                'user' => [
+                    'user_id' => $userId,
+                    'user_email' => $_SESSION['user_email'],
+                    'user_name' => $_SESSION['user_name']
+                ]
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to create account. Please try again.']);

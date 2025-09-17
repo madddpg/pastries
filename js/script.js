@@ -1647,7 +1647,17 @@ async function verifyOTP() {
       // Set a short delay to allow the user to see the success message
       setTimeout(() => {
         closeOtpModal();
-        // If backend returns redirect, follow it. Else just reload.
+        // Update in-memory login state (if such globals exist)
+        if (typeof window !== 'undefined') {
+          window.isLoggedIn = true;
+          window.currentUser = data.user || null;
+        }
+        // Try to update any header/user UI without full reload
+        const authModal = document.getElementById('registerModal');
+        if (authModal) authModal.style.display = 'none';
+        const loginModal = document.getElementById('loginModal');
+        if (loginModal) loginModal.style.display = 'none';
+        // If a redirect is provided, navigate; otherwise fallback to reload to pull server-rendered logged-in view.
         if (data.redirect) {
           window.location.href = data.redirect;
         } else {
