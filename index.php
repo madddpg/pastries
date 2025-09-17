@@ -168,9 +168,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="input-with-toggle">
                         <input type="password" name="registerPassword" id="registerPassword"
                             class="password-field" placeholder="Create a secure password" required>
-                        <button type="button" class="password-toggle-btn persist" data-target="registerPassword">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                       
                     </div>
                     <label class="note">Note: Capital Letter, Special Character and a Number is required</label>
                     <div id="passwordError" class="text-danger small"></div>
@@ -181,9 +179,6 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                     <div class="input-with-toggle">
                         <input type="password" name="confirmPassword" id="confirmPassword"
                             class="password-field" placeholder="Confirm your password" required>
-                        <button type="button" class="password-toggle-btn persist" data-target="confirmPassword">
-                            <i class="fas fa-eye"></i>
-                        </button>
                     </div>
                     <div id="confirmPasswordError" class="text-danger small"></div>
                 </div>
