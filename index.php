@@ -166,7 +166,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="form-group">
                     <label>Password</label>
                     <input type="password" name="registerPassword" id="registerPassword" class="password-field" placeholder="Create a secure password" required>
-                    <label>Capital Letter, Special Character and a Number is required</label>
+                    <label>Note: Capital Letter, Special Character and a Number is required</label>
                     <div id="passwordError" class="text-danger small"></div>
                 </div>
                 <div class="form-group">
@@ -1504,11 +1504,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                 btn.innerHTML = '<i class="fas fa-eye-slash"></i>';
                 btn.setAttribute('aria-label','Hide password');
             }
-            // Show button when focused or has value
-            if(document.activeElement === input || input.value){
-                btn.classList.add('visible');
-            } else {
-                btn.classList.remove('visible');
+            // Always show if focused or has any value (persist when user typed something)
+            if(document.activeElement === input || input.value.length > 0){
+                btn.classList.add('visible','persist');
+            } else if(!input.value){
+                btn.classList.remove('visible','persist');
             }
         }
 
@@ -1519,8 +1519,8 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         });
         input.addEventListener('focus', syncState);
         input.addEventListener('blur', ()=>{
-            // Delay so click can register before hiding
-            setTimeout(syncState, 120);
+            // Keep visible if it has value; just resync
+            setTimeout(syncState, 80);
         });
         input.addEventListener('input', syncState);
         syncState();

@@ -594,6 +594,7 @@ img, svg, picture, video {
   line-height: 1;
 }
 .password-toggle-btn.visible { display: block; }
+.password-toggle-btn.persist { display: block; }
 .password-toggle-btn:hover { color: var(--primary-purple); }
 .form-group input.password-field { padding-right: 44px; }
 
