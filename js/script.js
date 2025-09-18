@@ -238,7 +238,7 @@ function addProductToCart() {
   } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
     base = Number(currentProduct.price || base);
   }
-  
+
   const toppingsArr = Object.keys(modalSelectedToppings || {}).map(k => {
     const t = modalSelectedToppings[k];
     return {
@@ -252,7 +252,7 @@ function addProductToCart() {
   const itemPrice = Number((base + toppingsSum).toFixed(2));
   const sugarLevel = currentProduct.sugar || window.selectedSugar || 'Less Sweet';
 
- const item = {
+  const item = {
     product_id: currentProduct.id || ('manual-' + (currentProduct.name || '').replace(/\s+/g, '-').toLowerCase()),
     name: `${currentProduct.name} (${selectedSize})`,
     basePrice: base,
@@ -309,9 +309,9 @@ document.addEventListener('click', function (e) {
     if (window.recalcModalTotal) window.recalcModalTotal();
     else {
       // fallback simple total update if recalcModalTotal not defined
-      const base = parseFloat((document.getElementById('modalProductPrice')?.textContent||'0').replace(/[^0-9.]/g,'')) || 0;
+      const base = parseFloat((document.getElementById('modalProductPrice')?.textContent || '0').replace(/[^0-9.]/g, '')) || 0;
       let addons = 0;
-      Object.values(modalSelectedToppings || {}).forEach(t=> addons += (t.price||0));
+      Object.values(modalSelectedToppings || {}).forEach(t => addons += (t.price || 0));
       document.getElementById('modalTotalAmount').textContent = (base + addons).toFixed(2);
     }
     return;
@@ -467,7 +467,7 @@ function updateCartDisplay() {
       `
     )
     .join("");
-    
+
   // Update total calculation
   const total = cart.reduce((sum, item) => {
     const base = Number(item.basePrice || item.price || 0);
@@ -669,7 +669,7 @@ function submitPickupForm(payload) {
   payload = payload || {};
   payload.payment_method = 'cash';
 
-  try { console.debug("submitPickupForm payload (cash-only):", payload); } catch (e) {}
+  try { console.debug("submitPickupForm payload (cash-only):", payload); } catch (e) { }
 
   const cart_items = JSON.stringify(cart || []);
   const body = new URLSearchParams();
@@ -708,7 +708,7 @@ function submitPickupForm(payload) {
 
 document.addEventListener("DOMContentLoaded", function () {
   // Checkout buttons (cart total area)
-    document.body.addEventListener('click', function (ev) {
+  document.body.addEventListener('click', function (ev) {
     const checkoutBtn = ev.target.closest && ev.target.closest('.checkout-btn');
     if (checkoutBtn) {
       ev.preventDefault && ev.preventDefault();
@@ -1956,8 +1956,8 @@ async function loadActiveToppings() {
       return;
     }
     container.innerHTML = data.toppings.map(t => {
-      const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      const key = (t.id || safeName.toLowerCase().replace(/\s+/g,'-'));
+      const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const key = (t.id || safeName.toLowerCase().replace(/\s+/g, '-'));
       const price = Number(t.price || 0).toFixed(2);
       return `<button type="button" class="add-on-btn" data-key="${key}" data-price="${price}">
                 <span>${safeName}</span>
@@ -2160,7 +2160,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
     modalSelectedToppings = {};
     document.querySelectorAll('.add-on-btn').forEach(btn => {
-        btn.classList.remove('active');
+      btn.classList.remove('active');
     });
 
     const toppingsContainer = document.getElementById('toppingsList');
@@ -2215,7 +2215,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
   }
 
 
-}function selectSize(size) {
+} function selectSize(size) {
   selectedSize = size;
 
   // update UI highlight (match by text, data-size or data-label)
@@ -2245,7 +2245,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 
   // recalc total so modalTotal updates immediately when size changes
   if (typeof recalcModalTotal === 'function') recalcModalTotal();
-}function handleCheckout() {
+} function handleCheckout() {
   const deliveryOptions = document.getElementById("deliveryOptions");
 
   // If delivery/pickup form is not visible yet — show it first
@@ -2699,7 +2699,7 @@ function handleEditProfile(event) {
     if (typeof recalcModalTotal === "function") recalcModalTotal();
   }
 
- try {
+  try {
     Object.defineProperty(window, "handlePaymentChoice", {
       value: _canonicalHandlePaymentChoice,
       writable: false,
