@@ -514,7 +514,6 @@ function fetch_locations_pdo($con)
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- rows rendered by admin/js/main.js -->
                                 </tbody>
                             </table>
                         </div>
@@ -562,7 +561,7 @@ function fetch_locations_pdo($con)
                     <div class="card" style="padding:18px;">
                         <div style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
-                            $promos = $db->fetch_locations_pdo($con); // placeholder - avoid; fetch from promos table instead
+                            $promos = $db->fetch_locations_pdo($con); 
                             // Better: query directly:
                             $stmt = $con->prepare("SELECT * FROM promos ORDER BY created_at DESC");
                             $stmt->execute();

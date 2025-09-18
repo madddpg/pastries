@@ -143,7 +143,7 @@ async function fetchToppings() {
 
         tbody.innerHTML = data.toppings.map(t => {
             const status = (t.status === 'active') ? 'active' : 'inactive';
-            const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
+            const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.topping_id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
             const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
             // only normal delete for super admins (no force delete)
             const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
@@ -556,9 +556,7 @@ console.info('[admin] main.js loaded');
   if (!tbody) return;
 
   function clean() {
-    if (isSuper) return; // allow deletes for super admins
-    // remove known-class buttons
-    // fallback: remove plain "Delete" buttons in action column only
+    if (isSuper) return; 
     tbody.querySelectorAll('td').forEach(td => {
       td.querySelectorAll('button').forEach(btn => {
         if (btn.textContent && btn.textContent.trim().toLowerCase() === 'delete') btn.remove();
