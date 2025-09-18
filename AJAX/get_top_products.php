@@ -7,7 +7,7 @@ $db = new Database();
 $category = isset($_GET['category']) ? strtolower(trim($_GET['category'])) : '';
 $limit = isset($_GET['limit']) ? intval($_GET['limit']) : 3;
 
-if (!$category || !in_array($category, ['hot', 'cold'])) {
+if (!$category || !in_array($category, ['hot', 'cold', 'pastries'])) {
     echo json_encode(['success' => false, 'message' => 'Invalid or missing category.']);
     exit;
 }
