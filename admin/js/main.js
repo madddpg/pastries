@@ -290,7 +290,7 @@ document.body.addEventListener('click', async function(e){
           if (confirm(msg)) {
             const body2 = new URLSearchParams();
             body2.append('action','toggle_status');
-            body2.append('id', id);
+            body2.append('topping_id', id);
             body2.append('status','0'); // numeric inactive
             const r2 = await fetch(API, { method: 'POST', body: body2 });
             const d2 = await r2.json();
@@ -319,7 +319,7 @@ document.body.addEventListener('click', async function(e){
     const current = target.dataset.status === 'active' ? 1 : 0;
     const next = current === 1 ? 0 : 1;
     const body = new URLSearchParams();
-    body.append('id', id);
+    body.append('topping_id', id);
     body.append('status', next);
     try {
       const res = await fetch('update_product_status.php', { method: 'POST', body });
