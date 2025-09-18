@@ -273,13 +273,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // delegated actions: edit / toggle / delete
     document.body.addEventListener('click', async function (e) {
       const target = e.target;
-
       if (target.matches('.btn-edit-topping')) {
         const id = target.dataset.id;
+        console.log('[DEBUG edit click] dataset.id =', id, target);
         const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
         if (!row) return;
         document.getElementById('addToppingTitle').textContent = 'Edit Topping';
         document.getElementById('toppingId').value = id;
+        console.log('[DEBUG edit] hidden toppingId set to', id);
         document.getElementById('toppingName').value = row.children[1].textContent;
         document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
         if (addModal) addModal.style.display = 'flex';
@@ -288,15 +289,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (target.matches('.btn-toggle-topping')) {
         const id = target.dataset.id;
+        console.log('[DEBUG toggle click] dataset.id =', id, target);
         const current = target.dataset.status === 'active' ? 1 : 0;
         const next = current === 1 ? 0 : 1;
         const body = new URLSearchParams();
         body.append('action', 'toggle_status');
         body.append('topping_id', id);
         body.append('status', next === 1 ? 'active' : 'inactive');
+        console.log('[DEBUG toggle request] body =', body.toString());
         try {
           const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
           const data = await res.json();
+          console.log('[DEBUG toggle response]', data);
           if (data.success) {
             fetchToppings();
             await loadActiveToppings();
@@ -309,6 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (target.matches('.btn-delete-topping')) {
         const topping_id = target.dataset.id;
+        console.log('[DEBUG delete click] dataset.id =', topping_id, target);
         const row = document.querySelector(`#toppingsTable tr[data-id="${topping_id}"]`);
         const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
         if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
@@ -316,9 +321,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const body = new URLSearchParams();
         body.append('action', 'delete');
         body.append('topping_id', topping_id);
+        console.log('[DEBUG delete request] body =', body.toString());
         try {
           const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
           const data = await res.json();
+          console.log('[DEBUG delete response]', data);
           if (data.success) {
             fetchToppings();
             await loadActiveToppings();
@@ -331,8 +338,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 body2.append('action', 'toggle_status');
                 body2.append('topping_id', topping_id);
                 body2.append('status', 'inactive');
+                console.log('[DEBUG delete→toggle request] body =', body2.toString());
                 const r2 = await fetch(API, { method: 'POST', body: body2, credentials: 'same-origin' });
                 const d2 = await r2.json();
+                console.log('[DEBUG delete→toggle response]', d2);
                 if (d2.success) {
                   fetchToppings();
                   await loadActiveToppings();
@@ -355,14 +364,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (target.matches('.btn-toggle-product')) {
         e.preventDefault();
         const id = target.dataset.id;
+        console.log('[DEBUG toggle product] dataset.id =', id, target);
         const current = target.dataset.status === 'active' ? 1 : 0;
         const next = current === 1 ? 0 : 1;
         const body = new URLSearchParams();
         body.append('id', id);
         body.append('status', next);
+        console.log('[DEBUG product toggle request] body =', body.toString());
         try {
           const res = await fetch('update_product_status.php', { method: 'POST', body, credentials: 'same-origin' });
           const data = await res.json();
+          console.log('[DEBUG product toggle response]', data);
           if (data.success && data.rows > 0) {
             target.dataset.status = next === 1 ? 'active' : 'inactive';
             target.textContent = next === 1 ? 'Set Inactive' : 'Set Active';
@@ -388,6 +400,7 @@ document.addEventListener("DOMContentLoaded", () => {
       form.addEventListener('submit', async function (e) {
         e.preventDefault();
         const id = document.getElementById('toppingId').value;
+        console.log('[DEBUG form submit] hidden toppingId value =', id);
         const name = document.getElementById('toppingName').value.trim();
         const price = document.getElementById('toppingPrice').value;
         if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
@@ -400,9 +413,11 @@ document.addEventListener("DOMContentLoaded", () => {
           body.append('action', 'update');
           body.append('topping_id', id);
         }
+        console.log('[DEBUG form request] body =', body.toString());
         try {
           const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
           const data = await res.json();
+          console.log('[DEBUG form response]', data);
           if (data.success) {
             if (addModal) addModal.style.display = 'none';
             fetchToppings(); // refresh admin table
