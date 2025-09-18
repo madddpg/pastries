@@ -121,298 +121,229 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  (function () {
-    // Correct API path relative to admin.php
-    const API = 'AJAX/get_toppings.php';
+ (function () {
+  // Correct API path relative to admin.php
+  const API = 'AJAX/get_toppings.php';
 
-    async function fetchToppings() {
-      try {
-        const res = await fetch(`${API}?action=list`, { credentials: 'same-origin' });
-        const data = await res.json();
-        const tbody = document.querySelector('#toppingsTable tbody');
-        if (!tbody) return;
+  async function fetchToppings() {
+    try {
+      const res = await fetch(`${API}?action=list`, { credentials: 'same-origin' });
+      const data = await res.json();
+      const tbody = document.querySelector('#toppingsTable tbody');
+      if (!tbody) return;
 
-        if (!data || !data.success) {
-          tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Failed to load toppings</td></tr>';
-          return;
-        }
-
-        // 🔍 Debug: log full API payload
-        console.log('RAW toppings from API:', data.toppings);
-
-        const isSuper = !!data.is_super;
-
-        function esc(html) {
-          return String(html || '').replace(/[&<>"']/g, s => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-          }[s]));
-        }
-
-        tbody.innerHTML = data.toppings.map(t => {
-          const idVal = t?.topping_id ? String(t.topping_id) : '';
-          const status = (t.status === 'active') ? 'active' : 'inactive';
-
-          return `
-    <tr data-topping-id="${idVal}" data-status="${status}">
-      <td style="width:60px;">${idVal || '—'}</td>
-      <td>${esc(t.name)}</td>
-      <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
-      <td style="text-align:center;">
-        <span class="status-badge ${status}">
-          ${status.charAt(0).toUpperCase() + status.slice(1)}
-        </span>
-      </td>
-      <td style="text-align:center;white-space:nowrap;">
-        <button class="btn-edit-topping" data-topping-id="${idVal}">Edit</button>
-        <button class="btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:8px;">
-          ${status === 'active' ? 'Set Inactive' : 'Set Active'}
-        </button>
-        ${isSuper ? `<button class="btn-delete-topping" data-topping-id="${idVal}" style="margin-left:8px;color:#ef4444;">Delete</button>` : ''}
-      </td>
-    </tr>
-  `;
-        }).join('');
-
-
-      } catch (err) {
-        console.error('fetchToppings error', err);
-        const tbody = document.querySelector('#toppingsTable tbody');
-        if (tbody) {
-          tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console</td></tr>';
-        }
-      }
-    }
-
-
-    async function loadActiveToppings() {
-      try {
-        // Use same API base to avoid broken relative path (previously 'admin/AJAX/...')
-        const res = await fetch(`${API}?action=active`, { cache: 'no-store', credentials: 'same-origin' });
-        const data = await res.json();
-        if (!data.success || !Array.isArray(data.toppings)) return;
-        const container = document.getElementById('toppingsList');
-        if (!container) return;
-        container.innerHTML = data.toppings.map(t => {
-          const idVal = t?.topping_id ?? '';
-          const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          return `<label style="display:block;margin-bottom:6px;">
-        <input type="checkbox" class="topping-checkbox" data-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
-        ${safeName} — ₱${Number(t.price).toFixed(2)}
-      </label>`;
-        }).join('');
-        bindToppingCheckboxes();
-        if (typeof recalcModalTotal === 'function') recalcModalTotal();
-      } catch (err) {
-        console.error('loadActiveToppings error', err);
-      }
-    }
-
-    function bindToppingCheckboxes() {
-      document.querySelectorAll('.topping-checkbox').forEach(cb => {
-        cb.onchange = function () {
-          const key = cb.getAttribute('data-id');
-          const price = parseFloat(cb.getAttribute('data-price')) || 0;
-          if (cb.checked) {
-            modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
-          } else {
-            delete modalSelectedToppings[key];
-          }
-          recalcModalTotal();
-        };
-      });
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      loadActiveToppings();
-    });
-
-    fetchToppings();
-
-    const showBtn = document.getElementById('showAddToppingModalBtn');
-    const addModal = document.getElementById('addToppingModal');
-    const closeBtn = document.getElementById('closeAddToppingModal');
-    const cancelBtn = document.getElementById('cancelToppingBtn');
-    const form = document.getElementById('toppingForm');
-    const resultEl = document.getElementById('toppingFormResult');
-
-    if (showBtn) {
-      showBtn.addEventListener('click', function () {
-        document.getElementById('addToppingTitle').textContent = 'Add Topping';
-        document.getElementById('toppingId').value = '';
-        document.getElementById('toppingName').value = '';
-        document.getElementById('toppingPrice').value = '';
-        if (addModal) addModal.style.display = 'flex';
-      });
-    }
-    if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
-    if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
-
-    // delegated actions: edit / toggle / delete
-    document.body.addEventListener('click', async function (e) {
-      const target = e.target;
-      if (target.matches('.btn-edit-topping')) {
-        const id = target.dataset.toppingId;
-        console.log('[DEBUG edit click] dataset.toppingId =', id, target);
-        const row = document.querySelector(`#toppingsTable tr[data-toppingId="${id}"]`);
-        if (!row) return;
-        document.getElementById('addToppingTitle').textContent = 'Edit Topping';
-        document.getElementById('toppingId').value = id;
-        console.log('[DEBUG edit] hidden toppingId set to', id);
-        document.getElementById('toppingName').value = row.children[1].textContent;
-        document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
-        if (addModal) addModal.style.display = 'flex';
+      if (!data || !data.success) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Failed to load toppings</td></tr>';
         return;
       }
 
-      if (target.matches('.btn-toggle-topping')) {
-        const id = target.dataset.id;
-        console.log('[DEBUG toggle click] dataset.toppingId =', id, target);
-        const current = target.dataset.status === 'active' ? 1 : 0;
-        const next = current === 1 ? 0 : 1;
-        const body = new URLSearchParams();
-        body.append('action', 'toggle_status');
-        body.append('topping_id', id);
-        body.append('status', next === 1 ? 'active' : 'inactive');
-        console.log('[DEBUG toggle request] body =', body.toString());
-        try {
-          const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-          const data = await res.json();
-          console.log('[DEBUG toggle response]', data);
-          if (data.success) {
-            fetchToppings();
-            await loadActiveToppings();
-          }
-        } catch (err) {
-          console.error('toggle topping error', err);
-        }
-        return;
+      console.log('RAW toppings from API:', data.toppings);
+      const isSuper = !!data.is_super;
+
+      function esc(html) {
+        return String(html || '').replace(/[&<>"']/g, s => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[s]));
       }
 
-      if (target.matches('.btn-delete-topping')) {
-        const topping_id = target.dataset.toppingId;
-        console.log('[DEBUG delete click] dataset.toppingId =', topping_id, target);
-        const row = document.querySelector(`#toppingsTable tr[data-toppingId="${topping_id}"]`);
-        const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
-        if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
+      tbody.innerHTML = data.toppings.map(t => {
+        const idVal = t?.topping_id ? String(t.topping_id) : '';
+        const status = (t.status === 'active') ? 'active' : 'inactive';
 
-        const body = new URLSearchParams();
-        body.append('action', 'delete');
-        body.append('topping_id', topping_id);
-        console.log('[DEBUG delete request] body =', body.toString());
-        try {
-          const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-          const data = await res.json();
-          console.log('[DEBUG delete response]', data);
-          if (data.success) {
-            fetchToppings();
-            await loadActiveToppings();
-            showNotification(`Deleted topping: ${name}`);
-          } else {
-            if (res.status === 409 && data.message && /referenc/i.test(data.message)) {
-              const msg = data.message + "\n\nIt is referenced in past orders. Mark it INACTIVE instead?";
-              if (confirm(msg)) {
-                const body2 = new URLSearchParams();
-                body2.append('action', 'toggle_status');
-                body2.append('topping_id', topping_id);
-                body2.append('status', 'inactive');
-                console.log('[DEBUG delete→toggle request] body =', body2.toString());
-                const r2 = await fetch(API, { method: 'POST', body: body2, credentials: 'same-origin' });
-                const d2 = await r2.json();
-                console.log('[DEBUG delete→toggle response]', d2);
-                if (d2.success) {
-                  fetchToppings();
-                  await loadActiveToppings();
-                  showNotification(`Marked inactive: ${name}`);
-                } else {
-                  alert('Failed to set inactive: ' + (d2.message || 'unknown'));
-                }
-              }
-            } else {
-              alert('Delete failed: ' + (data.message || 'unknown'));
-            }
-          }
-        } catch (err) {
-          console.error('delete topping error', err);
-          alert('Delete request failed: ' + (err.message || 'network error'));
-        }
-        return;
+        return `
+          <tr data-topping-id="${idVal}" data-status="${status}">
+            <td style="width:60px;">${idVal || '—'}</td>
+            <td>${esc(t.name)}</td>
+            <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
+            <td style="text-align:center;">
+              <span class="status-badge ${status}">
+                ${status.charAt(0).toUpperCase() + status.slice(1)}
+              </span>
+            </td>
+            <td style="text-align:center;white-space:nowrap;">
+              <button class="btn-edit-topping" data-topping-id="${idVal}">Edit</button>
+              <button class="btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:8px;">
+                ${status === 'active' ? 'Set Inactive' : 'Set Active'}
+              </button>
+              ${isSuper ? `<button class="btn-delete-topping" data-topping-id="${idVal}" style="margin-left:8px;color:#ef4444;">Delete</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      console.error('fetchToppings error', err);
+      const tbody = document.querySelector('#toppingsTable tbody');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console</td></tr>';
       }
+    }
+  }
 
-      if (target.matches('.btn-toggle-product')) {
-        e.preventDefault();
-        const id = target.dataset.toppingId;
-        console.log('[DEBUG toggle product] dataset.toppingId =', id, target);
-        const current = target.dataset.status === 'active' ? 1 : 0;
-        const next = current === 1 ? 0 : 1;
-        const body = new URLSearchParams();
-        body.append('topping_id', id);
-        body.append('status', next);
-        console.log('[DEBUG product toggle request] body =', body.toString());
-        try {
-          const res = await fetch('update_product_status.php', { method: 'POST', body, credentials: 'same-origin' });
-          const data = await res.json();
-          console.log('[DEBUG product toggle response]', data);
-          if (data.success && data.rows > 0) {
-            target.dataset.status = next === 1 ? 'active' : 'inactive';
-            target.textContent = next === 1 ? 'Set Inactive' : 'Set Active';
-            const badge = target.closest('tr')?.querySelector('.status-badge');
-            if (badge) {
-              badge.classList.toggle('active', next === 1);
-              badge.classList.toggle('inactive', next !== 1);
-              badge.textContent = next === 1 ? 'Active' : 'Inactive';
-            }
-          } else {
-            alert('Update failed: ' + (data.message || 'no details'));
-          }
-        } catch (err) {
-          console.error('[admin] toggle product error', err);
-          alert('Request failed');
-        }
-        return;
-      }
-    });
+  async function loadActiveToppings() {
+    try {
+      const res = await fetch(`${API}?action=active`, { cache: 'no-store', credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.toppings)) return;
+      const container = document.getElementById('toppingsList');
+      if (!container) return;
+      container.innerHTML = data.toppings.map(t => {
+        const idVal = t?.topping_id ?? '';
+        const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<label style="display:block;margin-bottom:6px;">
+          <input type="checkbox" class="topping-checkbox" data-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
+          ${safeName} — ₱${Number(t.price).toFixed(2)}
+        </label>`;
+      }).join('');
+      bindToppingCheckboxes();
+      if (typeof recalcModalTotal === 'function') recalcModalTotal();
+    } catch (err) {
+      console.error('loadActiveToppings error', err);
+    }
+  }
 
-    // save form
-    if (form) {
-      form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        const id = document.getElementById('toppingId').value;
-        console.log('[DEBUG form submit] hidden toppingId value =', id);
-        const name = document.getElementById('toppingName').value.trim();
-        const price = document.getElementById('toppingPrice').value;
-        if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
-        const body = new URLSearchParams();
-        body.append('name', name);
-        body.append('price', price);
-        if (!id) {
-          body.append('action', 'add');
+  function bindToppingCheckboxes() {
+    document.querySelectorAll('.topping-checkbox').forEach(cb => {
+      cb.onchange = function () {
+        const key = cb.getAttribute('data-id');
+        const price = parseFloat(cb.getAttribute('data-price')) || 0;
+        if (cb.checked) {
+          modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
         } else {
-          body.append('action', 'update');
-          body.append('topping_id', id);
+          delete modalSelectedToppings[key];
         }
-        console.log('[DEBUG form request] body =', body.toString());
-        try {
-          const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-          const data = await res.json();
-          console.log('[DEBUG form response]', data);
-          if (data.success) {
-            if (addModal) addModal.style.display = 'none';
-            fetchToppings(); // refresh admin table
-            await loadActiveToppings(); // refresh selection list (adds/updates/removes)
-          } else {
-            if (resultEl) resultEl.textContent = data.message || 'Failed';
-          }
-        } catch (err) {
-          console.error('save topping error', err);
-          if (resultEl) resultEl.textContent = 'Request failed';
-        }
-      });
+        recalcModalTotal();
+      };
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    loadActiveToppings();
+  });
+
+  fetchToppings();
+
+  const showBtn = document.getElementById('showAddToppingModalBtn');
+  const addModal = document.getElementById('addToppingModal');
+  const closeBtn = document.getElementById('closeAddToppingModal');
+  const cancelBtn = document.getElementById('cancelToppingBtn');
+  const form = document.getElementById('toppingForm');
+  const resultEl = document.getElementById('toppingFormResult');
+
+  if (showBtn) {
+    showBtn.addEventListener('click', function () {
+      document.getElementById('addToppingTitle').textContent = 'Add Topping';
+      document.getElementById('toppingId').value = '';
+      document.getElementById('toppingName').value = '';
+      document.getElementById('toppingPrice').value = '';
+      if (addModal) addModal.style.display = 'flex';
+    });
+  }
+  if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+  if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
+
+  // delegated actions: edit / toggle / delete
+  document.body.addEventListener('click', async function (e) {
+    const target = e.target;
+
+    if (target.matches('.btn-edit-topping')) {
+      const id = target.dataset.toppingId;
+      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
+      if (!row) return;
+      document.getElementById('addToppingTitle').textContent = 'Edit Topping';
+      document.getElementById('toppingId').value = id;
+      document.getElementById('toppingName').value = row.children[1].textContent;
+      document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
+      if (addModal) addModal.style.display = 'flex';
+      return;
     }
-  })();
+
+    if (target.matches('.btn-toggle-topping')) {
+      const id = target.dataset.toppingId;
+      const current = target.dataset.status === 'active' ? 1 : 0;
+      const next = current === 1 ? 0 : 1;
+      const body = new URLSearchParams();
+      body.append('action', 'toggle_status');
+      body.append('topping_id', id);
+      body.append('status', next === 1 ? 'active' : 'inactive');
+      try {
+        const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+        const data = await res.json();
+        if (data.success) {
+          fetchToppings();
+          await loadActiveToppings();
+        }
+      } catch (err) {
+        console.error('toggle topping error', err);
+      }
+      return;
+    }
+
+    if (target.matches('.btn-delete-topping')) {
+      const topping_id = target.dataset.toppingId;
+      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${topping_id}"]`);
+      const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
+      if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
+
+      const body = new URLSearchParams();
+      body.append('action', 'delete');
+      body.append('topping_id', topping_id);
+      try {
+        const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+        const data = await res.json();
+        if (data.success) {
+          fetchToppings();
+          await loadActiveToppings();
+          showNotification(`Deleted topping: ${name}`);
+        } else {
+          alert('Delete failed: ' + (data.message || 'unknown'));
+        }
+      } catch (err) {
+        console.error('delete topping error', err);
+        alert('Delete request failed: ' + (err.message || 'network error'));
+      }
+      return;
+    }
+  });
+
+  // save form
+  if (form) {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const id = document.getElementById('toppingId').value;
+      const name = document.getElementById('toppingName').value.trim();
+      const price = document.getElementById('toppingPrice').value;
+      if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
+      const body = new URLSearchParams();
+      body.append('name', name);
+      body.append('price', price);
+      if (!id) {
+        body.append('action', 'add');
+      } else {
+        body.append('action', 'update');
+        body.append('topping_id', id);
+      }
+      try {
+        const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+        const data = await res.json();
+        if (data.success) {
+          if (addModal) addModal.style.display = 'none';
+          fetchToppings();
+          await loadActiveToppings();
+        } else {
+          if (resultEl) resultEl.textContent = data.message || 'Failed';
+        }
+      } catch (err) {
+        console.error('save topping error', err);
+        if (resultEl) resultEl.textContent = 'Request failed';
+      }
+    });
+  }
+})();
+
 
 
   // Make table rows clickable for order details (guard currentSection)
