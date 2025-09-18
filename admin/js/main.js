@@ -253,8 +253,8 @@ document.body.addEventListener('click', async function(e){
     const next = current === 1 ? 0 : 1;
     const body = new URLSearchParams();
     body.append('action','toggle_status');
-    body.append('id', id);
-    body.append('status', next);
+    body.append('topping_id', id);
+    body.append('status', next === 1 ? 'active' : 'inactive');
     try {
       const res = await fetch(API, { method: 'POST', body });
       const data = await res.json();
@@ -276,7 +276,7 @@ document.body.addEventListener('click', async function(e){
 
     const body = new URLSearchParams();
     body.append('action','delete');
-    body.append('id', id);
+    body.append('topping_id', id);
     try {
       const res = await fetch(API, { method: 'POST', body });
       const data = await res.json();
@@ -359,7 +359,7 @@ if (form) {
       body.append('action','add');
     } else {
       body.append('action','update');
-      body.append('id', id);
+      body.append('topping_id', id);
     }
     try {
       const res = await fetch(API, { method: 'POST', body });
