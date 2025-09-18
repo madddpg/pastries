@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once __DIR__ . '/database/db_connect.php';
 
 $isAjax = (
@@ -15,13 +18,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'], $_POST['status'
         $db  = new Database();
         $con = $db->opencon();
 
-        // UPDATE (no created_at change)
-        $stmt = $con->prepare("UPDATE `transaction` SET status = ?, notified = 0 WHERE transac_id = ?");
-        $stmt->execute([$status, $id]);
+        // Only logged-in admins can approve/update orders
+        $adminId = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : 0;
+        if (!$adminId) {
+            if ($isAjax) {
+                header('Content-Type: application/json', true, 403);
+                echo json_encode(['success'=>false,'message'=>'Forbidden: admin login required']);
+                exit;
+            }
+            header('Location: ./admin.php');
+            exit;
+        }
+
+        // If status transitions away from 'pending', stamp the approving admin if not already set
+        if (strtolower($status) !== 'pending') {
+            $stmt = $con->prepare("UPDATE `transaction`
+                                   SET status = ?, notified = 0,
+                                       admin_id = CASE WHEN admin_id IS NULL THEN ? ELSE admin_id END
+                                   WHERE transac_id = ?");
+            $stmt->execute([$status, $adminId, $id]);
+        } else {
+            $stmt = $con->prepare("UPDATE `transaction` SET status = ?, notified = 0 WHERE transac_id = ?");
+            $stmt->execute([$status, $id]);
+        }
 
         if ($isAjax) {
             header('Content-Type: application/json');
-            echo json_encode(['success'=>true,'message'=>'Status updated']);
+            echo json_encode(['success'=>true,'message'=>'Status updated', 'admin_id'=>$adminId]);
             exit;
         }
         header("Location: ./admin.php");

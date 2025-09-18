@@ -64,12 +64,15 @@ function fetch_live_orders_pdo($con, $status = '')
         $where = "WHERE t.status IN ('pending','preparing','ready')";
         $params = [];
     }
-    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, u.user_FN AS customer_name, p.pickup_time, p.special_instructions
-            FROM transaction t
-            LEFT JOIN users u ON t.user_id = u.user_id
-            LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
-            $where
-            ORDER BY t.created_at DESC";
+    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
+           u.user_FN AS customer_name, p.pickup_time, p.special_instructions,
+           a.admin_id AS approved_by_admin_id, a.username AS approved_by
+        FROM transaction t
+        LEFT JOIN users u ON t.user_id = u.user_id
+        LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
+        LEFT JOIN admin_users a ON t.admin_id = a.admin_id
+        $where
+        ORDER BY t.created_at DESC";
     $stmt = $con->prepare($sql);
     $stmt->execute($params);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
