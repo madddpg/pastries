@@ -144,13 +144,13 @@ async function fetchToppings() {
         tbody.innerHTML = data.toppings.map(t => {
             const status = (t.status === 'active') ? 'active' : 'inactive';
             const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.topping_id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
-            const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
+            const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.topping_id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
             // only normal delete for super admins (no force delete)
-            const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
+            const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.topping_id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
 
             return `
-                <tr data-id="${t.id}" data-status="${status}">
-                    <td style="width:60px;">${t.id}</td>
+                <tr data-id="${t.topping_id}" data-status="${status}">
+                    <td style="width:60px;">${t.topping_wid}</td>
                     <td>${esc(t.name)}</td>
                     <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
                     <td style="text-align:center;"><span class="status-badge ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
