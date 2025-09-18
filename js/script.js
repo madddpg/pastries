@@ -1835,7 +1835,7 @@ function loadTopProducts(category) {
                         <h4 style=\"font-weight:700; color:#2d4a3a; margin-bottom:0.3em;\">${tp.name}</h4>
                         <div style=\"font-size:0.98em; color:#374151; min-height:48px; margin-bottom:0.5em;\">${tp.description}</div>
                         <div class=\"badge bg-warning text-dark mb-2\" style=\"font-size:0.95em;\">#${idx + 1} Best Seller</div>
-                        <div style=\"font-size:0.95em; color:#b45309; font-weight:600;\">Sold: ${tp.sales_count}</div>
+                        
                     </div>`;
         });
         html += '</div></div>';
