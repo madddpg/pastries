@@ -525,7 +525,7 @@ function fetch_locations_pdo($con)
                             <button id="closeAddToppingModal" type="button" style="position:absolute;right:18px;top:12px;background:none;border:none;font-size:20px;">&times;</button>
                             <h3 id="addToppingTitle">Add Topping</h3>
                             <form id="toppingForm">
-                                <input type="hidden" id="toppingId" name="id" value="">
+                                <input type="hidden" id="toppingId" name="topping_id" value="">
                                 <div class="form-group" style="margin-bottom:8px;">
                                     <label style="display:block;margin-bottom:6px;font-weight:600;">Name</label>
                                     <input type="text" id="toppingName" name="name" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;">
