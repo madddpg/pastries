@@ -125,16 +125,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Correct API path relative to admin.php
     const API = 'AJAX/get_toppings.php';
 
-   async function fetchToppings() {
-    try {
+    async function fetchToppings() {
+      try {
         const res = await fetch(`${API}?action=list`, { credentials: 'same-origin' });
         const data = await res.json();
         const tbody = document.querySelector('#toppingsTable tbody');
         if (!tbody) return;
 
         if (!data || !data.success) {
-            tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Failed to load toppings</td></tr>';
-            return;
+          tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Failed to load toppings</td></tr>';
+          return;
         }
 
         // 🔍 Debug: log full API payload
@@ -143,68 +143,49 @@ document.addEventListener("DOMContentLoaded", () => {
         const isSuper = !!data.is_super;
 
         function esc(html) {
-            return String(html || '').replace(/[&<>"']/g, s => ({
-                '&':'&amp;',
-                '<':'&lt;',
-                '>':'&gt;',
-                '"':'&quot;',
-                "'":'&#39;'
-            }[s]));
+          return String(html || '').replace(/[&<>"']/g, s => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+          }[s]));
         }
 
         tbody.innerHTML = data.toppings.map(t => {
-            // Safe fallback for topping_id
-            const idVal = (t && t.topping_id) ? t.topping_id : '';
-            const status = (t.status === 'active') ? 'active' : 'inactive';
+          const idVal = t?.topping_id ? String(t.topping_id) : '';
+          const status = (t.status === 'active') ? 'active' : 'inactive';
 
-            // 🔍 Debug each row
-            console.log(`Row render → idVal: ${idVal}, name: ${t.name}, price: ${t.price}, status: ${status}`);
-
-            const editBtn = `<button class="btn-edit-topping edit-topping-btn" 
-                                data-id="${idVal}" 
-                                data-name="${esc(t.name)}" 
-                                data-price="${esc(t.price)}">Edit</button>`;
-
-            const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" 
-                                  data-id="${idVal}" 
-                                  data-status="${status}" 
-                                  style="margin-left:8px;">
-                                    ${status === 'active' ? 'Set Inactive' : 'Set Active'}
-                                </button>`;
-
-            const deleteBtn = isSuper 
-                ? `<button class="btn-delete-topping topping-delete" 
-                            data-id="${idVal}" 
-                            style="margin-left:8px;color:#ef4444;">Delete</button>`
-                : '';
-
-            return `
-                <tr data-id="${idVal}" data-status="${status}">
-                    <td style="width:60px;">${idVal || '—'}</td>
-                    <td>${esc(t.name)}</td>
-                    <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
-                    <td style="text-align:center;">
-                        <span class="status-badge ${status}">
-                            ${status.charAt(0).toUpperCase() + status.slice(1)}
-                        </span>
-                    </td>
-                    <td style="text-align:center;white-space:nowrap;">
-                        ${editBtn}
-                        ${toggleBtn}
-                        ${deleteBtn}
-                    </td>
-                </tr>
-            `;
+          return `
+    <tr data-topping-id="${idVal}" data-status="${status}">
+      <td style="width:60px;">${idVal || '—'}</td>
+      <td>${esc(t.name)}</td>
+      <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
+      <td style="text-align:center;">
+        <span class="status-badge ${status}">
+          ${status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+      </td>
+      <td style="text-align:center;white-space:nowrap;">
+        <button class="btn-edit-topping" data-topping-id="${idVal}">Edit</button>
+        <button class="btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:8px;">
+          ${status === 'active' ? 'Set Inactive' : 'Set Active'}
+        </button>
+        ${isSuper ? `<button class="btn-delete-topping" data-topping-id="${idVal}" style="margin-left:8px;color:#ef4444;">Delete</button>` : ''}
+      </td>
+    </tr>
+  `;
         }).join('');
 
-    } catch (err) {
+
+      } catch (err) {
         console.error('fetchToppings error', err);
         const tbody = document.querySelector('#toppingsTable tbody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="5" style="color:#c0392b">Server error: check console</td></tr>';
         }
+      }
     }
-}
 
 
     async function loadActiveToppings() {
