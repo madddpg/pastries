@@ -251,10 +251,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (target.matches('.btn-edit-topping')) {
       const id = target.dataset.toppingId;
-      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
+      const row = document.querySelector(`#toppingsTable tr[data-topping_id="${topping_id}"]`);
       if (!row) return;
       document.getElementById('addToppingTitle').textContent = 'Edit Topping';
-      document.getElementById('toppingId').value = id;
+      document.getElementById('toppingId').value = topping_id;
       document.getElementById('toppingName').value = row.children[1].textContent;
       document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
       if (addModal) addModal.style.display = 'flex';
@@ -284,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (target.matches('.btn-delete-topping')) {
       const topping_id = target.dataset.toppingId;
-      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${topping_id}"]`);
+      const row = document.querySelector(`#toppingsTable tr[data-topping_id="${topping_id}"]`);
       const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
       if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
 
