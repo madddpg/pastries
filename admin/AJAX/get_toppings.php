@@ -63,7 +63,7 @@ try {
 
     // Admin: update
     if ($method === 'POST' && $action === 'update') {
-        $topping_id = intval($_POST['topping_id'] ?? 0);
+        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
         $name = trim($_POST['name'] ?? '');
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
         if ($topping_id <= 0 || $name === '') send_json(['success' => false, 'message' => 'Invalid data'], 400);
@@ -73,8 +73,16 @@ try {
 
     // Admin: toggle status
     if ($method === 'POST' && $action === 'toggle_status') {
-        $topping_id = intval($_POST['topping_id'] ?? 0);
-        $status = ($_POST['status'] ?? '') === 'active' ? 'active' : 'inactive';
+        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
+        $rawStatus = $_POST['status'] ?? '';
+        // Accept both strings ('active'/'inactive') and numeric (1/0)
+        if ($rawStatus === '1' || $rawStatus === 1 || $rawStatus === true) {
+            $status = 'active';
+        } elseif ($rawStatus === '0' || $rawStatus === 0 || $rawStatus === false) {
+            $status = 'inactive';
+        } else {
+            $status = ($rawStatus === 'active') ? 'active' : 'inactive';
+        }
         if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
         $ok = $db->update_topping_status($topping_id, $status);
         send_json(['success' => (bool)$ok]);
@@ -82,7 +90,7 @@ try {
 
     // Admin: delete
     if ($method === 'POST' && $action === 'delete') {
-        $topping_id = intval($_POST['topping_id'] ?? 0);
+        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
         if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
 
         $checkExists = $con->prepare(

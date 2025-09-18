@@ -256,7 +256,7 @@ document.body.addEventListener('click', async function(e){
     body.append('topping_id', id);
     body.append('status', next === 1 ? 'active' : 'inactive');
     try {
-      const res = await fetch(API, { method: 'POST', body });
+      const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
       const data = await res.json();
       if (data.success) {
         fetchToppings();
@@ -276,9 +276,9 @@ document.body.addEventListener('click', async function(e){
 
     const body = new URLSearchParams();
     body.append('action','delete');
-    body.append('topping_id', id);
+    body.append('topping_id', topping_id);
     try {
-      const res = await fetch(API, { method: 'POST', body });
+      const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
       const data = await res.json();
       if (data.success) {
         fetchToppings();
@@ -290,9 +290,9 @@ document.body.addEventListener('click', async function(e){
           if (confirm(msg)) {
             const body2 = new URLSearchParams();
             body2.append('action','toggle_status');
-            body2.append('topping_id', id);
-            body2.append('status','0'); // numeric inactive
-            const r2 = await fetch(API, { method: 'POST', body: body2 });
+            body2.append('topping_id', topping_id);
+            body2.append('status','inactive');
+            const r2 = await fetch(API, { method: 'POST', body: body2, credentials: 'same-origin' });
             const d2 = await r2.json();
             if (d2.success) {
               fetchToppings();
@@ -319,10 +319,10 @@ document.body.addEventListener('click', async function(e){
     const current = target.dataset.status === 'active' ? 1 : 0;
     const next = current === 1 ? 0 : 1;
     const body = new URLSearchParams();
-    body.append('topping_id', id);
+    body.append('id', id);
     body.append('status', next);
     try {
-      const res = await fetch('update_product_status.php', { method: 'POST', body });
+      const res = await fetch('update_product_status.php', { method: 'POST', body, credentials: 'same-origin' });
       const data = await res.json();
       if (data.success && data.rows > 0) {
         target.dataset.status = next === 1 ? 'active' : 'inactive';
@@ -362,7 +362,7 @@ if (form) {
       body.append('topping_id', id);
     }
     try {
-      const res = await fetch(API, { method: 'POST', body });
+      const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
       const data = await res.json();
       if (data.success) {
         if (addModal) addModal.style.display = 'none';
