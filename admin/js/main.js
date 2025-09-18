@@ -349,7 +349,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const current = target.dataset.status === 'active' ? 1 : 0;
         const next = current === 1 ? 0 : 1;
         const body = new URLSearchParams();
-        body.append('id', id);
+        body.append('topping_id', id);
         body.append('status', next);
         console.log('[DEBUG product toggle request] body =', body.toString());
         try {
