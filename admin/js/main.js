@@ -293,6 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const body = new URLSearchParams();
       body.append('action', 'delete');
       body.append('topping_id', topping_id);
+      console.log('[DEBUG delete body]', body.toString()); // 👈
       try {
         const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
         const data = await res.json();
@@ -322,6 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const body = new URLSearchParams();
       body.append('name', name);
       body.append('price', price);
+      console.log('[DEBUG form submit] topping_id =', id);
+
       if (!id) {
         body.append('action', 'add');
       } else {
