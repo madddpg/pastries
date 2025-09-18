@@ -179,7 +179,7 @@ async function loadActiveToppings() {
     const container = document.getElementById('toppingsList');
     if (!container) return;
     container.innerHTML = data.toppings.map(t => {
-      const idVal = (t && (t.topping_id ?? t.id ?? t.topping_wid)) ?? '';
+      const idVal = t?.topping_id ?? '';
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<label style="display:block;margin-bottom:6px;">
         <input type="checkbox" class="topping-checkbox" data-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
@@ -239,7 +239,7 @@ document.body.addEventListener('click', async function(e){
 
   if (target.matches('.btn-edit-topping')) {
     const id = target.dataset.id;
-    const row = document.querySelector(`#toppingsTable tr[data-topping_id="${id}"]`);
+    const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
     if (!row) return;
     document.getElementById('addToppingTitle').textContent = 'Edit Topping';
     document.getElementById('toppingId').value = id;

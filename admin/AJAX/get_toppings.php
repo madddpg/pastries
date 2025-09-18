@@ -63,17 +63,18 @@ try {
 
     // Admin: update
     if ($method === 'POST' && $action === 'update') {
-        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
+        $topping_id = intval($_POST['topping_id'] ?? 0);
         $name = trim($_POST['name'] ?? '');
         $price = isset($_POST['price']) ? floatval($_POST['price']) : 0.00;
-        if ($topping_id <= 0 || $name === '') send_json(['success' => false, 'message' => 'Invalid data'], 400);
+        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'topping_id required'], 400);
+        if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
         $ok = $db->update_topping($topping_id, $name, $price);
         send_json(['success' => (bool)$ok]);
     }
 
     // Admin: toggle status
     if ($method === 'POST' && $action === 'toggle_status') {
-        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
+        $topping_id = intval($_POST['topping_id'] ?? 0);
         $rawStatus = $_POST['status'] ?? '';
         // Accept both strings ('active'/'inactive') and numeric (1/0)
         if ($rawStatus === '1' || $rawStatus === 1 || $rawStatus === true) {
@@ -83,15 +84,15 @@ try {
         } else {
             $status = ($rawStatus === 'active') ? 'active' : 'inactive';
         }
-        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
+        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'topping_id required'], 400);
         $ok = $db->update_topping_status($topping_id, $status);
         send_json(['success' => (bool)$ok]);
     }
 
     // Admin: delete
     if ($method === 'POST' && $action === 'delete') {
-        $topping_id = intval($_POST['topping_id'] ?? ($_POST['id'] ?? 0));
-        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'Invalid id'], 400);
+        $topping_id = intval($_POST['topping_id'] ?? 0);
+        if ($topping_id <= 0) send_json(['success' => false, 'message' => 'topping_id required'], 400);
 
         $checkExists = $con->prepare(
             "SELECT COUNT(*) FROM information_schema.tables 

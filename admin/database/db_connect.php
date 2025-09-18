@@ -644,13 +644,13 @@ public function createPickupOrder(
                         $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
                         $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
 
-                        if (isset($topping['id']) && is_numeric($topping['id']) && intval($topping['id']) > 0) {
-                            $topping_id = intval($topping['id']);
+                        if (isset($topping['topping_id']) && is_numeric($topping['topping_id']) && intval($topping['topping_id']) > 0) {
+                            $topping_id = intval($topping['topping_id']);
                         } elseif ($t_name !== '') {
                             $findTopping->execute([$t_name]);
                             $found = $findTopping->fetch(PDO::FETCH_ASSOC);
-                            if ($found && isset($found['id'])) {
-                                $topping_id = intval($found['id']);
+                            if ($found && isset($found['topping_id'])) {
+                                $topping_id = intval($found['topping_id']);
                             } else {
                                 $insertTopping->execute([$t_name, $t_price]);
                                 $topping_id = $con->lastInsertId();
@@ -687,17 +687,8 @@ public function createPickupOrder(
     public function fetch_toppings_pdo()
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("
-            SELECT 
-                topping_id,
-                name,
-                price,
-                CASE WHEN COALESCE(status,1)=1 THEN 'active' ELSE 'inactive' END AS status,
-                created_at,
-                updated_at
-            FROM toppings
-            ORDER BY topping_id DESC
-        ");
+        $sql = "SELECT topping_id, name, price, CASE WHEN COALESCE(status,1)=1 THEN 'active' ELSE 'inactive' END AS status, created_at, updated_at FROM toppings ORDER BY topping_id DESC";
+        $stmt = $con->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -705,15 +696,8 @@ public function createPickupOrder(
     public function fetch_active_toppings()
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("
-            SELECT 
-                topping_id,
-                name,
-                price
-            FROM toppings
-            WHERE COALESCE(status,1) = 1
-            ORDER BY topping_id ASC
-        ");
+        $sql = "SELECT topping_id, name, price FROM toppings WHERE COALESCE(status,1) = 1 ORDER BY topping_id ASC";
+        $stmt = $con->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
