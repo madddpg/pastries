@@ -261,29 +261,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (addModal) addModal.style.display = 'flex';
         return;
       }
+if (target.matches('.btn-toggle-topping')) {
+  const id = target.dataset.toppingId;   // ✅ 18
+  const current = target.dataset.status === 'active' ? 1 : 0;
+  const next = current === 1 ? 0 : 1;
 
-      if (target.matches('.btn-toggle-topping')) {
-        const id = target.dataset.toppingId;
-        const current = target.dataset.status === 'active' ? 1 : 0;
-        const next = current === 1 ? 0 : 1;
-        const body = new URLSearchParams();
-        console.log('[DEBUG toggle] toppingId =', id);  // 👈 add this
-        body.append('action', 'toggle_status');
-        body.append('topping_id', id);
-        body.append('status', next === 1 ? 'active' : 'inactive');
-        console.log('[DEBUG toggle body]', body.toString()); // 👈 and this
-        try {
-          const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-          const data = await res.json();
-          if (data.success) {
-            fetchToppings();
-            await loadActiveToppings();
-          }
-        } catch (err) {
-          console.error('toggle topping error', err);
-        }
-        return;
-      }
+  const body = new URLSearchParams();
+  body.append('action', 'toggle_status');
+  body.append('topping_id', id);         // ✅ sends topping_id=18
+  body.append('status', next === 1 ? 'active' : 'inactive');
+
+  console.log('[DEBUG toggle request] body =', body.toString());
+  const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+  const data = await res.json();
+  console.log('[DEBUG toggle response]', data);
+}
+
 
       if (target.matches('.btn-delete-topping')) {
         const topping_id = target.dataset.toppingId;
