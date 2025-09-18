@@ -255,9 +255,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.addEventListener('click', async function (e) {
       const target = e.target;
       if (target.matches('.btn-edit-topping')) {
-        const id = target.dataset.id;
-        console.log('[DEBUG edit click] dataset.id =', id, target);
-        const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
+        const id = target.dataset.toppingId;
+        console.log('[DEBUG edit click] dataset.toppingId =', id, target);
+        const row = document.querySelector(`#toppingsTable tr[data-toppingId="${id}"]`);
         if (!row) return;
         document.getElementById('addToppingTitle').textContent = 'Edit Topping';
         document.getElementById('toppingId').value = id;
@@ -270,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (target.matches('.btn-toggle-topping')) {
         const id = target.dataset.id;
-        console.log('[DEBUG toggle click] dataset.id =', id, target);
+        console.log('[DEBUG toggle click] dataset.toppingId =', id, target);
         const current = target.dataset.status === 'active' ? 1 : 0;
         const next = current === 1 ? 0 : 1;
         const body = new URLSearchParams();
@@ -293,9 +293,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (target.matches('.btn-delete-topping')) {
-        const topping_id = target.dataset.id;
-        console.log('[DEBUG delete click] dataset.id =', topping_id, target);
-        const row = document.querySelector(`#toppingsTable tr[data-id="${topping_id}"]`);
+        const topping_id = target.dataset.toppingId;
+        console.log('[DEBUG delete click] dataset.toppingId =', topping_id, target);
+        const row = document.querySelector(`#toppingsTable tr[data-toppingId="${topping_id}"]`);
         const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
         if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
 
@@ -344,8 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (target.matches('.btn-toggle-product')) {
         e.preventDefault();
-        const id = target.dataset.id;
-        console.log('[DEBUG toggle product] dataset.id =', id, target);
+        const id = target.dataset.toppingId;
+        console.log('[DEBUG toggle product] dataset.toppingId =', id, target);
         const current = target.dataset.status === 'active' ? 1 : 0;
         const next = current === 1 ? 0 : 1;
         const body = new URLSearchParams();
