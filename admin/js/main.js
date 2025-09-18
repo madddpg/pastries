@@ -260,7 +260,7 @@ document.body.addEventListener('click', async function(e){
       const data = await res.json();
       if (data.success) {
         fetchToppings();
-        await loadActiveToppings(); // refresh selectable toppings for order modal
+        await loadActiveToppings(); 
       }
     } catch (err) {
       console.error('toggle topping error', err);
@@ -269,9 +269,9 @@ document.body.addEventListener('click', async function(e){
   }
 
   if (target.matches('.btn-delete-topping')) {
-    const id = target.dataset.id;
-    const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
-    const name = row ? row.children[1].textContent.trim() : ('ID ' + id);
+    const topping_id = target.dataset.id;
+    const row = document.querySelector(`#toppingsTable tr[data-id="${topping_id}"]`);
+    const name = row ? row.children[1].textContent.trim() : ('ID ' + topping_id);
     if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
 
     const body = new URLSearchParams();
