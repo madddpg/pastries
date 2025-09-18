@@ -150,7 +150,7 @@ async function fetchToppings() {
 
             return `
                 <tr data-id="${t.topping_id}" data-status="${status}">
-                    <td style="width:60px;">${t.topping_wid}</td>
+          <td style="width:60px;">${t.topping_id}</td>
                     <td>${esc(t.name)}</td>
                     <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
                     <td style="text-align:center;"><span class="status-badge ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
@@ -180,7 +180,7 @@ async function loadActiveToppings() {
     container.innerHTML = data.toppings.map(t => {
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<label style="display:block;margin-bottom:6px;">
-        <input type="checkbox" class="topping-checkbox" data-id="${t.id}" data-price="${Number(t.price).toFixed(2)}"> 
+        <input type="checkbox" class="topping-checkbox" data-id="${t.topping_id}" data-price="${Number(t.price).toFixed(2)}"> 
         ${safeName} — ₱${Number(t.price).toFixed(2)}
       </label>`;
     }).join('');
