@@ -141,16 +141,17 @@ async function fetchToppings() {
             return String(html || '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
         }
 
-        tbody.innerHTML = data.toppings.map(t => {
+    tbody.innerHTML = data.toppings.map(t => {
+      const idVal = t.topping_id ?? '';
             const status = (t.status === 'active') ? 'active' : 'inactive';
-            const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${t.topping_id}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
-            const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${t.topping_id}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
+      const editBtn = `<button class="btn-edit-topping edit-topping-btn" data-id="${idVal}" data-name="${esc(t.name)}" data-price="${esc(t.price)}">Edit</button>`;
+      const toggleBtn = `<button class="btn-toggle-topping toggle-topping-status" data-id="${idVal}" data-status="${status}" style="margin-left:8px;">${status === 'active' ? 'Set Inactive' : 'Set Active'}</button>`;
             // only normal delete for super admins (no force delete)
-            const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${t.topping_id}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
+      const deleteBtn = isSuper ? `<button class="btn-delete-topping topping-delete" data-id="${idVal}" style="margin-left:8px;color:#ef4444;">Delete</button>` : '';
 
             return `
-                <tr data-id="${t.topping_id}" data-status="${status}">
-          <td style="width:60px;">${t.topping_id}</td>
+        <tr data-id="${idVal}" data-status="${status}">
+      <td style="width:60px;">${idVal || '—'}</td>
                     <td>${esc(t.name)}</td>
                     <td style="text-align:right;">₱${Number(t.price).toFixed(2)}</td>
                     <td style="text-align:center;"><span class="status-badge ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
@@ -178,9 +179,10 @@ async function loadActiveToppings() {
     const container = document.getElementById('toppingsList');
     if (!container) return;
     container.innerHTML = data.toppings.map(t => {
+      const idVal = (t && (t.topping_id ?? t.id ?? t.topping_wid)) ?? '';
       const safeName = (t.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<label style="display:block;margin-bottom:6px;">
-        <input type="checkbox" class="topping-checkbox" data-id="${t.topping_id}" data-price="${Number(t.price).toFixed(2)}"> 
+        <input type="checkbox" class="topping-checkbox" data-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
         ${safeName} — ₱${Number(t.price).toFixed(2)}
       </label>`;
     }).join('');
@@ -237,7 +239,7 @@ document.body.addEventListener('click', async function(e){
 
   if (target.matches('.btn-edit-topping')) {
     const id = target.dataset.id;
-    const row = document.querySelector(`#toppingsTable tr[data-id="${id}"]`);
+    const row = document.querySelector(`#toppingsTable tr[data-topping_id="${id}"]`);
     if (!row) return;
     document.getElementById('addToppingTitle').textContent = 'Edit Topping';
     document.getElementById('toppingId').value = id;
