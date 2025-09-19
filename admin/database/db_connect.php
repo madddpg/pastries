@@ -183,7 +183,8 @@ class Database
         $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
-                LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+                LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
+                WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
                 GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();
@@ -287,7 +288,8 @@ class Database
         $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
                        COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
-                LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+                LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
+                WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
                 GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();

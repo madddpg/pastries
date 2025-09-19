@@ -106,7 +106,8 @@ try {
     try {
         // Close current active row if present
         if ($hadActive) {
-            $stmtClose = $pdo->prepare("UPDATE products SET effective_to = CURRENT_DATE WHERE product_id = ? AND effective_to IS NULL");
+            // Close any active versions and mark them inactive
+            $stmtClose = $pdo->prepare("UPDATE products SET effective_to = CURRENT_DATE, status = 'inactive' WHERE product_id = ? AND effective_to IS NULL");
             $stmtClose->execute([$product_id]);
         }
 
@@ -124,6 +125,10 @@ try {
             $statusToInsert,
             $current['data_type'] ?? null
         ]);
+
+        // Safety: ensure all non-current (historical) rows are inactive
+        $pdo->prepare("UPDATE products SET status = 'inactive' WHERE product_id = ? AND effective_to IS NOT NULL")
+            ->execute([$product_id]);
 
         $pdo->commit();
         echo json_encode(['success' => true, 'message' => 'Product price versioned successfully.']);
