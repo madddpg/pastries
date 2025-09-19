@@ -158,9 +158,9 @@ function fetch_locations_pdo($con)
                 <a href="#" class="nav-item" data-section="promos">
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
                     <span>Promotions</span>
-                </a><a href="#" class="nav-item" data-section="blocked-users">
+                </a><a href="#" class="nav-item" data-section="block-users">
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
-                    <span>Blocked Users</span>
+                    <span>Customers</span>
                 </a>
                 <?php if (Database::isSuperAdmin()): ?>
                     <a href="#" class="nav-item" data-section="add-admin">
@@ -341,6 +341,9 @@ function fetch_locations_pdo($con)
                     <button id="showAddProductModalBtn" class="btn-primary" style="margin: 20px;">+ Add Product</button>
                     <div class="tabs">
                         <a href="#" class="tab active">All Products</a>
+                       <a href="#" class="tab-active">Hot Drinks</a>
+                       <a href="#" class="tab-active">Cold Drinks</a>
+                       <a href="#" class="tab-active">Pastries</a>
                     </div>
 
                     <div class="table-container">
@@ -482,7 +485,7 @@ function fetch_locations_pdo($con)
                                     <input type="number" name="new_price" id="editProductPrice" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
                                 <div class="form-group" style="margin-bottom:14px;">
-                                    s <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
+                                    <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
                                     <input type="text" name="new_category" id="editProductCategory" required class="form-control" placeholder="Category" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
                                 <button type="submit" class="btn-primary" style="width:100%;background:#059669;color:#fff;padding:12px 0;border:none;border-radius:10px;font-size:0.95rem;cursor:pointer;font-weight:600;">Save Changes</button>
