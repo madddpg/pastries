@@ -606,7 +606,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }, { capture: true });
       });
     });
-  } function attachOrderActionHandlers() {
+  } 
+  
+  function attachOrderActionHandlers() {
     const map = new Map([
       ['.btn-accept', 'preparing'],
       ['.btn-ready', 'ready'],

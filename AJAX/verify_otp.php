@@ -3,6 +3,16 @@ session_start();
 header('Content-Type: application/json');
 require_once __DIR__ . '/../admin/database/db_connect.php';
 
+
+session_set_cookie_params([
+    'lifetime' => 0,   // session ends when browser closes
+    'path' => '/',     // cookie valid for all paths (/ , /AJAX , /admin , etc.)
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
+session_start();
+
 // Require that an OTP flow and pending registration are in progress
 if (!isset($_SESSION['pending_registration']) || !isset($_SESSION['otp'])) {
     echo json_encode(['success' => false, 'message' => 'No pending registration found.']);

@@ -8,6 +8,15 @@ require_once __DIR__ . '/Mailer/class.smtp.php';
 $db = new Database();
 $pdo = $db->opencon();
 
+session_set_cookie_params([
+    'lifetime' => 0,   // session ends when browser closes
+    'path' => '/',     // cookie valid for all paths (/ , /AJAX , /admin , etc.)
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
+
+session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = isset($_POST['registerName']) ? trim($_POST['registerName']) : '';
     $lastName = isset($_POST['registerLastName']) ? trim($_POST['registerLastName']) : '';
