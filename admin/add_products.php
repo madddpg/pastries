@@ -7,7 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pdo = $db->opencon();
 
     // Get form data with validation
-    $id = trim($_POST['id'] ?? '');
+    $id = trim($_POST['product_id'] ?? ($_POST['id'] ?? ''));
     $name = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         // Check if product ID already exists
-        $checkStmt = $pdo->prepare("SELECT id FROM products WHERE id = ?");
+        $checkStmt = $pdo->prepare("SELECT product_id FROM products WHERE product_id = ?");
         $checkStmt->execute([$id]);
         if ($checkStmt->fetch()) {
             echo json_encode([
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     // Insert the new product (effective_from/effective_to for price history)
-    $stmt = $pdo->prepare("INSERT INTO products (id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+    $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
     $result = $stmt->execute([$id, $name, $description, $price, $category_id, $imagePath, $status, $data_type]);
 
 

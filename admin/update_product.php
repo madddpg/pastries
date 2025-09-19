@@ -4,7 +4,7 @@ require_once __DIR__ . '/database/db_connect.php';
 $db = new Database();
 $pdo = $db->opencon();
 
-$product_id = $_POST['product_id'] ?? null;
+$product_id = $_POST['product_id'] ?? ($_POST['id'] ?? null);
 $new_name = $_POST['new_name'] ?? null;
 $new_price = $_POST['new_price'] ?? null;
 $new_category = $_POST['new_category'] ?? null; // can be id or name
@@ -35,7 +35,7 @@ try {
     }
 
     // Load current active row (effective_to IS NULL)
-    $stmtCur = $pdo->prepare("SELECT * FROM products WHERE id = ? AND effective_to IS NULL LIMIT 1");
+    $stmtCur = $pdo->prepare("SELECT * FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
     $stmtCur->execute([$product_id]);
     $current = $stmtCur->fetch(PDO::FETCH_ASSOC);
 
@@ -50,10 +50,10 @@ try {
     // If price unchanged, update in-place (name/category/status) on active row
     if (!$priceChanged) {
         if ($new_status !== null && $new_status !== '') {
-            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, status = ? WHERE id = ? AND effective_to IS NULL");
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, status = ? WHERE product_id = ? AND effective_to IS NULL");
             $stmt->execute([trim($new_name), $category_id, trim($new_status), $product_id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ? WHERE id = ? AND effective_to IS NULL");
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ? WHERE product_id = ? AND effective_to IS NULL");
             $stmt->execute([trim($new_name), $category_id, $product_id]);
         }
         echo json_encode(['success' => true, 'message' => 'Product updated.']);
@@ -64,11 +64,11 @@ try {
     $pdo->beginTransaction();
     try {
         // Close current
-        $stmtClose = $pdo->prepare("UPDATE products SET effective_to = CURRENT_DATE WHERE id = ? AND effective_to IS NULL");
+    $stmtClose = $pdo->prepare("UPDATE products SET effective_to = CURRENT_DATE WHERE product_id = ? AND effective_to IS NULL");
         $stmtClose->execute([$product_id]);
 
         // Insert new version (copy most fields from current, override changed fields)
-        $stmtIns = $pdo->prepare("INSERT INTO products (id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+    $stmtIns = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
         $stmtIns->execute([
             $product_id,
             trim($new_name),

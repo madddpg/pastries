@@ -787,11 +787,11 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3;
-    $sql = "SELECT id as product_id, name, image, description, 0 as sales_count
+                $sql = "SELECT product_id, name, image, description, 0 as sales_count
         FROM products
-        WHERE status = 'active' AND name != '__placeholder__' AND effective_to IS NULL
-                  AND (LOWER(category_id) LIKE ? OR LOWER(name) LIKE ? OR LOWER(id) LIKE ?)
-                ORDER BY id DESC
+                                WHERE status = 'active' AND name != '__placeholder__' AND effective_to IS NULL
+                                    AND (LOWER(category_id) LIKE ? OR LOWER(name) LIKE ? OR LOWER(product_id) LIKE ?)
+                                ORDER BY product_id DESC
                 LIMIT $limit";
         $like = '%' . strtolower($category) . '%';
         $stmt = $con->prepare($sql);
@@ -992,10 +992,10 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3;
-    $sql = "SELECT id as product_id, name, image, description, data_type, 0 as sales_count
+    $sql = "SELECT product_id, name, image, description, data_type, 0 as sales_count
         FROM products
         WHERE status = 'active' AND LOWER(data_type) = ? AND name != '__placeholder__' AND effective_to IS NULL
-                ORDER BY id DESC
+        ORDER BY product_id DESC
                 LIMIT $limit";
         $stmt = $con->prepare($sql);
         $stmt->execute([strtolower($data_type)]);

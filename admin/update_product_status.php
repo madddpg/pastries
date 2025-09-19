@@ -6,18 +6,18 @@ $db = new Database();
 $pdo = $db->opencon();
 
 try {
-    if (isset($_POST['id'], $_POST['status'])) {
-        $id = trim($_POST['id']); // trim spaces just in case
+    if (isset($_POST['id'], $_POST['status']) || isset($_POST['product_id'], $_POST['status'])) {
+        $id = trim($_POST['product_id'] ?? $_POST['id']); // accept either, prefer product_id
         $status = $_POST['status'] === 'active' ? 'active' : 'inactive';
 
-    $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ? AND effective_to IS NULL");
+    $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE product_id = ? AND effective_to IS NULL");
         $stmt->execute([$status, $id]);
 
         $rows = $stmt->rowCount();
 
         if ($rows === 0) {
             // No rows updated, check if product exists
-            $check = $pdo->prepare("SELECT COUNT(*) FROM products WHERE id = ?");
+            $check = $pdo->prepare("SELECT COUNT(*) FROM products WHERE product_id = ?");
             $check->execute([$id]);
             if ($check->fetchColumn() > 0) {
                 // Product exists, status was already the same
