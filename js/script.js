@@ -1575,7 +1575,7 @@ async function verifyOTP() {
   btn.textContent = 'Verifying...';
 
   try {
-    const res = await fetch('AJAX/verify_otp.php', {
+    const res = await fetch('/AJAX/verify_otp.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
