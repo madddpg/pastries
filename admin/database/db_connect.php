@@ -481,7 +481,7 @@ public function createPickupOrder(
 
         // Insert toppings
         $insertTopping = $con->prepare("
-            INSERT INTO transaction_toppings (transaction_id, transaction_item_id, topping_id, quantity, unit_price, sugar_level) 
+            INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level) 
             VALUES (?, ?, ?, ?, ?, ?)
         ");
 
@@ -595,7 +595,7 @@ public function createPickupOrder(
 
             // prepared statements for items and toppings (match schema including sugar_level)
             $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
-            $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_id, transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $toppingInsert = $con->prepare("INSERT INTO transaction_toppings ( transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
             // helper: find topping by name (if not numeric id), and insert if missing
             $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE name = ? LIMIT 1");
