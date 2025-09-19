@@ -121,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 (function () {
+  // Correct API path relative to admin.php
   const API = 'AJAX/get_toppings.php';
 
   async function fetchToppings() {
@@ -135,7 +136,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      console.log('RAW toppings from API:', data.toppings);
       const isSuper = !!data.is_super;
 
       function esc(html) {
@@ -243,74 +243,71 @@ document.addEventListener("DOMContentLoaded", () => {
   if (closeBtn) closeBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
   if (cancelBtn) cancelBtn.addEventListener('click', () => { if (addModal) addModal.style.display = 'none'; });
 
-  // delegated actions
+  // delegated actions: edit / toggle / delete
   document.body.addEventListener('click', async function (e) {
     const target = e.target;
-if (target.matches('.btn-edit-topping')) {
-  const id = target.getAttribute('data-topping-id');  // ✅ safe
-  console.log('[DEBUG edit click] id =', id, target.outerHTML);
-  const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
-  if (!row) return;
-  document.getElementById('addToppingTitle').textContent = 'Edit Topping';
-  document.getElementById('toppingId').value = id;
-  document.getElementById('toppingName').value = row.children[1].textContent;
-  document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
-  if (addModal) addModal.style.display = 'flex';
-  return;
-}
 
-if (target.matches('.btn-toggle-topping')) {
-  const id = target.getAttribute('data-topping-id');  // ✅ safe
-  const current = target.getAttribute('data-status') === 'active' ? 1 : 0;
-  const next = current === 1 ? 0 : 1;
-
-  const body = new URLSearchParams();
-  body.append('action', 'toggle_status');
-  body.append('topping_id', id);
-  body.append('status', next === 1 ? 'active' : 'inactive');
-
-  console.log('[DEBUG toggle click] id =', id, target.outerHTML);
-  console.log('[DEBUG toggle request]', body.toString());
-
-  const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-  const data = await res.json();
-  console.log('[DEBUG toggle response]', data);
-
-  if (data.success) {
-    fetchToppings();
-    await loadActiveToppings();
-  }
-  return;
-}
-
-if (target.matches('.btn-delete-topping')) {
-  const id = target.getAttribute('data-topping-id');  // ✅ safe
-  const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
-  const name = row ? row.children[1].textContent.trim() : ('ID ' + id);
-  if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
-
-  const body = new URLSearchParams();
-  body.append('action', 'delete');
-  body.append('topping_id', id);
-
-  console.log('[DEBUG delete body]', body.toString());
-
-  try {
-    const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
-    const data = await res.json();
-    if (data.success) {
-      fetchToppings();
-      await loadActiveToppings();
-      showNotification(`Deleted topping: ${name}`);
-    } else {
-      alert('Delete failed: ' + (data.message || 'unknown'));
+    if (target.matches('.btn-edit-topping')) {
+      const id = target.getAttribute('data-topping-id');
+      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
+      if (!row) return;
+      document.getElementById('addToppingTitle').textContent = 'Edit Topping';
+      document.getElementById('toppingId').value = id;
+      document.getElementById('toppingName').value = row.children[1].textContent;
+      document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
+      if (addModal) addModal.style.display = 'flex';
+      return;
     }
-  } catch (err) {
-    console.error('delete topping error', err);
-    alert('Delete request failed: ' + (err.message || 'network error'));
-  }
-  return;
-}
+
+    if (target.matches('.btn-toggle-topping')) {
+      const id = target.getAttribute('data-topping-id');
+      const current = target.getAttribute('data-status') === 'active' ? 1 : 0;
+      const next = current === 1 ? 0 : 1;
+      const body = new URLSearchParams();
+      body.append('action', 'toggle_status');
+      body.append('topping_id', id);
+      body.append('status', next === 1 ? 'active' : 'inactive');
+      console.log('[DEBUG toggle request]', body.toString());
+      try {
+        const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+        const data = await res.json();
+        console.log('[DEBUG toggle response]', data);
+        if (data.success) {
+          fetchToppings();
+          await loadActiveToppings();
+        }
+      } catch (err) {
+        console.error('toggle topping error', err);
+      }
+      return;
+    }
+
+    if (target.matches('.btn-delete-topping')) {
+      const id = target.getAttribute('data-topping-id');
+      const row = document.querySelector(`#toppingsTable tr[data-topping-id="${id}"]`);
+      const name = row ? row.children[1].textContent.trim() : ('ID ' + id);
+      if (!confirm(`Delete topping "${name}"?\nThis cannot be undone.`)) return;
+
+      const body = new URLSearchParams();
+      body.append('action', 'delete');
+      body.append('topping_id', id);
+      console.log('[DEBUG delete body]', body.toString());
+      try {
+        const res = await fetch(API, { method: 'POST', body, credentials: 'same-origin' });
+        const data = await res.json();
+        if (data.success) {
+          fetchToppings();
+          await loadActiveToppings();
+          showNotification(`Deleted topping: ${name}`);
+        } else {
+          alert('Delete failed: ' + (data.message || 'unknown'));
+        }
+      } catch (err) {
+        console.error('delete topping error', err);
+        alert('Delete request failed: ' + (err.message || 'network error'));
+      }
+      return;
+    }
   });
 
   // save form
@@ -324,8 +321,6 @@ if (target.matches('.btn-delete-topping')) {
       const body = new URLSearchParams();
       body.append('name', name);
       body.append('price', price);
-      console.log('[DEBUG form submit] topping_id =', id);
-
       if (!id) {
         body.append('action', 'add');
       } else {
