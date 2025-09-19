@@ -158,6 +158,9 @@ function fetch_locations_pdo($con)
                 <a href="#" class="nav-item" data-section="promos">
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
                     <span>Promotions</span>
+                </a><a href="#" class="nav-item" data-section="blocked-users">
+                    <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
+                    <span>Blocked Users</span>
                 </a>
                 <?php if (Database::isSuperAdmin()): ?>
                     <a href="#" class="nav-item" data-section="add-admin">

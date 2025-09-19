@@ -1137,62 +1137,56 @@ function logout(event) {
 }
 
 
-// REPLACE your old handleRegister with this one
-function handleRegister(event) {
+async function handleRegister(event) {
   event.preventDefault();
 
-  const firstName = document.getElementById("registerName");
-  const lastName = document.getElementById("registerLastName");
-  const email = document.getElementById("registerEmail");
-  const password = document.getElementById("registerPassword");
-  const confirmPassword = document.getElementById("confirmPassword");
+  const firstName = document.getElementById("registerName").value.trim();
+  const lastName = document.getElementById("registerLastName").value.trim();
+  const email = document.getElementById("registerEmail").value.trim();
+  const password = document.getElementById("registerPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
   const registerBtn = document.getElementById("registerBtn");
 
-  const errFN = document.getElementById('firstnameError');
-  const errLN = document.getElementById('lastnameError');
-  const errEM = document.getElementById('emailError');
-  const errPW = document.getElementById('passwordError');
-  const errCPW = document.getElementById('confirmPasswordError');
-
-  // reset error messages
-  [errFN, errLN, errEM, errPW, errCPW].forEach(e => e.textContent = '');
-
-  // basic validation
-  if (!firstName.value.trim()) { errFN.textContent = "First name required"; return; }
-  if (!lastName.value.trim()) { errLN.textContent = "Last name required"; return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value)) { errEM.textContent = "Invalid email"; return; }
-  if (password.value.length < 8) { errPW.textContent = "At least 8 characters required"; return; }
-  if (password.value !== confirmPassword.value) { errCPW.textContent = "Passwords do not match"; return; }
-
-  // store pending registration (not sending yet until OTP is verified)
-  __pendingRegistration = {
-    firstName: firstName.value.trim(),
-    lastName: lastName.value.trim(),
-    email: email.value.trim(),
-    password: password.value,
-    confirmPassword: confirmPassword.value
-  };
-  __otpVerified = false;
-  __registrationCompleted = false;
+  // Basic validation
+  if (!firstName) return showNotification("First name required", "error");
+  if (!lastName) return showNotification("Last name required", "error");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return showNotification("Invalid email", "error");
+  if (password.length < 8) return showNotification("Password must be at least 8 characters", "error");
+  if (password !== confirmPassword) return showNotification("Passwords do not match", "error");
 
   registerBtn.disabled = true;
   registerBtn.classList.add("loading");
 
-  // send OTP before final registration
-  sendOTP(__pendingRegistration.email)
-    .then(() => {
-      showNotification("OTP sent. Please verify to finish account creation.", "success");
-      showOtpModal(__pendingRegistration.email);
-    })
-    .catch(() => {
-      showNotification("Failed to send OTP. Try again.", "error");
-      __pendingRegistration = null;
-    })
-    .finally(() => {
-      registerBtn.disabled = false;
-      registerBtn.classList.remove("loading");
+  try {
+    const formData = new FormData();
+    formData.append("registerName", firstName);
+    formData.append("registerLastName", lastName);
+    formData.append("registerEmail", email);
+    formData.append("registerPassword", password);
+    formData.append("confirmPassword", confirmPassword);
+
+    const res = await fetch("register.php", {
+      method: "POST",
+      body: formData,
+      credentials: "same-origin"
     });
+
+    const data = await res.json();
+
+    if (data.success) {
+      showNotification("OTP sent to " + email, "success");
+      showOtpModal(email);
+    } else {
+      showNotification(data.message || "Registration failed", "error");
+    }
+  } catch (err) {
+    showNotification("Network error during registration", "error");
+  } finally {
+    registerBtn.disabled = false;
+    registerBtn.classList.remove("loading");
+  }
 }
+
 
 // Add this right after your other document.addEventListener blocks (around line 600)
 // (before the window.addEventListener("scroll") blocks)
