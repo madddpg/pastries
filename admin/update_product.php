@@ -111,7 +111,9 @@ try {
         }
 
         // Insert new version (copy most fields from current, override changed fields)
-    $stmtIns = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+        // If new_status is not explicitly provided, default to 'active' so the new price is visible on the storefront.
+        $statusToInsert = ($new_status !== null && $new_status !== '') ? trim($new_status) : 'active';
+        $stmtIns = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
         $stmtIns->execute([
             $product_id,
             trim($new_name),
@@ -119,7 +121,7 @@ try {
             $price,
             $category_id,
             $current['image'],
-            $new_status !== null && $new_status !== '' ? trim($new_status) : $current['status'],
+            $statusToInsert,
             $current['data_type'] ?? null
         ]);
 
