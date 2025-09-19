@@ -595,7 +595,8 @@ public function createPickupOrder(
 
             // prepared statements for items and toppings (match schema including sugar_level)
             $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
-            $toppingInsert = $con->prepare("INSERT INTO transaction_toppings ( transaction_item_id, product_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            // transaction_toppings no longer stores product_id or transaction_id
+            $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?)");
 
             // helper: find topping by name (if not numeric id), and insert if missing
             $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE name = ? LIMIT 1");
@@ -660,7 +661,7 @@ public function createPickupOrder(
                         }
 
                         // insert topping record including sugar_level
-                        $toppingInsert->execute([$transaction_id, $transaction_item_id, $product_id, $topping_id, $t_qty, $t_price, $item_sugar]);
+                        $toppingInsert->execute([$transaction_item_id, $topping_id, $t_qty, $t_price, $item_sugar]);
                     }
                 }
             }
@@ -765,11 +766,11 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
-        $sql = "SELECT ti.product_id, p.name, p.image, p.description, COUNT(ti.product_id) AS sales_count
+    $sql = "SELECT ti.product_id, p.name, p.image, p.description, COUNT(ti.product_id) AS sales_count
                 FROM transaction_items ti
                 JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
-                WHERE p.status = 'active' AND t.status != 'cancelled'
+        WHERE p.status = 'active' AND t.status != 'cancelled' AND p.effective_to IS NULL
                   AND p.name != '__placeholder__'
                   AND (LOWER(p.category_id) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.product_id) LIKE ?)
                 GROUP BY ti.product_id
@@ -786,9 +787,9 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3;
-        $sql = "SELECT id as product_id, name, image, description, 0 as sales_count
-                FROM products
-                WHERE status = 'active' AND name != '__placeholder__'
+    $sql = "SELECT id as product_id, name, image, description, 0 as sales_count
+        FROM products
+        WHERE status = 'active' AND name != '__placeholder__' AND effective_to IS NULL
                   AND (LOWER(category_id) LIKE ? OR LOWER(name) LIKE ? OR LOWER(id) LIKE ?)
                 ORDER BY id DESC
                 LIMIT $limit";
@@ -803,11 +804,11 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3; // Sanitize limit
-        $sql = "SELECT ti.product_id, p.name, p.image, p.description, p.data_type, COUNT(ti.product_id) AS sales_count
+    $sql = "SELECT ti.product_id, p.name, p.image, p.description, p.data_type, COUNT(ti.product_id) AS sales_count
                 FROM transaction_items ti
                 JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
-                WHERE p.status = 'active' AND t.status != 'cancelled' AND LOWER(p.data_type) = ?
+        WHERE p.status = 'active' AND t.status != 'cancelled' AND LOWER(p.data_type) = ? AND p.effective_to IS NULL
                   AND p.name != '__placeholder__'
                 GROUP BY ti.product_id
                 ORDER BY sales_count DESC
@@ -991,9 +992,9 @@ public function createPickupOrder(
     {
         $con = $this->opencon();
         $limit = intval($limit) > 0 ? intval($limit) : 3;
-        $sql = "SELECT id as product_id, name, image, description, data_type, 0 as sales_count
-                FROM products
-                WHERE status = 'active' AND LOWER(data_type) = ? AND name != '__placeholder__'
+    $sql = "SELECT id as product_id, name, image, description, data_type, 0 as sales_count
+        FROM products
+        WHERE status = 'active' AND LOWER(data_type) = ? AND name != '__placeholder__' AND effective_to IS NULL
                 ORDER BY id DESC
                 LIMIT $limit";
         $stmt = $con->prepare($sql);

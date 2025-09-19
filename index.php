@@ -9,7 +9,7 @@ $db = new Database();
 $pdo = $db->opencon();
 $productStatuses = [];
 $allProducts = [];
-$stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
+$stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active' AND effective_to IS NULL");
 $stmt->execute();
 $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 foreach ($allProducts as $row) {

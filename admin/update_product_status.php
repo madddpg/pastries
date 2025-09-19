@@ -10,7 +10,7 @@ try {
         $id = trim($_POST['id']); // trim spaces just in case
         $status = $_POST['status'] === 'active' ? 'active' : 'inactive';
 
-        $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE products SET status = ? WHERE id = ? AND effective_to IS NULL");
         $stmt->execute([$status, $id]);
 
         $rows = $stmt->rowCount();

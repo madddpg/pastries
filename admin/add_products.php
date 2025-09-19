@@ -92,9 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
-        // Insert the new product
-        $stmt = $pdo->prepare("INSERT INTO products (id, name, description, price, category_id, image, status, data_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $result = $stmt->execute([$id, $name, $description, $price, $category_id, $imagePath, $status, $data_type]);
+    // Insert the new product (effective_from/effective_to for price history)
+    $stmt = $pdo->prepare("INSERT INTO products (id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+    $result = $stmt->execute([$id, $name, $description, $price, $category_id, $imagePath, $status, $data_type]);
 
 
         // In the success part of your try-catch block

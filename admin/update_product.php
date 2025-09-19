@@ -34,20 +34,57 @@ try {
         $category_id = (int)$catRow['id'];
     }
 
-    // Build SQL depending on whether status is provided
-    if ($new_status !== null && $new_status !== '') {
-        $stmt = $pdo->prepare("UPDATE products SET name = ?, price = ?, category_id = ?, status = ? WHERE id = ?");
-        $stmt->execute([trim($new_name), $price, $category_id, trim($new_status), $product_id]);
-    } else {
-        $stmt = $pdo->prepare("UPDATE products SET name = ?, price = ?, category_id = ? WHERE id = ?");
-        $stmt->execute([trim($new_name), $price, $category_id, $product_id]);
+    // Load current active row (effective_to IS NULL)
+    $stmtCur = $pdo->prepare("SELECT * FROM products WHERE id = ? AND effective_to IS NULL LIMIT 1");
+    $stmtCur->execute([$product_id]);
+    $current = $stmtCur->fetch(PDO::FETCH_ASSOC);
+
+    if (!$current) {
+        echo json_encode(['success' => false, 'message' => 'Active product row not found.']);
+        exit();
     }
 
-    if ($stmt->rowCount() > 0) {
-        echo json_encode(['success' => true, 'message' => 'Product updated successfully.']);
-    } else {
-        // rowCount == 0 might mean no change or wrong id
-        echo json_encode(['success' => false, 'message' => 'No changes made or product not found.']);
+    $currentPrice = (float)$current['price'];
+    $priceChanged = ($currentPrice !== $price);
+
+    // If price unchanged, update in-place (name/category/status) on active row
+    if (!$priceChanged) {
+        if ($new_status !== null && $new_status !== '') {
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ?, status = ? WHERE id = ? AND effective_to IS NULL");
+            $stmt->execute([trim($new_name), $category_id, trim($new_status), $product_id]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ? WHERE id = ? AND effective_to IS NULL");
+            $stmt->execute([trim($new_name), $category_id, $product_id]);
+        }
+        echo json_encode(['success' => true, 'message' => 'Product updated.']);
+        exit();
+    }
+
+    // Price changed: version the row
+    $pdo->beginTransaction();
+    try {
+        // Close current
+        $stmtClose = $pdo->prepare("UPDATE products SET effective_to = CURRENT_DATE WHERE id = ? AND effective_to IS NULL");
+        $stmtClose->execute([$product_id]);
+
+        // Insert new version (copy most fields from current, override changed fields)
+        $stmtIns = $pdo->prepare("INSERT INTO products (id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+        $stmtIns->execute([
+            $product_id,
+            trim($new_name),
+            $current['description'],
+            $price,
+            $category_id,
+            $current['image'],
+            $new_status !== null && $new_status !== '' ? trim($new_status) : $current['status'],
+            $current['data_type'] ?? null
+        ]);
+
+        $pdo->commit();
+        echo json_encode(['success' => true, 'message' => 'Product price versioned successfully.']);
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
     }
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
