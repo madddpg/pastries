@@ -17,21 +17,21 @@ if (!$product_id || !$new_name || $new_price === null || $new_category === null)
 
 try {
     // normalize types
-    $product_id = (int)$product_id;
+    $product_id = trim((string)$product_id); // product_id is VARCHAR, keep as string
     $price = floatval($new_price);
 
     // Resolve category -> category_id if necessary
     if (is_numeric($new_category)) {
         $category_id = (int)$new_category;
     } else {
-        $stmtCat = $pdo->prepare("SELECT id FROM categories WHERE name = ? LIMIT 1");
+        $stmtCat = $pdo->prepare("SELECT category_id FROM categories WHERE name = ? LIMIT 1");
         $stmtCat->execute([trim($new_category)]);
         $catRow = $stmtCat->fetch(PDO::FETCH_ASSOC);
         if (!$catRow) {
             echo json_encode(['success' => false, 'message' => 'Invalid category.']);
             exit();
         }
-        $category_id = (int)$catRow['id'];
+        $category_id = (int)$catRow['category_id'];
     }
 
     // Load current active row (effective_to IS NULL)
@@ -85,7 +85,17 @@ try {
                 echo json_encode(['success' => true, 'message' => 'Product updated (new active version created).']);
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                // If duplicate key occurs due to PRIMARY KEY(product_id), surface a clearer message
+                $sqlState = $e->getCode();
+                $driverCode = method_exists($e, 'errorInfo') && isset($e->errorInfo[1]) ? $e->errorInfo[1] : null;
+                if ($sqlState === '23000' || $driverCode === 1062) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Schema limitation: products.product_id is PRIMARY KEY. Price versioning requires multiple rows per product_id. Please alter schema to add a surrogate primary key or composite key.'
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+                }
             }
             exit();
         }
@@ -117,7 +127,17 @@ try {
         echo json_encode(['success' => true, 'message' => 'Product price versioned successfully.']);
     } catch (PDOException $e) {
         $pdo->rollBack();
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        // Duplicate key due to PRIMARY KEY(product_id)
+        $sqlState = $e->getCode();
+        $driverCode = method_exists($e, 'errorInfo') && isset($e->errorInfo[1]) ? $e->errorInfo[1] : null;
+        if ($sqlState === '23000' || $driverCode === 1062) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Schema limitation: products.product_id is PRIMARY KEY. Price versioning cannot insert another row. Please alter schema to support versioning.'
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+        }
     }
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);

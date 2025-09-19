@@ -912,8 +912,13 @@ function fetch_locations_pdo($con)
                             method: 'POST',
                             body: new URLSearchParams(formData)
                         })
-                        .then(() => {
-                            // Update row in-place
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!data || data.success !== true) {
+                                alert((data && data.message) ? data.message : 'Failed to update product');
+                                return;
+                            }
+                            // Update row in-place only on success
                             const row = document.querySelector(`tr[data-product-id="${id}"]`);
                             if (row) {
                                 row.setAttribute('data-product-name', newName);
@@ -925,7 +930,8 @@ function fetch_locations_pdo($con)
                                 if (cells[2]) cells[2].textContent = '₱' + Number(newPrice).toFixed(2);
                             }
                             editModal.style.display = 'none';
-                        });
+                        })
+                        .catch(() => alert('Request failed'));
                 };
             }
 

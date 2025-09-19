@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Look up category ID from name
-    $stmt = $pdo->prepare("SELECT id FROM categories WHERE name = ?");
+    $stmt = $pdo->prepare("SELECT category_id FROM categories WHERE name = ?");
     $stmt->execute([$category]);
     $categoryResult = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $category_id = $categoryResult['id'];
+    $category_id = $categoryResult['category_id'];
 
      $imagePath = '';
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {

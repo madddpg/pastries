@@ -60,10 +60,15 @@ class Database
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($orders as &$order) {
-            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-                FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.product_id 
-                WHERE ti.transaction_id = ?");
+            // Prefer join by products_pk (precise version); fallback to active row by product_id
+            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
+                        COALESCE(p.name, p2.name) AS name
+                    FROM transaction_items ti
+                    LEFT JOIN products p
+                        ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
+                    LEFT JOIN products p2
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                    WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -99,10 +104,14 @@ class Database
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($orders as &$order) {
-            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-            FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.product_id 
-            WHERE ti.transaction_id = ?");
+            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
+                        COALESCE(p.name, p2.name) AS name
+                    FROM transaction_items ti
+                    LEFT JOIN products p
+                        ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
+                    LEFT JOIN products p2
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                    WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -203,10 +212,14 @@ class Database
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         foreach ($orders as &$order) {
-            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-                FROM transaction_items ti 
-                JOIN products p ON ti.product_id = p.product_id 
-                WHERE ti.transaction_id = ?");
+            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
+                        COALESCE(p.name, p2.name) AS name
+                    FROM transaction_items ti
+                    LEFT JOIN products p
+                        ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
+                    LEFT JOIN products p2
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                    WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         }
@@ -241,10 +254,14 @@ class Database
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($orders as &$order) {
-            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
-            FROM transaction_items ti 
-            JOIN products p ON ti.product_id = p.product_id 
-            WHERE ti.transaction_id = ?");
+            $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
+                        COALESCE(p.name, p2.name) AS name
+                    FROM transaction_items ti
+                    LEFT JOIN products p
+                        ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
+                    LEFT JOIN products p2
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                    WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -415,7 +432,14 @@ class Database
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$order) return null;
         // Fetch items for this order
-        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name FROM transaction_items ti JOIN products p ON ti.product_id = p.product_id WHERE ti.transaction_id = ?");
+        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
+                COALESCE(p.name, p2.name) AS name
+            FROM transaction_items ti
+            LEFT JOIN products p
+                ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
+            LEFT JOIN products p2
+                ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+            WHERE ti.transaction_id = ?");
         $itemStmt->execute([$transac_id]);
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
         return $order;
@@ -473,19 +497,20 @@ public function createPickupOrder(
         $con->prepare("UPDATE transaction SET reference_number = ? WHERE transac_id = ?")
             ->execute([$reference_number, $transaction_id]);
 
-        // Insert items
+        // Insert items (include products_pk for version-accurate linkage)
         $insertItem = $con->prepare("
-            INSERT INTO transaction_items (transaction_id, product_id, quantity, size, sugar_level, price) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO transaction_items (transaction_id, product_id, products_pk, quantity, size, sugar_level, price)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
 
-        // Insert toppings
+        // Insert toppings (no transaction_id here)
         $insertTopping = $con->prepare("
-            INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level) 
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level)
+            VALUES (?, ?, ?, ?, ?)
         ");
 
         $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
+        $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -509,10 +534,19 @@ public function createPickupOrder(
             }
             $linePrice = $basePrice + $tSum;
 
-            // Save item
+            // Resolve active products_pk for this product_id
+            $products_pk_val = null;
+            $findActiveProductPk->execute([$product_id]);
+            $pkRow = $findActiveProductPk->fetch(PDO::FETCH_ASSOC);
+            if ($pkRow && isset($pkRow['products_pk'])) {
+                $products_pk_val = (int)$pkRow['products_pk'];
+            }
+
+            // Save item with products_pk
             $insertItem->execute([
                 $transaction_id,
                 $product_id,
+                $products_pk_val,
                 $quantity,
                 $size,
                 $item_sugar,
@@ -534,7 +568,6 @@ public function createPickupOrder(
                     $t_qty   = max(1, (int)($t['quantity'] ?? 1));
                     $t_price = (float)($t['price'] ?? 0);
                     $insertTopping->execute([
-                        $transaction_id,
                         $transaction_item_id,
                         $topping_id,
                         $t_qty,
@@ -594,7 +627,7 @@ public function createPickupOrder(
             $transaction_id = $con->lastInsertId();
 
             // prepared statements for items and toppings (match schema including sugar_level)
-            $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, quantity, size, price) VALUES (?, ?, ?, ?, ?)");
+            $itemInsert = $con->prepare("INSERT INTO transaction_items (transaction_id, product_id, products_pk, quantity, size, price) VALUES (?, ?, ?, ?, ?, ?)");
             // transaction_toppings no longer stores product_id or transaction_id
             $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?)");
 
@@ -603,6 +636,7 @@ public function createPickupOrder(
             $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
             // Insert items and their toppings (if any)
+            $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
             foreach ($items as $item) {
                 $size = '';
                 if (isset($item['size']) && $item['size']) {
@@ -631,7 +665,17 @@ public function createPickupOrder(
                     $price_to_store = 0.00;
                 }
 
-                $itemInsert->execute([$transaction_id, $product_id, $quantity, $size, $price_to_store]);
+                // Resolve active products_pk
+                $products_pk_val = null;
+                if ($product_id) {
+                    $findActiveProductPk->execute([$product_id]);
+                    $pkRow = $findActiveProductPk->fetch(PDO::FETCH_ASSOC);
+                    if ($pkRow && isset($pkRow['products_pk'])) {
+                        $products_pk_val = (int)$pkRow['products_pk'];
+                    }
+                }
+
+                $itemInsert->execute([$transaction_id, $product_id, $products_pk_val, $quantity, $size, $price_to_store]);
                 $transaction_item_id = $con->lastInsertId();
 
                 // Handle toppings (create/find topping and insert into transaction_toppings with sugar_level)
