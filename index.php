@@ -12,13 +12,43 @@ $allProducts = [];
 $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active' AND effective_to IS NULL");
 $stmt->execute();
 $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$productPrices = [];
 foreach ($allProducts as $row) {
     $productStatuses[$row['product_id']] = $row['status'];
+    if (isset($row['product_id'])) {
+        $productPrices[$row['product_id']] = isset($row['price']) ? (float)$row['price'] : 0;
+    }
 }
 
 $promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
 $promoStmt->execute();
 $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Helper: compute typical category header prices (Grande/Supreme) from DB
+// Uses mode (most common) price in the category as Grande; Supreme = Grande + 30 by default.
+// Falls back to provided defaults if no products found.
+function computeCategoryHeader(array $allProducts, int $categoryId, int $defaultGrande, int $defaultSupreme): array {
+    $prices = [];
+    foreach ($allProducts as $p) {
+        if ((int)($p['category_id'] ?? 0) === $categoryId && ($p['status'] ?? '') === 'active') {
+            $pr = isset($p['price']) ? (float)$p['price'] : 0;
+            if ($pr > 0) {
+                $prices[] = (int)round($pr);
+            }
+        }
+    }
+    if (!$prices) {
+        return ['grande' => $defaultGrande, 'supreme' => $defaultSupreme];
+    }
+    // mode (most frequent) price
+    $freq = [];
+    foreach ($prices as $pr) { $freq[$pr] = ($freq[$pr] ?? 0) + 1; }
+    arsort($freq);
+    $grande = (int)array_key_first($freq);
+    $delta = max(0, (int)$defaultSupreme - (int)$defaultGrande);
+    $supreme = $grande + $delta; // use category-specific default delta
+    return ['grande' => $grande, 'supreme' => $supreme];
+}
 
 
 ?>
@@ -581,10 +611,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         <div id="topProductsContainer"></div>
         <!-- End Top Products Section -->
 
+        <?php $hp5 = computeCategoryHeader($allProducts, 5, 140, 150); ?>
         <div class="products-header">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Premium Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 140</span> &nbsp;|&nbsp; <span>Supreme - Php 150</span>
+                <span>Grande - Php <?= htmlspecialchars($hp5['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp5['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -614,7 +645,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -662,7 +693,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                                 <button class="view-btn"
                                     data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars(isset($productPrices[$p['product_id']]) ? $productPrices[$p['product_id']] : 120, ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
                                     data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
                                     data-type="cold">View</button>
@@ -684,7 +715,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                                 <button class="view-btn"
                                     data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars(120, ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars(isset($productPrices[$p['product_id']]) ? $productPrices[$p['product_id']] : 120, ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
                                     data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
                                     data-type="hot">View</button>
@@ -776,10 +807,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
         <!-- Specialty Coffee Section -->
+        <?php $hp6 = computeCategoryHeader($allProducts, 6, 150, 180); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Specialty Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 150</span> &nbsp;|&nbsp; <span>Supreme - Php 180</span>
+                <span>Grande - Php <?= htmlspecialchars($hp6['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp6['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -809,7 +841,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -826,10 +858,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 
 
         <!-- Chocolate Overload Section -->
+        <?php $hp2 = computeCategoryHeader($allProducts, 2, 150, 180); ?>
         <div class="products-header">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Chocolate Overload</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 150</span> &nbsp;|&nbsp; <span>Supreme - Php 180</span>
+                <span>Grande - Php <?= htmlspecialchars($hp2['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp2['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -858,7 +891,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -874,10 +907,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- Matcha Series Section -->
+        <?php $hp3 = computeCategoryHeader($allProducts, 3, 160, 190); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Matcha Series</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 160</span> &nbsp;|&nbsp; <span>Supreme - Php 190</span>
+                <span>Grande - Php <?= htmlspecialchars($hp3['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp3['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -906,7 +940,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -922,10 +956,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- Milk Based Section -->
+        <?php $hp4 = computeCategoryHeader($allProducts, 4, 99, 120); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Milk Based</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 99</span> &nbsp;|&nbsp; <span>Supreme - Php 120</span>
+                <span>Grande - Php <?= htmlspecialchars($hp4['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp4['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -954,7 +989,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -970,10 +1005,11 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
         </div>
 
         <!-- All Time Fave Section -->
+        <?php $hp1 = computeCategoryHeader($allProducts, 1, 120, 170); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">All Time Fave</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php 120</span> &nbsp;|&nbsp; <span>Supreme - Php 170</span>
+                <span>Grande - Php <?= htmlspecialchars($hp1['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp1['supreme']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -1002,7 +1038,7 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(140, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
