@@ -110,6 +110,8 @@ function recalcModalTotal() {
 document.querySelectorAll('.view-btn').forEach(button => {
   button.addEventListener('click', handleViewProductClick);
 });
+
+
 function handleViewProductClick(event) {
   event.preventDefault();
   const btn = event.currentTarget || event.target;
@@ -174,6 +176,8 @@ document.querySelectorAll('.view-btn').forEach(button => {
 });
 function handleViewProduct(event) {
   if (!isLoggedIn) {
+    // Product Modal Functions
+    // Note: Legacy openProductModal handler removed. We now rely on dataset-driven handlers above.
     showLoginModal();
     return;
   }
