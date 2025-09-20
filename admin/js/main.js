@@ -111,15 +111,100 @@ document.addEventListener("DOMContentLoaded", () => {
     // Apply initial filter based on current active tab
     const active = productsTabs.querySelector('.tab.active');
     if (active) {
-      const filter = (active.dataset.filter || 'all').toLowerCase();
-      const tbody = document.querySelector('#products-section .products-table tbody');
-      if (tbody) {
-        tbody.querySelectorAll('tr').forEach(tr => {
-          const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
-          tr.style.display = (filter === 'all' || type === filter) ? '' : 'none';
-        });
-      }
+      applyProductsFilterAndPaginate((active.dataset.filter || 'all').toLowerCase());
     }
+  }
+
+  // --- Products pagination (5 per page) ---
+  const PRODUCTS_PER_PAGE = 5;
+  function getFilteredProductRows(filter = 'all') {
+    const tbody = document.querySelector('#products-section .products-table tbody');
+    if (!tbody) return [];
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    return rows.filter(tr => {
+      const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
+      return filter === 'all' || type === filter;
+    });
+  }
+
+  function renderProductsPage(rows, page = 1) {
+    const tbody = document.querySelector('#products-section .products-table tbody');
+    if (!tbody) return;
+    const total = rows.length;
+    const totalPages = Math.max(1, Math.ceil(total / PRODUCTS_PER_PAGE));
+    const clamped = Math.min(Math.max(1, page), totalPages);
+    const start = (clamped - 1) * PRODUCTS_PER_PAGE;
+    const end = start + PRODUCTS_PER_PAGE;
+    const set = new Set(rows.slice(start, end));
+
+    // Show only rows in the current page; hide the rest (but keep filter state)
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      if (rows.includes(tr)) {
+        tr.style.display = set.has(tr) ? '' : 'none';
+      } else {
+        tr.style.display = 'none';
+      }
+    });
+
+    renderProductsPagination(totalPages, clamped);
+  }
+
+  function renderProductsPagination(totalPages, current) {
+    const pag = document.getElementById('products-pagination');
+    if (!pag) return;
+    pag.innerHTML = '';
+    if (totalPages <= 1) return;
+
+    const mkBtn = (label, page, disabled = false, active = false) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pager-btn' + (active ? ' active' : '');
+      btn.textContent = label;
+      btn.disabled = disabled;
+      btn.dataset.page = String(page);
+      return btn;
+    };
+
+    // Prev
+    pag.appendChild(mkBtn('Prev', Math.max(1, current - 1), current === 1));
+
+    // Numbers (compact for few pages since 5/page)
+    for (let p = 1; p <= totalPages; p++) {
+      pag.appendChild(mkBtn(String(p), p, false, p === current));
+    }
+
+    // Next
+    pag.appendChild(mkBtn('Next', Math.min(totalPages, current + 1), current === totalPages));
+
+    pag.addEventListener('click', onProductsPaginateClick, { once: true });
+  }
+
+  function onProductsPaginateClick(e) {
+    const btn = e.target.closest('button.pager-btn');
+    if (!btn) return;
+    const page = parseInt(btn.dataset.page || '1', 10) || 1;
+    const active = document.querySelector('#products-filter-tabs .tab.active');
+    const filter = (active?.dataset.filter || 'all').toLowerCase();
+    const rows = getFilteredProductRows(filter);
+    renderProductsPage(rows, page);
+    // Rebind for subsequent clicks
+    const pag = document.getElementById('products-pagination');
+    if (pag) pag.addEventListener('click', onProductsPaginateClick, { once: true });
+  }
+
+  function applyProductsFilterAndPaginate(filter = 'all') {
+    const rows = getFilteredProductRows(filter);
+    renderProductsPage(rows, 1);
+  }
+
+  // Hook filtering to pagination
+  if (productsTabs) {
+    productsTabs.addEventListener('click', function (e) {
+      const a = e.target.closest('.tab');
+      if (!a) return;
+      const filter = (a.dataset.filter || 'all').toLowerCase();
+      applyProductsFilterAndPaginate(filter);
+    });
   }
 
   // Live Orders Tabs: SPA behavior (no page reload)

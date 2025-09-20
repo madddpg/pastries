@@ -459,6 +459,8 @@ function fetch_locations_pdo($con)
                             </tbody>
                         </table>
                     </div>
+                    <!-- Products Pagination -->
+                    <div id="products-pagination" class="pagination" aria-label="Products pagination" style="margin-top:12px"></div>
 
                     <!-- Add Product Modal -->
                     <div id="addProductModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.15);">

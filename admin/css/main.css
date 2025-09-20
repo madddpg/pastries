@@ -140,6 +140,42 @@
   user-select:none;
 }
 
+/* Products Pagination (reuse same theme as picked-up pagination) */
+#products-pagination {
+  display:flex;
+  gap:4px;
+  justify-content:center;
+  align-items:center;
+  margin-top:12px;
+  flex-wrap:wrap;
+  padding:12px 0 4px;
+}
+#products-pagination .pager-btn {
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  border:1px solid #059669;
+  border-radius:8px;
+  color:#059669;
+  cursor:pointer;
+  min-width:34px;
+  font-weight:600;
+  line-height:1;
+  transition:background .15s,color .15s;
+}
+#products-pagination .pager-btn:hover:not(:disabled):not(.active){
+  background:#e6f9f1;
+}
+#products-pagination .pager-btn:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+#products-pagination .pager-btn.active {
+  background:#059669;
+  color:#fff;
+  cursor:default;
+}
+
 /* Make modals adapt full width on small screens */
 .modal-content, .product-modal-content {
   width: 96%;
