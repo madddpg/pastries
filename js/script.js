@@ -105,70 +105,126 @@ function recalcModalTotal() {
   if (pv) pv.textContent = `(${selectedSize})`;
 }
 
-// Centralized product view handler using DB-driven size prices
-function handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme) {
-  if (!isLoggedIn) { showLoginModal(); return; }
+// Centralized product view handler using DB-driven size prices.
+// Robust: supports both (event) and (id, name, price, description, image, dataType, variants, grande, supreme)
+function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn) {
+  try {
+    // If called as an event handler, extract dataset from the clicked .view-btn
+    if (id && typeof id === 'object' && (id.type || id.target)) {
+      const e = id;
+      e.preventDefault && e.preventDefault();
+      const btn = e.currentTarget || (e.target && e.target.closest && e.target.closest('.view-btn')) || e.target;
+      const ds = (btn && btn.dataset) ? btn.dataset : {};
+      id = ds.productId || ds.id;
+      name = ds.name || '';
+      price = Number(ds.price || 0) || 0;
+      description = ds.desc || '';
+      image = ds.image || '';
+      dataType = ds.type || 'cold';
+      variants = (ds.variants && ds.variants !== 'null') ? (() => { try { return JSON.parse(ds.variants); } catch { return null; } })() : null;
+      grandeFromBtn = Number(ds.grande || ds.price || 0) || 0;
+      supremeFromBtn = Number(ds.supreme || 0) || grandeFromBtn || 0;
+    }
 
-  // Build current product state
-  currentProduct = {
-    id: id,
-    name: name || '',
-    description: description || '',
-    image: image || '',
-    dataType: (dataType || 'cold').toLowerCase(),
-    price: Number(price || 0),        // base (pastries or fallback)
-    grandePrice: Number(grande || 0),
-    supremePrice: Number(supreme || 0),
-    variants: variants || null,
-    sugar: window.selectedSugar || 'Less Sweet'
-  };
+    if (!isLoggedIn) { showLoginModal(); return; }
 
-  // Default size selection
-  selectedSize = 'Grande';
-  document.querySelectorAll('.size-btn').forEach((btn) => {
-    btn.classList.remove('active');
-    const label = btn.dataset.size || btn.textContent.trim();
-    if (label === 'Grande') btn.classList.add('active');
-  });
+    dataType = (dataType || 'cold').toString().toLowerCase();
 
-  // Populate modal content
-  const modal = document.getElementById('productModal');
-  if (!modal) return;
-  const nm = modal.querySelector('#modalProductName'); if (nm) nm.textContent = currentProduct.name;
-  const de = modal.querySelector('#modalProductDescription'); if (de) de.textContent = currentProduct.description;
-  const im = modal.querySelector('#modalProductImage'); if (im) { im.src = currentProduct.image; im.alt = currentProduct.name; }
-  const pv = modal.querySelector('#modalPriceVariant'); if (pv) pv.textContent = '(Grande)';
+    // Get UI elements
+    const modal = document.getElementById('productModal');
+    if (!modal) return;
+    const nameEl = modal.querySelector('#modalProductName');
+    const descEl = modal.querySelector('#modalProductDescription');
+    const imgEl = modal.querySelector('#modalProductImage');
+    const priceEl = modal.querySelector('#modalProductPrice');
+    const sizeTitleEl = modal.querySelector('.product-modal-sizes h3');
+    const sizeButtons = modal.querySelector('.size-buttons');
 
-  // Base price display derives from size for drinks or base for pastries
-  const base = currentProduct.dataType !== 'pastries'
-    ? (currentProduct.grandePrice || currentProduct.price || 0)
-    : (currentProduct.price || 0);
-  const pr = modal.querySelector('#modalProductPrice'); if (pr) pr.textContent = `Php ${Number(base).toFixed(2)}`;
+    // Use prices coming from dataset (derived from product_size_prices). No hardcoded defaults.
+    const grandePrice = Number(grandeFromBtn || 0);
+    const supremePrice = Number(supremeFromBtn || 0);
 
-  // Open modal visually
-  modal.classList.add('active');
-  modal.style.display = 'flex';
-  modal.style.alignItems = 'center';
-  modal.style.justifyContent = 'center';
-  modal.style.position = 'fixed';
-  modal.style.top = '0';
-  modal.style.left = '0';
-  modal.style.width = '100vw';
-  modal.style.height = '100vh';
-  modal.style.background = 'rgba(0,0,0,0.15)';
-  modal.style.zIndex = '3000';
-  document.body.style.overflow = 'hidden';
+    // Build product object baseline
+    currentProduct = {
+      id,
+      name: name || '',
+      description: description || '',
+      image: image || '',
+      dataType,
+      price: (typeof price === 'number' && price > 0) ? price : grandePrice,
+      grandePrice,
+      supremePrice,
+      variants: null,
+      sugar: window.selectedSugar || 'Less Sweet'
+    };
 
-  // Reset toppings and recalc
-  modalSelectedToppings = {};
-  if (typeof recalcModalTotal === 'function') recalcModalTotal();
+    if (dataType === 'pastries') {
+      // Pastries: options/variants; prefer provided variants else fallback
+      let v = [];
+      if (Array.isArray(variants) && variants.length) {
+        v = variants;
+      } else {
+        v = [{ label: 'Standard', price: currentProduct.price }];
+      }
+      currentProduct.variants = v.slice();
+      selectedSize = v[0].label;
+      currentProduct.price = v[0].price;
+      if (sizeTitleEl) sizeTitleEl.textContent = 'Options';
+      if (sizeButtons) {
+        sizeButtons.innerHTML = v.map((opt, i) => `<button class="size-btn ${i === 0 ? 'active' : ''}" data-label="${opt.label}" data-price="${opt.price}">${opt.label}</button>`).join('');
+        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+          btn.onclick = (e) => { e.stopPropagation(); selectSize(btn.dataset.label); };
+        });
+      }
+    } else {
+      // Drinks: standard two sizes
+      selectedSize = 'Grande';
+      if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
+      if (sizeButtons) {
+        sizeButtons.innerHTML = `
+          <button class="size-btn active">Grande</button>
+          <button class="size-btn">Supreme</button>
+        `;
+        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
+          const text = btn.textContent.trim();
+          btn.onclick = (e) => { e.stopPropagation(); selectSize(text); };
+        });
+      }
+    }
 
-  // Load active toppings shortly after open (if available)
-  if (typeof loadActiveToppings === 'function') setTimeout(loadActiveToppings, 40);
+    // Populate modal UI
+    if (nameEl) nameEl.textContent = currentProduct.name;
+    if (descEl) descEl.textContent = currentProduct.description;
+    if (imgEl) { imgEl.src = currentProduct.image; imgEl.alt = currentProduct.name; }
+    const pv = modal.querySelector('#modalPriceVariant'); if (pv) pv.textContent = `(${selectedSize})`;
+    if (priceEl) priceEl.textContent = `Php ${Number(currentProduct.price || 0).toFixed(2)}`;
+
+    // Open modal visually
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.15)';
+    modal.style.zIndex = '3000';
+    document.body.style.overflow = 'hidden';
+
+    // Reset toppings and recalc
+    modalSelectedToppings = {};
+    document.querySelectorAll('.add-on-btn').forEach(btn => btn.classList.remove('active'));
+    if (typeof recalcModalTotal === 'function') recalcModalTotal();
+    if (typeof loadActiveToppings === 'function') setTimeout(loadActiveToppings, 40);
+
+  } catch (err) {
+    console.error('handleViewProduct error', err);
+  }
 }
 
 // Product Modal Functions
-// Note: Legacy openProductModal flow removed. Use handleViewProduct(id, name, price, desc, image, type, variants, grande, supreme).
 
 // Close modal helper
 function closeProductModal() {
@@ -2054,163 +2110,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn) {
-  try {
-    console.log("handleViewProduct called", { id, name, price, dataType, variants });
-    // Require login
-    if (!isLoggedIn) { showLoginModal(); return; }
-
-    dataType = (dataType || 'cold').toString().toLowerCase();
-
-
-    // Get UI elements
-    const sizeTitleEl = document.querySelector(".product-modal-sizes h3");
-    const sizeButtons = document.querySelector(".size-buttons");
-    const nameEl = document.getElementById("modalProductName");
-    const descEl = document.getElementById("modalProductDescription");
-    const imgEl = document.getElementById("modalProductImage");
-    const priceEl = document.getElementById("modalProductPrice");
-
-    // Use prices coming from dataset (derived from product_size_prices). No hardcoded defaults.
-    let grandePrice = Number(grandeFromBtn || 0);
-    let supremePrice = Number(supremeFromBtn || 0);
-
-    // Build product object
-    currentProduct = {
-      id,
-      name,
-      description,
-      image,
-      dataType,
-      price: (typeof price === 'number' && price > 0) ? price : grandePrice
-    };
-
-    // Pastries: show variants/options
-    if (dataType === 'pastries') {
-      // Default variants if none provided
-      let v = [];
-
-      // Custom pricing for specific pastries
-      const nameLc = name.toLowerCase();
-
-      if (nameLc.includes('crème flan') || nameLc.includes('creme flan') || nameLc.includes('flan')) {
-        v = [
-          { label: 'Per piece', price: 60 },
-          { label: 'Box of 4', price: 230 },
-          { label: 'Box of 6', price: 350 }
-        ];
-      } else if (nameLc.includes('egg pie')) {
-        v = [
-          { label: 'Per slice', price: 60 },
-          { label: 'Whole', price: 380 }
-        ];
-      } else if (Array.isArray(variants) && variants.length) {
-        v = variants;
-      } else {
-        v = [{ label: 'Standard', price: currentProduct.price }];
-      }
-
-      currentProduct.variants = v.slice();
-      selectedSize = v[0].label;
-      currentProduct.price = v[0].price;
-
-      // Update UI
-      if (sizeTitleEl) sizeTitleEl.textContent = 'Options';
-      if (sizeButtons) {
-        sizeButtons.innerHTML = v.map((opt, i) =>
-          `<button class="size-btn ${i === 0 ? 'active' : ''}" data-label="${opt.label}" 
-           data-price="${opt.price}">${opt.label}</button>`
-        ).join('');
-        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
-          btn.onclick = (e) => {
-            e.stopPropagation();
-            selectSize(btn.dataset.label);
-          };
-        });
-      }
-    } else {
-      // Drinks: restore default two buttons
-      currentProduct.grandePrice = grandePrice;
-      currentProduct.supremePrice = supremePrice;
-      selectedSize = "Grande";
-      currentProduct.price = grandePrice;
-
-      if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
-      if (sizeButtons) {
-        sizeButtons.innerHTML = `
-          <button class="size-btn active">Grande</button>
-          <button class="size-btn">Supreme</button>
-        `;
-        sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
-          const text = btn.textContent.trim();
-          btn.onclick = (e) => { e.stopPropagation(); selectSize(text); };
-        });
-      }
-    }
-
-    // Populate modal UI
-    if (nameEl) nameEl.textContent = name || '';
-    if (descEl) descEl.textContent = description || '';
-    if (imgEl) { imgEl.src = image || ''; imgEl.alt = name || ''; }
-
-    modalSelectedToppings = {};
-    document.querySelectorAll('.add-on-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-
-    const toppingsContainer = document.getElementById('toppingsList');
-    if (toppingsContainer) {
-      // keep the markup defined in index.php, ensure all checkboxes are unchecked
-      toppingsContainer.querySelectorAll('.topping-checkbox').forEach(cb => cb.checked = false);
-    }
-    // compute initial displayed price (includes selected size but not toppings)
-    recalcModalTotal();
-    // Cleanly bind Add to Cart
-    const detailsSection = document.querySelector(".product-modal-details");
-    const addBtn = detailsSection ? detailsSection.querySelector(".product-modal-add-cart") : null;
-    if (addBtn) {
-      const newBtn = addBtn.cloneNode(true);
-      addBtn.parentNode.replaceChild(newBtn, addBtn);
-      newBtn.onclick = (e) => { e.stopPropagation(); addProductToCart(); closeProductModal(); };
-    }
-
-    // Open modal
-    const modal = document.getElementById("productModal");
-    if (modal) {
-      modal.classList.add("active");
-      modal.style.display = "flex";
-      modal.style.alignItems = "center";
-      modal.style.justifyContent = "center";
-      modal.style.position = "fixed";
-      modal.style.top = "0";
-      modal.style.left = "0";
-      modal.style.width = "100vw";
-      modal.style.height = "100vh";
-      modal.style.background = "rgba(0,0,0,0.15)";
-      modal.style.zIndex = "3000";
-      document.body.style.overflow = "hidden";
-      const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
-      if (yellowCloseBtn) yellowCloseBtn.onclick = (ev) => { ev.stopPropagation(); closeProductModal(); };
-    }
-
-    document.querySelectorAll('.topping-checkbox').forEach(cb => {
-      cb.onchange = function (e) {
-        const key = cb.getAttribute('data-key');
-        const price = parseFloat(cb.getAttribute('data-price')) || 0;
-        if (cb.checked) {
-          modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };
-        } else {
-          delete modalSelectedToppings[key];
-        }
-        recalcModalTotal();
-      };
-    });
-  } catch (err) {
-    console.error('handleViewProduct error', err);
-  }
-
-
-} function selectSize(size) {
+function selectSize(size) {
   selectedSize = size;
 
   // update UI highlight (match by text, data-size or data-label)
