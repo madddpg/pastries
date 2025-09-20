@@ -111,7 +111,7 @@ function fetch_products_with_sales_pdo($con)
                 COALESCE(SUM(ti.quantity), 0) AS sales
             FROM products p
             LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
-            WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
+            WHERE p.name != '__placeholder__'
             GROUP BY p.product_id";
     $stmt = $con->prepare($sql);
     $stmt->execute();
@@ -862,6 +862,64 @@ function fetch_locations_pdo($con)
                     if (dropdown && dropdown.classList.contains('dropdown-menu')) {
                         dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
                     }
+                });
+            });
+
+            // Product status toggle
+            document.querySelectorAll('.btn-toggle-product').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var row = btn.closest('tr');
+                    if (!row) return;
+                    var id = row.getAttribute('data-product-id');
+                    var currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
+                    var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                    if (!id) return;
+
+                    fetch('update_product_status.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'product_id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data && data.success) {
+                            // Update row dataset
+                            row.setAttribute('data-product-status', newStatus);
+
+                            // Update stock cell and its class
+                            var cells = row.querySelectorAll('td');
+                            // cells: [Product(ID), Category, Grande, Supreme, Stock, Status, Sales, Action]
+                            var stockCell = cells[4];
+                            if (stockCell) {
+                                stockCell.textContent = (newStatus === 'active') ? 'In Stock' : 'Out of Stock';
+                                stockCell.classList.toggle('stock-good', newStatus === 'active');
+                                stockCell.classList.toggle('stock-out', newStatus !== 'active');
+                            }
+
+                            // Update status badge
+                            var badge = row.querySelector('.status-badge');
+                            if (badge) {
+                                badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+                                badge.classList.toggle('active', newStatus === 'active');
+                                badge.classList.toggle('inactive', newStatus !== 'active');
+                            }
+
+                            // Update button text and data-status for next toggle
+                            btn.textContent = 'Set ' + (newStatus === 'active' ? 'Inactive' : 'Active');
+                            btn.setAttribute('data-status', newStatus);
+
+                            // Close dropdown
+                            var dropdown = btn.closest('.dropdown-menu');
+                            if (dropdown) dropdown.style.display = 'none';
+                        } else {
+                            alert((data && data.message) ? data.message : 'Failed to update product status');
+                        }
+                    })
+                    .catch(function() {
+                        alert('Request failed');
+                    });
                 });
             });
 

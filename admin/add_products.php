@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
     // Insert the new product (no base price column)
-    $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+    $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, category_id, image, status, data_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $result = $stmt->execute([$id, $name, $description, $category_id, $imagePath, $status, $data_type]);
 
         // Optionally store explicit size prices if provided

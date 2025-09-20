@@ -179,7 +179,7 @@ class Database
                     LEFT JOIN products p
                         ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
                     LEFT JOIN products p2
-                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id
                     WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -307,7 +307,7 @@ class Database
                     COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
-                WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
+                WHERE p.name != '__placeholder__'
                 GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();
@@ -321,29 +321,25 @@ class Database
         $size = strtolower(trim($size));
         // Only constrain by size if it's one of our supported values
         $constrainSize = in_array($size, ['grande', 'supreme'], true);
-                $tbl = $this->getSizePriceTable($con);
-                if ($constrainSize) {
-                    $sql = "SELECT spp.price AS price
-                              FROM products p
-                              LEFT JOIN `{$tbl}` spp
-                                ON spp.products_pk = p.products_pk AND spp.size = ? AND spp.effective_to IS NULL
-                             WHERE p.product_id = ? AND p.effective_to IS NULL
-                             LIMIT 1";
-                } else {
-                    // No size specified: prefer grande, then supreme
-                    $sql = "SELECT COALESCE(
-                                (SELECT price FROM `{$tbl}` s1 WHERE s1.products_pk = p.products_pk AND s1.size='grande' AND s1.effective_to IS NULL LIMIT 1),
-                                (SELECT price FROM `{$tbl}` s2 WHERE s2.products_pk = p.products_pk AND s2.size='supreme' AND s2.effective_to IS NULL LIMIT 1)
-                            ) AS price
-                            FROM products p
-                            WHERE p.product_id = ? AND p.effective_to IS NULL
-                            LIMIT 1";
-                }
+        $tbl = $this->getSizePriceTable($con);
+        // Resolve the current products_pk for this product_id (latest row by created_at)
+        $pkRow = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+        $pkRow->execute([$product_id]);
+        $pPk = $pkRow->fetchColumn();
+        if (!$pPk) { return 0.0; }
+        if ($constrainSize) {
+            $sql = "SELECT spp.price AS price FROM `{$tbl}` spp WHERE spp.products_pk = ? AND spp.size = ? AND spp.effective_to IS NULL LIMIT 1";
+        } else {
+            $sql = "SELECT COALESCE(
+                        (SELECT price FROM `{$tbl}` s1 WHERE s1.products_pk = ? AND s1.size='grande' AND s1.effective_to IS NULL LIMIT 1),
+                        (SELECT price FROM `{$tbl}` s2 WHERE s2.products_pk = ? AND s2.size='supreme' AND s2.effective_to IS NULL LIMIT 1)
+                    ) AS price";
+        }
         $stmt = $con->prepare($sql);
         if ($constrainSize) {
-            $stmt->execute([$size, $product_id]);
+            $stmt->execute([$pPk, $size]);
         } else {
-            $stmt->execute([$product_id]);
+            $stmt->execute([$pPk, $pPk]);
         }
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row && isset($row['price']) ? (float)$row['price'] : 0.0;
@@ -353,11 +349,17 @@ class Database
     public function get_all_size_prices_for_active(): array
     {
         $con = $this->opencon();
-    $tbl = $this->getSizePriceTable($con);
-    $sql = "SELECT p.product_id, spp.size, spp.price
-          FROM products p
-          JOIN `{$tbl}` spp ON spp.products_pk = p.products_pk AND spp.effective_to IS NULL
-         WHERE p.status = 'active' AND p.effective_to IS NULL";
+        $tbl = $this->getSizePriceTable($con);
+        // Join via latest products_pk per product_id
+        $sql = "SELECT p.product_id, spp.size, spp.price
+                FROM products p
+                JOIN (
+                    SELECT product_id, MAX(created_at) AS max_created
+                    FROM products
+                    GROUP BY product_id
+                ) latest ON latest.product_id = p.product_id AND latest.max_created = p.created_at
+                JOIN `{$tbl}` spp ON spp.products_pk = p.products_pk AND spp.effective_to IS NULL
+                WHERE p.status = 'active'";
         $stmt = $con->prepare($sql);
         $stmt->execute();
         $map = [];
@@ -478,7 +480,7 @@ class Database
                     COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
-                WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
+                WHERE p.name != '__placeholder__'
                 GROUP BY p.product_id";
         $stmt = $con->prepare($sql);
         $stmt->execute();
