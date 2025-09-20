@@ -101,6 +101,7 @@ function fetch_products_with_sales_pdo($con)
                 p.product_id,
                 p.name,
                 p.category_id,
+                p.data_type,
                 COALESCE(
                     (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
                     (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),
@@ -359,11 +360,11 @@ function fetch_locations_pdo($con)
 
                     <!-- Add Product Button (outside modal) -->
                     <button id="showAddProductModalBtn" class="btn-primary" style="margin: 20px;">+ Add Product</button>
-                    <div class="tabs">
-                        <a href="#" class="tab active">All Products</a>
-                       <a href="#" class="tab-active">Hot Drinks</a>
-                       <a href="#" class="tab-active">Cold Drinks</a>
-                       <a href="#" class="tab-active">Pastries</a>
+                    <div class="tabs" id="products-filter-tabs">
+                        <a href="#" class="tab active" data-filter="all"><i class="bi bi-grid-3x3-gap" style="margin-right:6px"></i>All Products</a>
+                        <a href="#" class="tab" data-filter="hot"><i class="bi bi-cup-hot" style="margin-right:6px"></i>Hot Drinks</a>
+                        <a href="#" class="tab" data-filter="cold"><i class="bi bi-snow" style="margin-right:6px"></i>Cold Drinks</a>
+                        <a href="#" class="tab" data-filter="pastries"><i class="bi bi-egg-fried" style="margin-right:6px"></i>Pastries</a>
                     </div>
 
                     <div class="table-container">
@@ -390,12 +391,27 @@ function fetch_locations_pdo($con)
                                     <tr data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                         data-product-name="<?= htmlspecialchars($product['name']) ?>"
                                         data-product-category="<?= htmlspecialchars($product['category_id']) ?>"
+                                        data-product-type="<?= htmlspecialchars(strtolower($product['data_type'] ?? '')) ?>"
                                         data-product-price="<?= htmlspecialchars($product['price']) ?>"
-                                        data-price-grande="<?= isset($sizePriceMap[$product['product_id']]["grande"]) ? htmlspecialchars($sizePriceMap[$product['product_id']]["grande"]) : '' ?>"
-                                        data-price-supreme="<?= isset($sizePriceMap[$product['product_id']]["supreme"]) ? htmlspecialchars($sizePriceMap[$product['product_id']]["supreme"]) : '' ?>"
+                                        data-price-grande="<?= isset($sizePriceMap[$product['product_id']]['grande']) ? htmlspecialchars($sizePriceMap[$product['product_id']]['grande']) : '' ?>"
+                                        data-price-supreme="<?= isset($sizePriceMap[$product['product_id']]['supreme']) ? htmlspecialchars($sizePriceMap[$product['product_id']]['supreme']) : '' ?>"
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
                                         <td><?= htmlspecialchars($product['product_id']) ?></td>
-                                        <td><?= htmlspecialchars($product['category_id']) ?></td>
+                                        <td>
+                                            <?= htmlspecialchars($product['category_id']) ?>
+                                            <?php $ptype = strtolower($product['data_type'] ?? ''); if ($ptype): ?>
+                                                <span class="type-badge <?= htmlspecialchars($ptype) ?>" style="margin-left:8px;">
+                                                    <?php if ($ptype === 'hot'): ?>
+                                                        <i class="bi bi-cup-hot"></i>
+                                                    <?php elseif ($ptype === 'cold'): ?>
+                                                        <i class="bi bi-snow"></i>
+                                                    <?php elseif ($ptype === 'pastries'): ?>
+                                                        <i class="bi bi-egg-fried"></i>
+                                                    <?php endif; ?>
+                                                    <?= ucfirst($ptype) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
                                         <?php
                                             $pid = $product['product_id'];
                                             $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;

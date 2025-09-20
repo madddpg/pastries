@@ -297,6 +297,7 @@ class Database
                     p.product_id,
                     p.name,
                     p.category_id,
+                    p.data_type,
                     COALESCE(
                         (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
                         (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),
@@ -470,6 +471,7 @@ class Database
                     p.product_id,
                     p.name,
                     p.category_id,
+                    p.data_type,
                     COALESCE(
                         (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
                         (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),

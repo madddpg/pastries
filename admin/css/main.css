@@ -14,9 +14,16 @@
   --csd-border-radius-xl: 3rem; /* Extra large for sidebar top-left */
   --csd-text-muted: #6c757d; /* Added definition for muted text */
   --csd-text-light: #f8f9fa; /* Added definition for light text */
+  /* Product type palette */
+  --type-hot: #d44637;       /* warm red-orange for hot */
+  --type-cold: #0ea5e9;      /* icy blue for cold */
+  --type-pastries: #b7791f;  /* golden brown for pastries */
+  --type-bg-hot: #fde7e4;
+  --type-bg-cold: #e0f6ff;
+  --type-bg-pastries: #fff3da;
 }
 
-body {
+.tabs {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   /* Subtle gradient background matching the image */
   background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 50%, #c3e6cb 100%);
@@ -33,6 +40,27 @@ body {
 .dashboard-overview h1 {
   display: none; /* Hide the main title to match the design */
 }
+
+/* Products Filter Tabs: add per-type emphasis on hover/active */
+#products-filter-tabs .tab[data-filter="hot"]:hover { color: var(--type-hot); background: var(--type-bg-hot); }
+#products-filter-tabs .tab[data-filter="cold"]:hover { color: var(--type-cold); background: var(--type-bg-cold); }
+#products-filter-tabs .tab[data-filter="pastries"]:hover { color: var(--type-pastries); background: var(--type-bg-pastries); }
+
+#products-filter-tabs .tab.active[data-filter="hot"] { color:#fff; background: var(--type-hot); }
+#products-filter-tabs .tab.active[data-filter="cold"] { color:#fff; background: var(--type-cold); }
+#products-filter-tabs .tab.active[data-filter="pastries"] { color:#fff; background: var(--type-pastries); }
+#products-filter-tabs .tab.active[data-filter="all"] { color:#152e22; background:#e8f5e8; }
+
+/* Product table row accents based on data type */
+.products-table tbody tr[data-product-type="hot"] { border-left: 4px solid var(--type-hot); background: linear-gradient(90deg, var(--type-bg-hot), transparent); }
+.products-table tbody tr[data-product-type="cold"] { border-left: 4px solid var(--type-cold); background: linear-gradient(90deg, var(--type-bg-cold), transparent); }
+.products-table tbody tr[data-product-type="pastries"] { border-left: 4px solid var(--type-pastries); background: linear-gradient(90deg, var(--type-bg-pastries), transparent); }
+
+/* Small pill badge for type (can be used in table) */
+.type-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+.type-badge.hot { background: var(--type-bg-hot); color: var(--type-hot); }
+.type-badge.cold { background: var(--type-bg-cold); color: var(--type-cold); }
+.type-badge.pastries { background: var(--type-bg-pastries); color: var(--type-pastries); }
 
 .card {
   border-radius: 12px;

@@ -1400,17 +1400,33 @@ function filterDrinks(type) {
   coldBtn?.classList.toggle('active', type === 'cold');
   pasBtn?.classList.toggle('active', type === 'pastries');
 
-  // Filter strictly by products.data_type
-  const typeFilter = (type === 'hot' || type === 'cold' || type === 'pastries') ? type : null;
+  // Allowed categories and type filter
+  let allowedCats = [];
+  let typeFilter = null; // 'hot' | 'cold' | null (ignore)
+  if (type === 'hot') {
+    allowedCats = [CATEGORY.premium];
+    typeFilter = 'hot';
+  } else if (type === 'pastries') {
+    allowedCats = [CATEGORY.pastries];
+    typeFilter = null; // ignore data-type for pastries
+  } else {
+    allowedCats = [CATEGORY.premium, CATEGORY.specialty, CATEGORY.milk, CATEGORY.chocolate, CATEGORY.matcha, CATEGORY.alltime];
+    typeFilter = 'cold';
+  }
+
+  // Show/hide items
   const items = document.querySelectorAll('#products .product-item');
   items.forEach(item => {
-    const dt = (item.getAttribute('data-type') || '').toLowerCase();
-    const show = typeFilter ? (dt === typeFilter) : true; // if no type, show all
+    const cat = item.getAttribute('data-category');
+    const dt = (item.getAttribute('data-type') || 'cold').toLowerCase();
+    const catOk = allowedCats.includes(cat);
+    const typeOk = typeFilter ? (dt === typeFilter) : true;
+    const show = catOk && typeOk;
     item.style.display = show ? '' : 'none';
     item.style.opacity = show ? '1' : '0';
   });
 
-  // Hide empty section headers/lists after filtering
+  // REPLACE old header/list hiding with:
   updateMenuSectionVisibility();
 
   if (typeof loadTopProducts === 'function') loadTopProducts(type);

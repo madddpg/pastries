@@ -70,6 +70,19 @@ document.addEventListener("DOMContentLoaded", () => {
         tabGroup.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
       }
       this.classList.add("active");
+
+      // If this is the products filter tabs, filter rows by data_type
+      if (tabGroup && tabGroup.id === 'products-filter-tabs') {
+        const filter = (this.dataset.filter || 'all').toLowerCase();
+        const table = document.querySelector('#products-section .products-table tbody');
+        if (table) {
+          table.querySelectorAll('tr').forEach(tr => {
+            const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
+            const show = filter === 'all' || type === filter;
+            tr.style.display = show ? '' : 'none';
+          });
+        }
+      }
     });
   });
 
