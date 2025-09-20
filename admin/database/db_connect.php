@@ -8,6 +8,8 @@ class Database
     private $password = "CupS@1234";
     private $db = "u778762049_ordering";
     private $pdo;
+    // Cache resolved table name for size-based price history
+    private $sizePriceTableName = null;
 
     public function opencon()
     {
@@ -17,6 +19,8 @@ class Database
             $this->password
         );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Ensure supporting tables/schemas exist or are updated
+        try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -43,7 +47,115 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]
         );
+        try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
+    }
+
+    /** Resolve the size-price table name in the current DB (supports product_sizes_prices or product_size_prices). */
+    public function getSizePriceTable(PDO $pdo): string
+    {
+        if (is_string($this->sizePriceTableName) && $this->sizePriceTableName !== '') {
+            return $this->sizePriceTableName;
+        }
+        try {
+            $stmt = $pdo->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('product_sizes_prices','product_size_prices') LIMIT 1");
+            $name = $stmt->fetchColumn();
+            if (is_string($name) && $name !== '') {
+                $this->sizePriceTableName = $name;
+                return $this->sizePriceTableName;
+            }
+        } catch (Throwable $_) { /* ignore */ }
+        // Default to singular if creating new
+        $this->sizePriceTableName = 'product_size_prices';
+        return $this->sizePriceTableName;
+    }
+
+    /**
+     * Create or migrate the product_size_prices table to support historical pricing by size.
+     * - Adds effective_from/effective_to
+     * - Removes UNIQUE(products_pk,size) if present
+     * - Keeps FK to products(products_pk)
+     */
+    private function ensureSizePriceHistorySchema(PDO $pdo): void
+    {
+        $tbl = $this->getSizePriceTable($pdo);
+        // 1) Create table if it does not exist
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS `{$tbl}` (
+                    `product_size_id` INT NOT NULL AUTO_INCREMENT,
+                    `products_pk` INT NOT NULL,
+                    `size` ENUM('grande','supreme') NOT NULL,
+                    `price` DECIMAL(10,2) NOT NULL,
+                    `effective_from` DATE NOT NULL DEFAULT (CURDATE()),
+                    `effective_to` DATE DEFAULT NULL,
+                    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (`product_size_id`),
+                    KEY `idx_psp_products_pk` (`products_pk`),
+                    CONSTRAINT `fk_psp_products` FOREIGN KEY (`products_pk`) REFERENCES `products` (`products_pk`) ON DELETE CASCADE ON UPDATE RESTRICT
+                ) ENGINE=InnoDB"
+            );
+        } catch (Throwable $e) {
+            // Some MySQL/MariaDB versions don't allow DEFAULT (CURDATE()) for DATE.
+            // Retry without DEFAULT expression.
+            try {
+                $pdo->exec(
+                    "CREATE TABLE IF NOT EXISTS `{$tbl}` (
+                        `product_size_id` INT NOT NULL AUTO_INCREMENT,
+                        `products_pk` INT NOT NULL,
+                        `size` ENUM('grande','supreme') NOT NULL,
+                        `price` DECIMAL(10,2) NOT NULL,
+                        `effective_from` DATE NOT NULL,
+                        `effective_to` DATE DEFAULT NULL,
+                        `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (`product_size_id`),
+                        KEY `idx_psp_products_pk` (`products_pk`),
+                        CONSTRAINT `fk_psp_products` FOREIGN KEY (`products_pk`) REFERENCES `products` (`products_pk`) ON DELETE CASCADE ON UPDATE RESTRICT
+                    ) ENGINE=InnoDB"
+                );
+            } catch (Throwable $_) { /* ignore */ }
+        }
+
+        // 2) Ensure columns effective_from/effective_to exist
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '" . str_replace("`","",$tbl) . "'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (!in_array('effective_from', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `effective_from` DATE NOT NULL DEFAULT (CURDATE()) AFTER price"); }
+                catch (Throwable $e) { try { $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `effective_from` DATE NOT NULL AFTER price"); } catch (Throwable $_) {} }
+            }
+            if (!in_array('effective_to', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE `{$tbl}` ADD COLUMN `effective_to` DATE NULL AFTER effective_from"); } catch (Throwable $_) {}
+            }
+        } catch (Throwable $_) { /* ignore */ }
+
+        // 3) Drop UNIQUE(products_pk,size) if present
+        try {
+            $rows = $pdo->query("SHOW INDEX FROM `{$tbl}`")->fetchAll(PDO::FETCH_ASSOC);
+            $byKey = [];
+            foreach ($rows as $r) {
+                $key = $r['Key_name'];
+                if (!isset($byKey[$key])) {
+                    $byKey[$key] = ['non_unique' => (int)$r['Non_unique'], 'cols' => []];
+                }
+                $byKey[$key]['cols'][(int)$r['Seq_in_index']] = $r['Column_name'];
+            }
+            foreach ($byKey as $name => $meta) {
+                ksort($meta['cols']);
+                $cols = array_values($meta['cols']);
+                if ((int)$meta['non_unique'] === 0 && $cols === ['products_pk','size']) {
+                    try { $pdo->exec("ALTER TABLE `{$tbl}` DROP INDEX `{$name}`"); } catch (Throwable $_) {}
+                }
+            }
+        } catch (Throwable $_) { /* ignore */ }
+
+        // 4) Ensure helpful indexes exist
+        try {
+            // Add composite index to speed up active lookups
+            $pdo->exec("ALTER TABLE `{$tbl}` ADD INDEX `idx_psp_active` (`products_pk`,`size`,`effective_to`)");
+        } catch (Throwable $_) { /* ignore if exists */ }
     }
 
     // Fetch all picked up orders 
@@ -198,12 +310,13 @@ class Database
         $size = strtolower(trim($size));
         // Only constrain by size if it's one of our supported values
         $constrainSize = in_array($size, ['grande', 'supreme'], true);
-        $sql = "SELECT COALESCE(spp.price, p.price) AS price
-                  FROM products p
-                  LEFT JOIN product_size_prices spp
-                    ON spp.products_pk = p.products_pk" . ($constrainSize ? " AND spp.size = ?" : "") . "
-                 WHERE p.product_id = ? AND p.effective_to IS NULL
-                 LIMIT 1";
+                $tbl = $this->getSizePriceTable($con);
+                $sql = "SELECT COALESCE(spp.price, p.price) AS price
+                                    FROM products p
+                                    LEFT JOIN `{$tbl}` spp
+                                        ON spp.products_pk = p.products_pk" . ($constrainSize ? " AND spp.size = ?" : "") . " AND (spp.effective_to IS NULL)
+                                 WHERE p.product_id = ? AND p.effective_to IS NULL
+                                 LIMIT 1";
         $stmt = $con->prepare($sql);
         if ($constrainSize) {
             $stmt->execute([$size, $product_id]);
@@ -218,10 +331,11 @@ class Database
     public function get_all_size_prices_for_active(): array
     {
         $con = $this->opencon();
-        $sql = "SELECT p.product_id, spp.size, spp.price
-                  FROM products p
-                  JOIN product_size_prices spp ON spp.products_pk = p.products_pk
-                 WHERE p.status = 'active' AND p.effective_to IS NULL";
+    $tbl = $this->getSizePriceTable($con);
+    $sql = "SELECT p.product_id, spp.size, spp.price
+          FROM products p
+          JOIN `{$tbl}` spp ON spp.products_pk = p.products_pk AND spp.effective_to IS NULL
+         WHERE p.status = 'active' AND p.effective_to IS NULL";
         $stmt = $con->prepare($sql);
         $stmt->execute();
         $map = [];

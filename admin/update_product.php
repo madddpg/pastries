@@ -135,11 +135,13 @@ try {
                 $prevStmt->execute([$product_id]);
                 $prevPk = $prevStmt->fetchColumn();
                 if ($prevPk) {
-                    // Copy size prices from previous version to new version
-                    $copySql = "INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at)
-                                SELECT ?, size, price, NOW(), NOW() FROM product_size_prices WHERE products_pk = ?
-                                ON DUPLICATE KEY UPDATE price = VALUES(price), updated_at = NOW()";
-                    $pdo->prepare($copySql)->execute([$new_products_pk, $prevPk]);
+                                                            // Copy only currently active size prices to the new version; start a new effective period
+                                                            $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
+                                                            $copySql = "INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at)
+                                                                                    SELECT ?, size, price, CURRENT_DATE, NULL, NOW(), NOW()
+                                                                                        FROM `{$tbl}`
+                                                                                     WHERE products_pk = ? AND effective_to IS NULL";
+                                                            $pdo->prepare($copySql)->execute([$new_products_pk, $prevPk]);
                 }
             } catch (Throwable $e) {
                 // Table may not exist yet; ignore quietly

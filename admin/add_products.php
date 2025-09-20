@@ -102,12 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $price_grande  = isset($_POST['price_grande']) && $_POST['price_grande'] !== '' ? round((float)$_POST['price_grande'], 2) : null;
             $price_supreme = isset($_POST['price_supreme']) && $_POST['price_supreme'] !== '' ? round((float)$_POST['price_supreme'], 2) : null;
             if ($products_pk > 0 && ($price_grande !== null || $price_supreme !== null)) {
+                $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
                 if ($price_grande !== null) {
-                    $pdo->prepare("INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at) VALUES (?, 'grande', ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE price=VALUES(price), updated_at=NOW()")
+                    $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())")
                         ->execute([$products_pk, $price_grande]);
                 }
                 if ($price_supreme !== null) {
-                    $pdo->prepare("INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at) VALUES (?, 'supreme', ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE price=VALUES(price), updated_at=NOW()")
+                    $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'supreme', ?, CURRENT_DATE, NULL, NOW(), NOW())")
                         ->execute([$products_pk, $price_supreme]);
                 }
             }
