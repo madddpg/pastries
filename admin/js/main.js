@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Skip live-orders tabs (they reload with ?status=)
       if (this.closest("#live-orders-tabs")) return;
       e.preventDefault();
+      e.stopPropagation();
       const tabGroup = this.closest(".tabs");
       if (tabGroup) {
         tabGroup.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
@@ -85,6 +86,41 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+
+  // Delegated handler as a fallback to ensure clicks are captured
+  const productsTabs = document.getElementById('products-filter-tabs');
+  if (productsTabs) {
+    productsTabs.addEventListener('click', function (e) {
+      const a = e.target.closest('.tab');
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // Activate
+      this.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      a.classList.add('active');
+      // Apply filter
+      const filter = (a.dataset.filter || 'all').toLowerCase();
+      const tbody = document.querySelector('#products-section .products-table tbody');
+      if (tbody) {
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
+          tr.style.display = (filter === 'all' || type === filter) ? '' : 'none';
+        });
+      }
+    }, true); // capture to beat other handlers
+    // Apply initial filter based on current active tab
+    const active = productsTabs.querySelector('.tab.active');
+    if (active) {
+      const filter = (active.dataset.filter || 'all').toLowerCase();
+      const tbody = document.querySelector('#products-section .products-table tbody');
+      if (tbody) {
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
+          tr.style.display = (filter === 'all' || type === filter) ? '' : 'none';
+        });
+      }
+    }
+  }
 
   // Live Orders Tabs: SPA behavior (no page reload)
   const liveOrdersTabs = document.querySelectorAll('#live-orders-tabs .tab');
