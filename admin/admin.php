@@ -89,10 +89,29 @@ function fetch_live_orders_pdo($con, $status = '')
 
 function fetch_products_with_sales_pdo($con)
 {
-    $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
-                   COALESCE(SUM(ti.quantity), 0) AS sales
+    // Resolve size price table name similarly to Database helper
+    $tbl = 'product_size_prices';
+    try {
+        $q = $con->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('product_sizes_prices','product_size_prices') LIMIT 1");
+        $name = $q->fetchColumn();
+        if ($name) { $tbl = $name; }
+    } catch (Throwable $e) { /* default stays */ }
+
+    $sql = "SELECT 
+                p.product_id,
+                p.name,
+                p.category_id,
+                COALESCE(
+                    (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
+                    (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),
+                    0
+                ) AS price,
+                p.status,
+                p.created_at,
+                COALESCE(SUM(ti.quantity), 0) AS sales
             FROM products p
             LEFT JOIN transaction_items ti ON p.product_id = ti.product_id
+            WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
             GROUP BY p.product_id";
     $stmt = $con->prepare($sql);
     $stmt->execute();

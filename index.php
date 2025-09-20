@@ -15,9 +15,6 @@ $allProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $productPrices = [];
 foreach ($allProducts as $row) {
     $productStatuses[$row['product_id']] = $row['status'];
-    if (isset($row['product_id'])) {
-        $productPrices[$row['product_id']] = isset($row['price']) ? (float)$row['price'] : 0;
-    }
 }
 
 // Fetch active size prices map once: [product_id => ['grande'=>float, 'supreme'=>float]]
@@ -25,6 +22,14 @@ try {
     $sizePriceMap = method_exists($db, 'get_all_size_prices_for_active') ? $db->get_all_size_prices_for_active() : [];
 } catch (Throwable $e) {
     $sizePriceMap = [];
+}
+
+// Derive a base price per product from sizePriceMap (prefer grande, then supreme)
+foreach ($allProducts as $row) {
+    $pid = $row['product_id'];
+    $gr = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : null;
+    $su = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : null;
+    $productPrices[$pid] = $gr !== null ? $gr : ($su !== null ? $su : 0.0);
 }
 
 $promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
@@ -690,13 +695,13 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <?php
                                 $pid = $product['product_id'];
-                                $grande = isset($sizePriceMap[$pid]['grande']) ? $sizePriceMap[$pid]['grande'] : (isset($product['price']) ? (float)$product['price'] : 0);
-                                $supreme = isset($sizePriceMap[$pid]['supreme']) ? $sizePriceMap[$pid]['supreme'] : $grande;
+                                $grande = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : (isset($productPrices[$pid]) ? (float)$productPrices[$pid] : 0);
+                                $supreme = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : $grande;
                             ?>
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(number_format((float)$grande, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-grande="<?= htmlspecialchars(number_format((float)$grande, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-supreme="<?= htmlspecialchars(number_format((float)$supreme, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
@@ -830,10 +835,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 ['label' => 'Per slice', 'price' => 60],
                                 ['label' => 'Whole', 'price' => 380],
                             ];
-                        } else {
-                            // Fallback to single price from DB (if any)
-                            $fallback = isset($product['price']) ? (float)$product['price'] : 0;
-                            $variants = [['label' => 'Standard', 'price' => $fallback]];
                         }
                         $basePrice = $variants[0]['price'];
                 ?>
@@ -906,10 +907,14 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Specialty Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
+                            <?php
+                                $pid = $product['product_id'];
+                                $base = isset($productPrices[$pid]) ? (float)$productPrices[$pid] : 0;
+                            ?>
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(number_format($base, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -956,10 +961,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Chocolate Overload</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
+                            <?php $base = isset($productPrices[$product['product_id']]) ? (float)$productPrices[$product['product_id']] : 0; ?>
                             <button type="button" class="view-btn"
                                 data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
-                                data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
+                                data-price="<?= htmlspecialchars(number_format($base, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">

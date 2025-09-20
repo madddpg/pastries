@@ -288,12 +288,23 @@ class Database
         return $flat;
     }
 
-    // Fetch all products with sales count 
+    // Fetch all products with sales count (price derived from size prices; prefers 'grande' then 'supreme')
     public function fetch_products_with_sales_pdo()
     {
         $con = $this->opencon();
-        $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
-                       COALESCE(SUM(ti.quantity), 0) AS sales
+        $tbl = $this->getSizePriceTable($con);
+        $sql = "SELECT 
+                    p.product_id,
+                    p.name,
+                    p.category_id,
+                    COALESCE(
+                        (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
+                        (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),
+                        0
+                    ) AS price,
+                    p.status,
+                    p.created_at,
+                    COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
                 WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
@@ -311,12 +322,23 @@ class Database
         // Only constrain by size if it's one of our supported values
         $constrainSize = in_array($size, ['grande', 'supreme'], true);
                 $tbl = $this->getSizePriceTable($con);
-                $sql = "SELECT COALESCE(spp.price, p.price) AS price
-                                    FROM products p
-                                    LEFT JOIN `{$tbl}` spp
-                                        ON spp.products_pk = p.products_pk" . ($constrainSize ? " AND spp.size = ?" : "") . " AND (spp.effective_to IS NULL)
-                                 WHERE p.product_id = ? AND p.effective_to IS NULL
-                                 LIMIT 1";
+                if ($constrainSize) {
+                    $sql = "SELECT spp.price AS price
+                              FROM products p
+                              LEFT JOIN `{$tbl}` spp
+                                ON spp.products_pk = p.products_pk AND spp.size = ? AND spp.effective_to IS NULL
+                             WHERE p.product_id = ? AND p.effective_to IS NULL
+                             LIMIT 1";
+                } else {
+                    // No size specified: prefer grande, then supreme
+                    $sql = "SELECT COALESCE(
+                                (SELECT price FROM `{$tbl}` s1 WHERE s1.products_pk = p.products_pk AND s1.size='grande' AND s1.effective_to IS NULL LIMIT 1),
+                                (SELECT price FROM `{$tbl}` s2 WHERE s2.products_pk = p.products_pk AND s2.size='supreme' AND s2.effective_to IS NULL LIMIT 1)
+                            ) AS price
+                            FROM products p
+                            WHERE p.product_id = ? AND p.effective_to IS NULL
+                            LIMIT 1";
+                }
         $stmt = $con->prepare($sql);
         if ($constrainSize) {
             $stmt->execute([$size, $product_id]);
@@ -441,8 +463,19 @@ class Database
     public function fetch_products_with_sales()
     {
         $con = $this->opencon();
-        $sql = "SELECT p.product_id, p.name, p.category_id, p.price, p.status, p.created_at,
-                       COALESCE(SUM(ti.quantity), 0) AS sales
+        $tbl = $this->getSizePriceTable($con);
+        $sql = "SELECT 
+                    p.product_id,
+                    p.name,
+                    p.category_id,
+                    COALESCE(
+                        (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='grande' AND spp.effective_to IS NULL LIMIT 1),
+                        (SELECT spp.price FROM `{$tbl}` spp WHERE spp.products_pk = p.products_pk AND spp.size='supreme' AND spp.effective_to IS NULL LIMIT 1),
+                        0
+                    ) AS price,
+                    p.status,
+                    p.created_at,
+                    COALESCE(SUM(ti.quantity), 0) AS sales
                 FROM products p
                 LEFT JOIN transaction_items ti ON ti.product_id = p.product_id
                 WHERE p.effective_to IS NULL AND p.name != '__placeholder__'
