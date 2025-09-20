@@ -10,7 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = trim($_POST['product_id'] ?? ($_POST['id'] ?? ''));
     $name = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
-    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0;
+    // Base price no longer stored on products; use size-specific prices instead
+    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0; // accepted but ignored
     $category = trim($_POST['category'] ?? '');
     $status = $_POST['status'] ?? 'active';
     $data_type = $_POST['data_type'] ?? '';
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($id)) $errors[] = 'Product ID is required';
     if (empty($name)) $errors[] = 'Product name is required';
     if (empty($description)) $errors[] = 'Description is required';
-    if ($price <= 0) $errors[] = 'Valid price is required';
+    // price field is no longer required on products table
     if (empty($category)) $errors[] = 'Category is required';
 
     // If there are validation errors, return them
@@ -92,9 +93,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit();
         }
 
-    // Insert the new product (effective_from/effective_to for price history)
-    $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
-    $result = $stmt->execute([$id, $name, $description, $price, $category_id, $imagePath, $status, $data_type]);
+    // Insert the new product (no base price column)
+    $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
+    $result = $stmt->execute([$id, $name, $description, $category_id, $imagePath, $status, $data_type]);
 
         // Optionally store explicit size prices if provided
         if ($result) {
@@ -124,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => $name,
                     'id' => $id,
                     'category' => $category,
-                    'price' => number_format($price, 2)
+                    'price' => isset($price_grande) && $price_grande !== null ? number_format($price_grande, 2) : (isset($price_supreme) && $price_supreme !== null ? number_format($price_supreme, 2) : '0.00')
                 ]
             ]);
         } else {
