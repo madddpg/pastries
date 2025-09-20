@@ -6,11 +6,13 @@ $pdo = $db->opencon();
 
 $product_id = $_POST['product_id'] ?? ($_POST['id'] ?? null);
 $new_name = $_POST['new_name'] ?? null;
-$new_price = $_POST['new_price'] ?? null;
+$new_price = $_POST['new_price'] ?? null; // optional now; we derive from size prices when provided
+$new_grande_price = isset($_POST['new_grande_price']) && $_POST['new_grande_price'] !== '' ? floatval($_POST['new_grande_price']) : null;
+$new_supreme_price = isset($_POST['new_supreme_price']) && $_POST['new_supreme_price'] !== '' ? floatval($_POST['new_supreme_price']) : null;
 $new_category = $_POST['new_category'] ?? null; // can be id or name
 $new_status = $_POST['new_status'] ?? null;
 
-if (!$product_id || !$new_name || $new_price === null || $new_category === null) {
+if (!$product_id || !$new_name || $new_category === null) {
     echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
     exit();
 }
@@ -18,7 +20,15 @@ if (!$product_id || !$new_name || $new_price === null || $new_category === null)
 try {
     // normalize types
     $product_id = trim((string)$product_id); // product_id is VARCHAR, keep as string
-    $price = floatval($new_price);
+    // Determine base display price: prefer provided grand/supreme; else fallback to new_price; else 0
+    $price = 0.0;
+    if ($new_grande_price !== null) {
+        $price = $new_grande_price;
+    } elseif ($new_supreme_price !== null) {
+        $price = $new_supreme_price;
+    } elseif ($new_price !== null) {
+        $price = floatval($new_price);
+    }
 
     // Resolve category -> category_id if necessary
     if (is_numeric($new_category)) {
@@ -50,7 +60,7 @@ try {
         }
     }
 
-    $currentPrice = (float)$current['price'];
+    $currentPrice = isset($current['price']) ? (float)$current['price'] : 0.0;
     $priceChanged = ($currentPrice !== $price);
 
     // If price unchanged, update in-place (name/category/status) on active row
@@ -64,6 +74,36 @@ try {
                 $stmt = $pdo->prepare("UPDATE products SET name = ?, category_id = ? WHERE product_id = ? AND effective_to IS NULL");
                 $stmt->execute([trim($new_name), $category_id, $product_id]);
             }
+
+            // If size prices are provided, version them for the current active products_pk
+            if ($new_grande_price !== null || $new_supreme_price !== null) {
+                try {
+                    $currPkStmt = $pdo->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
+                    $currPkStmt->execute([$product_id]);
+                    $currPk = (int)$currPkStmt->fetchColumn();
+                    if ($currPk) {
+                        $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
+                        $pdo->beginTransaction();
+                        if ($new_grande_price !== null) {
+                            $pdo->prepare("UPDATE `{$tbl}` SET effective_to = CURRENT_DATE WHERE products_pk = ? AND size = 'grande' AND effective_to IS NULL")
+                                ->execute([$currPk]);
+                            $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())")
+                                ->execute([$currPk, $new_grande_price]);
+                        }
+                        if ($new_supreme_price !== null) {
+                            $pdo->prepare("UPDATE `{$tbl}` SET effective_to = CURRENT_DATE WHERE products_pk = ? AND size = 'supreme' AND effective_to IS NULL")
+                                ->execute([$currPk]);
+                            $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'supreme', ?, CURRENT_DATE, NULL, NOW(), NOW())")
+                                ->execute([$currPk, $new_supreme_price]);
+                        }
+                        $pdo->commit();
+                    }
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) { $pdo->rollBack(); }
+                    // ignore if table missing or other non-critical errors
+                }
+            }
+
             echo json_encode(['success' => true, 'message' => 'Product updated.']);
             exit();
         } else {
@@ -135,13 +175,13 @@ try {
                 $prevStmt->execute([$product_id]);
                 $prevPk = $prevStmt->fetchColumn();
                 if ($prevPk) {
-                                                            // Copy only currently active size prices to the new version; start a new effective period
-                                                            $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
-                                                            $copySql = "INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at)
-                                                                                    SELECT ?, size, price, CURRENT_DATE, NULL, NOW(), NOW()
-                                                                                        FROM `{$tbl}`
-                                                                                     WHERE products_pk = ? AND effective_to IS NULL";
-                                                            $pdo->prepare($copySql)->execute([$new_products_pk, $prevPk]);
+                    // Copy only currently active size prices to the new version; start a new effective period
+                    $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
+                    $copySql = "INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at)
+                                        SELECT ?, size, price, CURRENT_DATE, NULL, NOW(), NOW()
+                                          FROM `{$tbl}`
+                                         WHERE products_pk = ? AND effective_to IS NULL";
+                    $pdo->prepare($copySql)->execute([$new_products_pk, $prevPk]);
                 }
             } catch (Throwable $e) {
                 // Table may not exist yet; ignore quietly
@@ -152,8 +192,27 @@ try {
         $pdo->prepare("UPDATE products SET status = 'inactive' WHERE product_id = ? AND effective_to IS NOT NULL")
             ->execute([$product_id]);
 
+        // If new grande/supreme prices are provided, version them: close existing active rows for this new products_pk and insert new ones
+        try {
+            $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
+            if ($new_grande_price !== null || $new_supreme_price !== null) {
+                // Close any active size rows for this new products_pk (in case we copied forward above)
+                $stmtCloseSizes = $pdo->prepare("UPDATE `{$tbl}` SET effective_to = CURRENT_DATE WHERE products_pk = ? AND effective_to IS NULL");
+                $stmtCloseSizes->execute([$new_products_pk]);
+                // Insert new ones for provided sizes
+                if ($new_grande_price !== null) {
+                    $stmtInsSz = $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())");
+                    $stmtInsSz->execute([$new_products_pk, $new_grande_price]);
+                }
+                if ($new_supreme_price !== null) {
+                    $stmtInsSz = $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'supreme', ?, CURRENT_DATE, NULL, NOW(), NOW())");
+                    $stmtInsSz->execute([$new_products_pk, $new_supreme_price]);
+                }
+            }
+        } catch (Throwable $e) { /* ignore if table missing */ }
+
         $pdo->commit();
-        echo json_encode(['success' => true, 'message' => 'Product price versioned successfully.']);
+        echo json_encode(['success' => true, 'message' => 'Product updated successfully.']);
     } catch (PDOException $e) {
         $pdo->rollBack();
         // Duplicate key due to PRIMARY KEY(product_id)

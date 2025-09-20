@@ -382,11 +382,16 @@ function fetch_locations_pdo($con)
                             <tbody>
                                 <?php
                                 $products = $db->fetch_products_with_sales_pdo();
+                                // Map of size prices to prefill edit modal
+                                $sizePriceMap = [];
+                                try { $sizePriceMap = $db->get_all_size_prices_for_active(); } catch (Throwable $e) { $sizePriceMap = []; }
                                 foreach ($products as $product): ?>
                                     <tr data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                         data-product-name="<?= htmlspecialchars($product['name']) ?>"
                                         data-product-category="<?= htmlspecialchars($product['category_id']) ?>"
                                         data-product-price="<?= htmlspecialchars($product['price']) ?>"
+                                        data-price-grande="<?= isset($sizePriceMap[$product['product_id']]["grande"]) ? htmlspecialchars($sizePriceMap[$product['product_id']]["grande"]) : '' ?>"
+                                        data-price-supreme="<?= isset($sizePriceMap[$product['product_id']]["supreme"]) ? htmlspecialchars($sizePriceMap[$product['product_id']]["supreme"]) : '' ?>"
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
                                         <td><?= htmlspecialchars($product['product_id']) ?></td>
                                         <td><?= htmlspecialchars($product['category_id']) ?></td>
@@ -491,18 +496,25 @@ function fetch_locations_pdo($con)
 
                     <!-- Edit Product Modal -->
                     <div id="editProductModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.15);">
-                        <div class="modal-content" style="background:#fff;padding:28px 24px;border-radius:20px;max-width:420px;width:100%;position:relative;box-shadow:0 4px 18px rgba(0,0,0,0.1);">
+                        <div class="modal-content" style="background:#fff;padding:28px 24px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 4px 18px rgba(0,0,0,0.1);">
                             <button id="closeEditProductModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#555;">&times;</button>
                             <h2 style="margin-bottom:20px;font-size:1.25rem;font-weight:600;color:#333;">Edit Product</h2>
                             <form id="editProductForm" method="post">
                                 <input type="hidden" name="product_id" id="editProductId">
+                                <input type="hidden" name="new_price" id="editHiddenBasePrice" value="">
                                 <div class="form-group" style="margin-bottom:14px;">
                                     <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Name</label>
                                     <input type="text" name="new_name" id="editProductName" required class="form-control" placeholder="Product Name" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
-                                <div class="form-group" style="margin-bottom:14px;">
-                                    <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Price</label>
-                                    <input type="number" name="new_price" id="editProductPrice" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                <div class="form-group" style="margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                                    <div>
+                                        <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Grande Price</label>
+                                        <input type="number" name="new_grande_price" id="editGrandePrice" step="0.01" class="form-control" placeholder="e.g. 140.00" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                    </div>
+                                    <div>
+                                        <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Supreme Price</label>
+                                        <input type="number" name="new_supreme_price" id="editSupremePrice" step="0.01" class="form-control" placeholder="e.g. 190.00" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                    </div>
                                 </div>
                                 <div class="form-group" style="margin-bottom:14px;">
                                     <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Category</label>
@@ -894,6 +906,8 @@ function fetch_locations_pdo($con)
             // Edit product modal logic
             const editModal = document.getElementById('editProductModal');
             const editForm = document.getElementById('editProductForm');
+            const editGrandePrice = document.getElementById('editGrandePrice');
+            const editSupremePrice = document.getElementById('editSupremePrice');
             const closeEditModalBtn = document.getElementById('closeEditProductModal');
 
             if (editModal && editForm && closeEditModalBtn) {
@@ -904,7 +918,11 @@ function fetch_locations_pdo($con)
                         var row = btn.closest('tr');
                         document.getElementById('editProductId').value = row.getAttribute('data-product-id');
                         document.getElementById('editProductName').value = row.getAttribute('data-product-name');
-                        document.getElementById('editProductPrice').value = row.getAttribute('data-product-price');
+                        // Prefill grande/supreme prices (if available)
+                        const g = row.getAttribute('data-price-grande') || '';
+                        const s = row.getAttribute('data-price-supreme') || '';
+                        if (editGrandePrice) editGrandePrice.value = g;
+                        if (editSupremePrice) editSupremePrice.value = s;
                         document.getElementById('editProductCategory').value = row.getAttribute('data-product-category');
                         editModal.style.display = 'flex';
                     });
@@ -925,7 +943,14 @@ function fetch_locations_pdo($con)
                     const formData = new FormData(editForm);
                     const id = formData.get('product_id');
                     const newName = formData.get('new_name');
-                    const newPrice = parseFloat(formData.get('new_price') || '0').toFixed(2);
+                    // Compute a base price to keep the table's single Price column (prefer grande, else supreme)
+                    const g = parseFloat((formData.get('new_grande_price')||'').toString());
+                    const s = parseFloat((formData.get('new_supreme_price')||'').toString());
+                    const hasG = !isNaN(g);
+                    const hasS = !isNaN(s);
+                    const newPrice = (hasG ? g : (hasS ? s : 0)).toFixed(2);
+                    const hidden = document.getElementById('editHiddenBasePrice');
+                    if (hidden) hidden.value = newPrice;
                     const newCat = formData.get('new_category');
 
                     fetch('update_product.php', {
@@ -944,6 +969,9 @@ function fetch_locations_pdo($con)
                                 row.setAttribute('data-product-name', newName);
                                 row.setAttribute('data-product-price', newPrice);
                                 row.setAttribute('data-product-category', newCat);
+                                // Also update stored grande/supreme for next edits
+                                if (hasG) row.setAttribute('data-price-grande', g.toFixed(2));
+                                if (hasS) row.setAttribute('data-price-supreme', s.toFixed(2));
                                 // cells: [Product(ID), Category, Price, Stock, Status, Sales, Action]
                                 const cells = row.querySelectorAll('td');
                                 if (cells[1]) cells[1].textContent = newCat;
