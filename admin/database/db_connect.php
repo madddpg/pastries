@@ -222,7 +222,7 @@ class Database
                     LEFT JOIN products p
                         ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
                     LEFT JOIN products p2
-                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id
                     WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -399,7 +399,7 @@ class Database
                     LEFT JOIN products p
                         ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
                     LEFT JOIN products p2
-                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+                        ON ti.products_pk IS NULL AND p2.product_id = ti.product_id
                     WHERE ti.transaction_id = ?");
             $itemStmt->execute([$order['transac_id']]);
             $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -705,8 +705,8 @@ public function createPickupOrder(
             VALUES (?, ?, ?, ?, ?)
         ");
 
-        $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
-        $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
+    $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
+    $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -833,7 +833,7 @@ public function createPickupOrder(
             $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
 
             // Insert items and their toppings (if any)
-            $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to IS NULL LIMIT 1");
+            $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
             foreach ($items as $item) {
                 $size = '';
                 if (isset($item['size']) && $item['size']) {
@@ -1007,7 +1007,7 @@ public function createPickupOrder(
                 FROM transaction_items ti
                 JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
-        WHERE p.status = 'active' AND t.status != 'cancelled' AND p.effective_to IS NULL
+    WHERE p.status = 'active' AND t.status != 'cancelled'
                   AND p.name != '__placeholder__'
                   AND (LOWER(p.category_id) LIKE ? OR LOWER(p.name) LIKE ? OR LOWER(p.product_id) LIKE ?)
                 GROUP BY ti.product_id
@@ -1026,7 +1026,7 @@ public function createPickupOrder(
         $limit = intval($limit) > 0 ? intval($limit) : 3;
                 $sql = "SELECT product_id, name, image, description, 0 as sales_count
         FROM products
-                                WHERE status = 'active' AND name != '__placeholder__' AND effective_to IS NULL
+                                WHERE status = 'active' AND name != '__placeholder__'
                                     AND (LOWER(category_id) LIKE ? OR LOWER(name) LIKE ? OR LOWER(product_id) LIKE ?)
                                 ORDER BY product_id DESC
                 LIMIT $limit";
@@ -1045,7 +1045,7 @@ public function createPickupOrder(
                 FROM transaction_items ti
                 JOIN products p ON ti.product_id = p.product_id
                 JOIN transaction t ON ti.transaction_id = t.transac_id
-        WHERE p.status = 'active' AND t.status != 'cancelled' AND LOWER(p.data_type) = ? AND p.effective_to IS NULL
+    WHERE p.status = 'active' AND t.status != 'cancelled' AND LOWER(p.data_type) = ?
                   AND p.name != '__placeholder__'
                 GROUP BY ti.product_id
                 ORDER BY sales_count DESC
