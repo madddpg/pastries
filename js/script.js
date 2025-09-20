@@ -105,85 +105,70 @@ function recalcModalTotal() {
   if (pv) pv.textContent = `(${selectedSize})`;
 }
 
-// ...existing code...
+// Centralized product view handler using DB-driven size prices
+function handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme) {
+  if (!isLoggedIn) { showLoginModal(); return; }
 
-document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProductClick);
-});
+  // Build current product state
+  currentProduct = {
+    id: id,
+    name: name || '',
+    description: description || '',
+    image: image || '',
+    dataType: (dataType || 'cold').toLowerCase(),
+    price: Number(price || 0),        // base (pastries or fallback)
+    grandePrice: Number(grande || 0),
+    supremePrice: Number(supreme || 0),
+    variants: variants || null,
+    sugar: window.selectedSugar || 'Less Sweet'
+  };
 
-
-function handleViewProductClick(event) {
-  event.preventDefault();
-  const btn = event.currentTarget || event.target;
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  // Read dataset (ID, name, images, size prices)
-  const pid = btn.dataset.productId || btn.dataset.id;
-  const name = btn.dataset.name || '';
-  const desc = btn.dataset.desc || '';
-  const image = btn.dataset.image || '';
-  const dataType = (btn.dataset.type || 'cold').toLowerCase();
-  const grande = parseFloat(btn.dataset.grande || btn.dataset.price || '0') || 0;
-  const supreme = parseFloat(btn.dataset.supreme || grande || '0') || 0;
-  const base = parseFloat(btn.dataset.price || grande || '0') || 0;
-
-  // Delegate to the centralized handler that builds the modal state
-  handleViewProduct(pid, name, base, desc, image, dataType, null, grande, supreme);
-
-  // Populate modal UI safely if present
-  const modal = document.getElementById('productModal');
-  if (modal) {
-    const nm = modal.querySelector('#modalProductName'); if (nm) nm.textContent = name;
-    const pr = modal.querySelector('#modalProductPrice'); if (pr) pr.textContent = `Php ${Number(grande || base).toFixed(2)}`;
-    const pv = modal.querySelector('#modalPriceVariant'); if (pv) pv.textContent = '(Grande)';
-    const de = modal.querySelector('#modalProductDescription'); if (de) de.textContent = desc;
-    const im = modal.querySelector('#modalProductImage'); if (im) { im.src = image; im.alt = name; }
-  }
-
+  // Default size selection
   selectedSize = 'Grande';
-  document.querySelectorAll('.size-btn').forEach((btn) => btn.classList.remove('active'));
-  const firstSizeBtn = document.querySelector('.size-btn');
-  if (firstSizeBtn) firstSizeBtn.classList.add('active');
+  document.querySelectorAll('.size-btn').forEach((btn) => {
+    btn.classList.remove('active');
+    const label = btn.dataset.size || btn.textContent.trim();
+    if (label === 'Grande') btn.classList.add('active');
+  });
+
+  // Populate modal content
+  const modal = document.getElementById('productModal');
+  if (!modal) return;
+  const nm = modal.querySelector('#modalProductName'); if (nm) nm.textContent = currentProduct.name;
+  const de = modal.querySelector('#modalProductDescription'); if (de) de.textContent = currentProduct.description;
+  const im = modal.querySelector('#modalProductImage'); if (im) { im.src = currentProduct.image; im.alt = currentProduct.name; }
+  const pv = modal.querySelector('#modalPriceVariant'); if (pv) pv.textContent = '(Grande)';
+
+  // Base price display derives from size for drinks or base for pastries
+  const base = currentProduct.dataType !== 'pastries'
+    ? (currentProduct.grandePrice || currentProduct.price || 0)
+    : (currentProduct.price || 0);
+  const pr = modal.querySelector('#modalProductPrice'); if (pr) pr.textContent = `Php ${Number(base).toFixed(2)}`;
 
   // Open modal visually
-  if (modal) {
-    modal.classList.add('active');
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100vw';
-    modal.style.height = '100vh';
-    modal.style.background = 'rgba(0,0,0,0.15)';
-    modal.style.zIndex = '3000';
-    document.body.style.overflow = 'hidden';
-  }
+  modal.classList.add('active');
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100vw';
+  modal.style.height = '100vh';
+  modal.style.background = 'rgba(0,0,0,0.15)';
+  modal.style.zIndex = '3000';
+  document.body.style.overflow = 'hidden';
 
-  // Recalc total with the now known grande/supreme prices
+  // Reset toppings and recalc
+  modalSelectedToppings = {};
   if (typeof recalcModalTotal === 'function') recalcModalTotal();
+
+  // Load active toppings shortly after open (if available)
+  if (typeof loadActiveToppings === 'function') setTimeout(loadActiveToppings, 40);
 }
 
 // Product Modal Functions
-// Deprecated: openProductModal() superseded by handleViewProduct which passes size prices.
-// ...existing code...
-
-document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProduct);
-});
-function handleViewProduct(event) {
-  if (!isLoggedIn) {
-    // Product Modal Functions
-    // Note: Legacy openProductModal handler removed. We now rely on dataset-driven handlers above.
-    showLoginModal();
-    return;
-  }
-  // proceed to open product modal
-  openProductModal(event.target.dataset.productId);
-}
+// Note: Legacy openProductModal flow removed. Use handleViewProduct(id, name, price, desc, image, type, variants, grande, supreme).
 
 // Close modal helper
 function closeProductModal() {
