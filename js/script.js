@@ -1251,14 +1251,22 @@ document.addEventListener('click', function (e) {
   const btn = e.target.closest && e.target.closest('.view-btn');
   if (!btn) return;
   try {
-    const id = btn.dataset.id;
+    const id = btn.dataset.productId || btn.dataset.id;
     const name = btn.dataset.name;
-    const price = Number(btn.dataset.price) || 0;
+    const sizeMap = (window.SIZE_PRICE_MAP && id && window.SIZE_PRICE_MAP[id]) ? window.SIZE_PRICE_MAP[id] : {};
+    // prefer data-*; fallback to SIZE_PRICE_MAP; finally 0
+    const grande = (btn.dataset.grande !== undefined && btn.dataset.grande !== '')
+      ? Number(btn.dataset.grande)
+      : Number(sizeMap.grande ?? 0);
+    const supreme = (btn.dataset.supreme !== undefined && btn.dataset.supreme !== '')
+      ? Number(btn.dataset.supreme)
+      : Number(sizeMap.supreme ?? grande ?? 0);
+    const price = (btn.dataset.price !== undefined && btn.dataset.price !== '')
+      ? Number(btn.dataset.price)
+      : Number((sizeMap && sizeMap.grande != null) ? sizeMap.grande : 0);
     const description = btn.dataset.desc || '';
     const image = btn.dataset.image || '';
     const dataType = btn.dataset.type || 'cold';
-    const grande = Number(btn.dataset.grande || 0);
-    const supreme = Number(btn.dataset.supreme || 0);
     let variants = null;
     if (btn.dataset.variants && btn.dataset.variants !== 'null') {
       try {
