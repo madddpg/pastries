@@ -108,9 +108,9 @@ function recalcModalTotal() {
 // ...existing code...
 
 document.querySelectorAll('.view-btn').forEach(button => {
-  button.addEventListener('click', handleViewProduct);
+  button.addEventListener('click', handleViewProductClick);
 });
-function handleViewProduct(event) {
+function handleViewProductClick(event) {
   event.preventDefault();
   const btn = event.currentTarget || event.target;
   if (!isLoggedIn) {
@@ -127,17 +127,8 @@ function handleViewProduct(event) {
   const supreme = parseFloat(btn.dataset.supreme || grande || '0') || 0;
   const base = parseFloat(btn.dataset.price || grande || '0') || 0;
 
-  // Seed currentProduct with size-aware prices used by modal/calculations
-  currentProduct = {
-    id: pid,
-    name,
-    description: desc,
-    image,
-    dataType,
-    price: base,
-    grandePrice: grande,
-    supremePrice: supreme,
-  };
+  // Delegate to the centralized handler that builds the modal state
+  handleViewProduct(pid, name, base, desc, image, dataType, null, grande, supreme);
 
   // Populate modal UI safely if present
   const modal = document.getElementById('productModal');
@@ -1221,6 +1212,8 @@ document.addEventListener('click', function (e) {
     const description = btn.dataset.desc || '';
     const image = btn.dataset.image || '';
     const dataType = btn.dataset.type || 'cold';
+    const grande = Number(btn.dataset.grande || 0);
+    const supreme = Number(btn.dataset.supreme || 0);
     let variants = null;
     if (btn.dataset.variants && btn.dataset.variants !== 'null') {
       try {
@@ -1231,7 +1224,7 @@ document.addEventListener('click', function (e) {
       }
     }
     // Call product view handler
-    handleViewProduct(id, name, price, description, image, dataType, variants);
+    handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme);
   } catch (err) {
     console.error('Error handling view button click:', err);
   }
@@ -2072,7 +2065,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function handleViewProduct(id, name, price, description, image, dataType, variants) {
+function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn) {
   try {
     console.log("handleViewProduct called", { id, name, price, dataType, variants });
     // Require login
@@ -2089,9 +2082,9 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     const imgEl = document.getElementById("modalProductImage");
     const priceEl = document.getElementById("modalProductPrice");
 
-    // Set default prices based on type
-    let grandePrice = 140, supremePrice = 170;
-    if (dataType === 'hot') { grandePrice = 120; supremePrice = 150; }
+    // Use prices coming from dataset (derived from product_size_prices). No hardcoded defaults.
+    let grandePrice = Number(grandeFromBtn || 0);
+    let supremePrice = Number(supremeFromBtn || 0);
 
     // Build product object
     currentProduct = {
@@ -2100,7 +2093,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       description,
       image,
       dataType,
-      price: (typeof price === 'number' && price > 0) ? price : (dataType === 'pastries' ? 60 : grandePrice)
+      price: (typeof price === 'number' && price > 0) ? price : grandePrice
     };
 
     // Pastries: show variants/options
