@@ -191,6 +191,48 @@ class Database
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Get size-specific price for the active version of a product (falls back to products.price)
+    public function get_size_price_for_active(string $product_id, string $size = ''): float
+    {
+        $con = $this->opencon();
+        $size = strtolower(trim($size));
+        // Only constrain by size if it's one of our supported values
+        $constrainSize = in_array($size, ['grande', 'supreme'], true);
+        $sql = "SELECT COALESCE(spp.price, p.price) AS price
+                  FROM products p
+                  LEFT JOIN product_size_prices spp
+                    ON spp.products_pk = p.products_pk" . ($constrainSize ? " AND spp.size = ?" : "") . "
+                 WHERE p.product_id = ? AND p.effective_to IS NULL
+                 LIMIT 1";
+        $stmt = $con->prepare($sql);
+        if ($constrainSize) {
+            $stmt->execute([$size, $product_id]);
+        } else {
+            $stmt->execute([$product_id]);
+        }
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row && isset($row['price']) ? (float)$row['price'] : 0.0;
+    }
+
+    // Return map of size prices for all active products: [product_id => ['grande'=>price, 'supreme'=>price]]
+    public function get_all_size_prices_for_active(): array
+    {
+        $con = $this->opencon();
+        $sql = "SELECT p.product_id, spp.size, spp.price
+                  FROM products p
+                  JOIN product_size_prices spp ON spp.products_pk = p.products_pk
+                 WHERE p.status = 'active' AND p.effective_to IS NULL";
+        $stmt = $con->prepare($sql);
+        $stmt->execute();
+        $map = [];
+        while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $pid = $r['product_id'];
+            $sz  = strtolower($r['size']);
+            $map[$pid][$sz] = (float)$r['price'];
+        }
+        return $map;
+    }
+
     // Fetch all locations (PDO)
     public function fetch_locations_pdo()
     {
@@ -475,7 +517,10 @@ public function createPickupOrder(
         $total_amount = 0.0;
         foreach ($cart_items as $item) {
             $qty = max(1, (int)($item['quantity'] ?? 1));
-            $base = (float)($item['basePrice'] ?? $item['price'] ?? 0);
+            // Enforce server-side base price from DB by product + size
+            $pid  = $item['product_id'] ?? '';
+            $sz   = strtolower($item['size'] ?? '');
+            $base = $pid ? $this->get_size_price_for_active($pid, $sz) : (float)($item['basePrice'] ?? $item['price'] ?? 0);
             $tSum = 0.0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -525,7 +570,8 @@ public function createPickupOrder(
             $item_sugar = isset($item['sugar']) && $item['sugar'] !== '' ? trim($item['sugar']) : null;
 
             // Calculate per item price (base + toppings)
-            $basePrice = (float)($item['basePrice'] ?? $item['price'] ?? 0);
+            // Re-fetch authoritative base price from DB using size
+            $basePrice = $this->get_size_price_for_active($product_id, $size);
             $tSum = 0.0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -659,13 +705,9 @@ public function createPickupOrder(
                         $computed_toppings_sum += ($t_price * $t_qty);
                     }
                 }
-                if (isset($item['price'])) {
-                    $price_to_store = floatval($item['price']);
-                } elseif (isset($item['basePrice'])) {
-                    $price_to_store = floatval($item['basePrice']) + $computed_toppings_sum;
-                } else {
-                    $price_to_store = 0.00;
-                }
+                // Authoritative base price from DB for the given size
+                $base_from_db = $product_id ? $this->get_size_price_for_active($product_id, $size) : 0.00;
+                $price_to_store = $base_from_db + $computed_toppings_sum;
 
                 // Resolve active products_pk
                 $products_pk_val = null;

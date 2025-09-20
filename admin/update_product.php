@@ -126,6 +126,26 @@ try {
             $current['data_type'] ?? null
         ]);
 
+        // Carry forward size-specific prices to the new version if a size pricing table exists
+        $new_products_pk = (int)$pdo->lastInsertId();
+        if ($new_products_pk > 0) {
+            try {
+                // Find previous products_pk (the one we just closed)
+                $prevStmt = $pdo->prepare("SELECT products_pk FROM products WHERE product_id = ? AND effective_to = CURRENT_DATE ORDER BY created_at DESC LIMIT 1");
+                $prevStmt->execute([$product_id]);
+                $prevPk = $prevStmt->fetchColumn();
+                if ($prevPk) {
+                    // Copy size prices from previous version to new version
+                    $copySql = "INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at)
+                                SELECT ?, size, price, NOW(), NOW() FROM product_size_prices WHERE products_pk = ?
+                                ON DUPLICATE KEY UPDATE price = VALUES(price), updated_at = NOW()";
+                    $pdo->prepare($copySql)->execute([$new_products_pk, $prevPk]);
+                }
+            } catch (Throwable $e) {
+                // Table may not exist yet; ignore quietly
+            }
+        }
+
         // Safety: ensure all non-current (historical) rows are inactive
         $pdo->prepare("UPDATE products SET status = 'inactive' WHERE product_id = ? AND effective_to IS NOT NULL")
             ->execute([$product_id]);

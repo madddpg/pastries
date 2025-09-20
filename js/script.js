@@ -111,52 +111,71 @@ document.querySelectorAll('.view-btn').forEach(button => {
   button.addEventListener('click', handleViewProduct);
 });
 function handleViewProduct(event) {
+  event.preventDefault();
+  const btn = event.currentTarget || event.target;
   if (!isLoggedIn) {
     showLoginModal();
     return;
   }
-  // proceed to open product modal
-  openProductModal(event.target.dataset.productId);
+  // Read dataset (ID, name, images, size prices)
+  const pid = btn.dataset.productId || btn.dataset.id;
+  const name = btn.dataset.name || '';
+  const desc = btn.dataset.desc || '';
+  const image = btn.dataset.image || '';
+  const dataType = (btn.dataset.type || 'cold').toLowerCase();
+  const grande = parseFloat(btn.dataset.grande || btn.dataset.price || '0') || 0;
+  const supreme = parseFloat(btn.dataset.supreme || grande || '0') || 0;
+  const base = parseFloat(btn.dataset.price || grande || '0') || 0;
+
+  // Seed currentProduct with size-aware prices used by modal/calculations
+  currentProduct = {
+    id: pid,
+    name,
+    description: desc,
+    image,
+    dataType,
+    price: base,
+    grandePrice: grande,
+    supremePrice: supreme,
+  };
+
+  // Populate modal UI safely if present
+  const modal = document.getElementById('productModal');
+  if (modal) {
+    const nm = modal.querySelector('#modalProductName'); if (nm) nm.textContent = name;
+    const pr = modal.querySelector('#modalProductPrice'); if (pr) pr.textContent = `Php ${Number(grande || base).toFixed(2)}`;
+    const pv = modal.querySelector('#modalPriceVariant'); if (pv) pv.textContent = '(Grande)';
+    const de = modal.querySelector('#modalProductDescription'); if (de) de.textContent = desc;
+    const im = modal.querySelector('#modalProductImage'); if (im) { im.src = image; im.alt = name; }
+  }
+
+  selectedSize = 'Grande';
+  document.querySelectorAll('.size-btn').forEach((btn) => btn.classList.remove('active'));
+  const firstSizeBtn = document.querySelector('.size-btn');
+  if (firstSizeBtn) firstSizeBtn.classList.add('active');
+
+  // Open modal visually
+  if (modal) {
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.15)';
+    modal.style.zIndex = '3000';
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Recalc total with the now known grande/supreme prices
+  if (typeof recalcModalTotal === 'function') recalcModalTotal();
 }
 
 // Product Modal Functions
-function openProductModal(id, name, price, description, image) {
-  if (!isLoggedIn) {
-    showLoginModal();
-    return;
-  }
-  currentProduct = { id, name, price, description, image };
-  document.getElementById("modalProductName").textContent = name;
-  document.getElementById("modalProductPrice").textContent = `Php ${price}`;
-  document.getElementById("modalProductDescription").textContent = description;
-  document.getElementById("modalProductImage").src = image;
-  document.getElementById("modalProductImage").alt = name;
-  selectedSize = "Grande";
-  document.querySelectorAll(".size-btn").forEach((btn) => btn.classList.remove("active"));
-  document.querySelector(".size-btn").classList.add("active");
-  const modal = document.getElementById("productModal");
-  modal.classList.add("active");
-  modal.style.display = "flex";
-  modal.style.alignItems = "center";
-  modal.style.justifyContent = "center";
-  modal.style.position = "fixed";
-  modal.style.top = "0";
-  modal.style.left = "0";
-  modal.style.width = "100vw";
-  modal.style.height = "100vh";
-  modal.style.background = "rgba(0,0,0,0.15)";
-  modal.style.zIndex = "3000";
-  document.body.style.overflow = "hidden";
-
-  // Ensure the yellow close button closes the modal
-  const yellowCloseBtn = modal.querySelector('.product-modal-close-yellow');
-  if (yellowCloseBtn) {
-    yellowCloseBtn.onclick = function (e) {
-      e.stopPropagation();
-      closeProductModal();
-    };
-  }
-}
+// Deprecated: openProductModal() superseded by handleViewProduct which passes size prices.
 // ...existing code...
 
 document.querySelectorAll('.view-btn').forEach(button => {

@@ -20,6 +20,13 @@ foreach ($allProducts as $row) {
     }
 }
 
+// Fetch active size prices map once: [product_id => ['grande'=>float, 'supreme'=>float]]
+try {
+    $sizePriceMap = method_exists($db, 'get_all_size_prices_for_active') ? $db->get_all_size_prices_for_active() : [];
+} catch (Throwable $e) {
+    $sizePriceMap = [];
+}
+
 $promoStmt = $pdo->prepare("SELECT * FROM promos WHERE active = 1 ORDER BY promo_id ASC");
 $promoStmt->execute();
 $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -28,10 +35,15 @@ $activePromos = $promoStmt->fetchAll(PDO::FETCH_ASSOC);
 // Uses mode (most common) price in the category as Grande; Supreme = Grande + 30 by default.
 // Falls back to provided defaults if no products found.
 function computeCategoryHeader(array $allProducts, int $categoryId, int $defaultGrande, int $defaultSupreme): array {
+    // Use sizePriceMap if available for more accuracy
+    global $sizePriceMap;
     $prices = [];
     foreach ($allProducts as $p) {
         if ((int)($p['category_id'] ?? 0) === $categoryId && ($p['status'] ?? '') === 'active') {
-            $pr = isset($p['price']) ? (float)$p['price'] : 0;
+            $pid = $p['product_id'];
+            $pr = isset($sizePriceMap[$pid]['grande'])
+                ? (float)$sizePriceMap[$pid]['grande']
+                : (isset($p['price']) ? (float)$p['price'] : 0);
             if ($pr > 0) {
                 $prices[] = (int)round($pr);
             }
@@ -45,8 +57,26 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     foreach ($prices as $pr) { $freq[$pr] = ($freq[$pr] ?? 0) + 1; }
     arsort($freq);
     $grande = (int)array_key_first($freq);
-    $delta = max(0, (int)$defaultSupreme - (int)$defaultGrande);
-    $supreme = $grande + $delta; // use category-specific default delta
+    // Try to infer a representative Supreme from products if any; otherwise, fall back to default delta
+    $supCandidates = [];
+    foreach ($allProducts as $p) {
+        if ((int)($p['category_id'] ?? 0) === $categoryId && ($p['status'] ?? '') === 'active') {
+            $pid = $p['product_id'];
+            if (isset($sizePriceMap[$pid]['supreme'])) {
+                $supCandidates[] = (int)round((float)$sizePriceMap[$pid]['supreme']);
+            }
+        }
+    }
+    if ($supCandidates) {
+        // use mode of collected supreme prices
+        $sf = [];
+        foreach ($supCandidates as $sp) { $sf[$sp] = ($sf[$sp] ?? 0) + 1; }
+        arsort($sf);
+        $supreme = (int)array_key_first($sf);
+    } else {
+        $delta = max(0, (int)$defaultSupreme - (int)$defaultGrande);
+        $supreme = $grande + $delta; // fallback: apply default delta
+    }
     return ['grande' => $grande, 'supreme' => $supreme];
 }
 
@@ -79,6 +109,22 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         }
     </style>
 <?php endif; ?>
+
+<script>
+    // Expose active size prices to the storefront JS for universal access
+    window.SIZE_PRICE_MAP = <?php
+        $safeMap = [];
+        if (!empty($sizePriceMap)) {
+            foreach ($sizePriceMap as $pid => $sizes) {
+                $safeMap[$pid] = [
+                    'grande' => isset($sizes['grande']) ? (float)$sizes['grande'] : null,
+                    'supreme' => isset($sizes['supreme']) ? (float)$sizes['supreme'] : null,
+                ];
+            }
+        }
+        echo json_encode($safeMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ?>;
+</script>
 
 <body>
     <!-- Header -->
@@ -642,10 +688,17 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
+                            <?php
+                                $pid = $product['product_id'];
+                                $grande = isset($sizePriceMap[$pid]['grande']) ? $sizePriceMap[$pid]['grande'] : (isset($product['price']) ? (float)$product['price'] : 0);
+                                $supreme = isset($sizePriceMap[$pid]['supreme']) ? $sizePriceMap[$pid]['supreme'] : $grande;
+                            ?>
                             <button type="button" class="view-btn"
-                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
+                                data-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($product['product_id'], ENT_QUOTES) ?>"
                                 data-name="<?= htmlspecialchars($product['name'], ENT_QUOTES) ?>"
                                 data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
+                                data-grande="<?= htmlspecialchars(number_format((float)$grande, 2, '.', ''), ENT_QUOTES) ?>"
+                                data-supreme="<?= htmlspecialchars(number_format((float)$supreme, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
                                 data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
@@ -690,10 +743,18 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($p['cold_desc']) ?></p>
                             <div class="product-footer">
+                                <?php
+                                    $pid2 = $p['product_id'];
+                                    $base2 = isset($productPrices[$pid2]) ? (float)$productPrices[$pid2] : 120;
+                                    $gr2 = isset($sizePriceMap[$pid2]['grande']) ? (float)$sizePriceMap[$pid2]['grande'] : $base2;
+                                    $su2 = isset($sizePriceMap[$pid2]['supreme']) ? (float)$sizePriceMap[$pid2]['supreme'] : $gr2;
+                                ?>
                                 <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
+                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars(isset($productPrices[$p['product_id']]) ? $productPrices[$p['product_id']] : 120, ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars($base2, ENT_QUOTES) ?>"
+                                    data-grande="<?= htmlspecialchars(number_format($gr2, 2, '.', ''), ENT_QUOTES) ?>"
+                                    data-supreme="<?= htmlspecialchars(number_format($su2, 2, '.', ''), ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
                                     data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
                                     data-type="cold">View</button>
@@ -712,10 +773,17 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <span class="badge bg-success mb-2">Premium Coffee</span>
                             <p><?= htmlspecialchars($p['hot_desc']) ?></p>
                             <div class="product-footer">
+                                <?php
+                                    $base3 = isset($productPrices[$pid2]) ? (float)$productPrices[$pid2] : 120;
+                                    $gr3 = isset($sizePriceMap[$pid2]['grande']) ? (float)$sizePriceMap[$pid2]['grande'] : $base3;
+                                    $su3 = isset($sizePriceMap[$pid2]['supreme']) ? (float)$sizePriceMap[$pid2]['supreme'] : $gr3;
+                                ?>
                                 <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
+                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
                                     data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars(isset($productPrices[$p['product_id']]) ? $productPrices[$p['product_id']] : 120, ENT_QUOTES) ?>"
+                                    data-price="<?= htmlspecialchars($base3, ENT_QUOTES) ?>"
+                                    data-grande="<?= htmlspecialchars(number_format($gr3, 2, '.', ''), ENT_QUOTES) ?>"
+                                    data-supreme="<?= htmlspecialchars(number_format($su3, 2, '.', ''), ENT_QUOTES) ?>"
                                     data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
                                     data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
                                     data-type="hot">View</button>

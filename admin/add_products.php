@@ -96,6 +96,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, price, category_id, image, status, data_type, effective_from, effective_to) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_DATE, NULL)");
     $result = $stmt->execute([$id, $name, $description, $price, $category_id, $imagePath, $status, $data_type]);
 
+        // Optionally store explicit size prices if provided
+        if ($result) {
+            $products_pk = (int)$pdo->lastInsertId();
+            $price_grande  = isset($_POST['price_grande']) && $_POST['price_grande'] !== '' ? round((float)$_POST['price_grande'], 2) : null;
+            $price_supreme = isset($_POST['price_supreme']) && $_POST['price_supreme'] !== '' ? round((float)$_POST['price_supreme'], 2) : null;
+            if ($products_pk > 0 && ($price_grande !== null || $price_supreme !== null)) {
+                if ($price_grande !== null) {
+                    $pdo->prepare("INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at) VALUES (?, 'grande', ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE price=VALUES(price), updated_at=NOW()")
+                        ->execute([$products_pk, $price_grande]);
+                }
+                if ($price_supreme !== null) {
+                    $pdo->prepare("INSERT INTO product_size_prices (products_pk, size, price, created_at, updated_at) VALUES (?, 'supreme', ?, NOW(), NOW()) ON DUPLICATE KEY UPDATE price=VALUES(price), updated_at=NOW()")
+                        ->execute([$products_pk, $price_supreme]);
+                }
+            }
+        }
+
 
         // In the success part of your try-catch block
         if ($result) {
