@@ -372,7 +372,8 @@ function fetch_locations_pdo($con)
                                 <tr>
                                     <th>Product</th>
                                     <th>Category</th>
-                                    <th>Price</th>
+                                    <th>Grande</th>
+                                    <th>Supreme</th>
                                     <th>Stock</th>
                                     <th>Status</th>
                                     <th>Sales</th>
@@ -395,7 +396,13 @@ function fetch_locations_pdo($con)
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
                                         <td><?= htmlspecialchars($product['product_id']) ?></td>
                                         <td><?= htmlspecialchars($product['category_id']) ?></td>
-                                        <td>₱<?= number_format($product['price'], 2) ?></td>
+                                        <?php
+                                            $pid = $product['product_id'];
+                                            $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;
+                                            $sPrice = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : 0.0;
+                                        ?>
+                                        <td>₱<?= number_format($gPrice, 2) ?></td>
+                                        <td>₱<?= number_format($sPrice, 2) ?></td>
                                         <td class="<?= $product['status'] === 'active' ? 'stock-good' : 'stock-out' ?>">
                                             <?= $product['status'] === 'active' ? 'In Stock' : 'Out of Stock' ?>
                                         </td>
@@ -972,10 +979,13 @@ function fetch_locations_pdo($con)
                                 // Also update stored grande/supreme for next edits
                                 if (hasG) row.setAttribute('data-price-grande', g.toFixed(2));
                                 if (hasS) row.setAttribute('data-price-supreme', s.toFixed(2));
-                                // cells: [Product(ID), Category, Price, Stock, Status, Sales, Action]
+                                // cells: [Product(ID), Category, Grande, Supreme, Stock, Status, Sales, Action]
                                 const cells = row.querySelectorAll('td');
                                 if (cells[1]) cells[1].textContent = newCat;
-                                if (cells[2]) cells[2].textContent = '₱' + Number(newPrice).toFixed(2);
+                                // Grande
+                                if (cells[2] && hasG) cells[2].textContent = '₱' + g.toFixed(2);
+                                // Supreme
+                                if (cells[3] && hasS) cells[3].textContent = '₱' + s.toFixed(2);
                             }
                             editModal.style.display = 'none';
                         })
