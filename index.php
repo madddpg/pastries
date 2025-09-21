@@ -829,33 +829,45 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         $fsPath = __DIR__ . '/' . ltrim(parse_url($imgSrc, PHP_URL_PATH), '/');
                         if (!file_exists($fsPath)) $imgSrc = 'img/placeholder_pastry.png';
 
-                        // Define pastry price variants
-                        $nameLc = mb_strtolower($product['name']);
+                        // Prefer DB-driven pastry variants if available; fallback to simple heuristics
+                        $pid = $product['product_id'];
                         $variants = [];
-                        if (strpos($nameLc, 'crème flan') !== false || strpos($nameLc, 'creme flan') !== false || strpos($nameLc, 'flan') !== false) {
-                            $variants = [
-                                ['label' => 'Per piece', 'price' => 60],
-                                ['label' => 'Box of 4', 'price' => 230],
-                                ['label' => 'Box of 6', 'price' => 350],
-                            ];
-                        } elseif (strpos($nameLc, 'egg pie') !== false) {
-                            $variants = [
-                                ['label' => 'Per slice', 'price' => 60],
-                                ['label' => 'Whole', 'price' => 380],
-                            ];
-                        }
-                        // Determine a safe base price: if variants are defined, use the first; otherwise fall back
-                        if (!empty($variants) && isset($variants[0]['price'])) {
-                            $basePrice = $variants[0]['price'];
+                        if (!empty($pastryVariantsMap[$pid]) && is_array($pastryVariantsMap[$pid])) {
+                            $variants = $pastryVariantsMap[$pid];
                         } else {
-                            $fallbackPid = $product['product_id'];
+                            $nameLc = mb_strtolower($product['name']);
+                            if (strpos($nameLc, 'crème flan') !== false || strpos($nameLc, 'creme flan') !== false || strpos($nameLc, 'flan') !== false) {
+                                $variants = [
+                                    ['label' => 'Per piece', 'price' => 60],
+                                    ['label' => 'Box of 4', 'price' => 230],
+                                    ['label' => 'Box of 6', 'price' => 350],
+                                ];
+                            } elseif (strpos($nameLc, 'egg pie') !== false) {
+                                $variants = [
+                                    ['label' => 'Per slice', 'price' => 60],
+                                    ['label' => 'Whole', 'price' => 380],
+                                ];
+                            }
+                        }
+
+                        // Determine display/base price: use minimum variant price when variants exist; otherwise fallback
+                        $basePrice = 0;
+                        if (!empty($variants)) {
+                            $prices = array_map(function($v) { return isset($v['price']) ? (float)$v['price'] : 0; }, $variants);
+                            $prices = array_values(array_filter($prices, function($p){ return $p > 0; }));
+                            if (!empty($prices)) {
+                                $basePrice = min($prices);
+                            }
+                        }
+                        if ($basePrice <= 0) {
+                            $fallbackPid = $pid;
                             $fallback = 0;
-                            if (isset($productPrices) && isset($productPrices[$fallbackPid])) {
+                            if (isset($productPrices[$fallbackPid])) {
                                 $fallback = (float)$productPrices[$fallbackPid];
                             } elseif (isset($product['price'])) {
                                 $fallback = (float)$product['price'];
                             }
-                            $basePrice = $fallback;
+                            $basePrice = $fallback > 0 ? $fallback : 0;
                         }
                 ?>
                         <div class="product-item" data-type="pastries" data-category="7">
@@ -866,10 +878,15 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 <h3><?= htmlspecialchars($product['name']) ?></h3>
                                 <span class="badge bg-success mb-2">Pastries</span>
                                 <p><?= htmlspecialchars($product['description']) ?></p>
+                                <div class="product-price" style="font-weight:700;color:#2d4a3a;margin-bottom:6px;">
+                                    <?= $basePrice > 0 ? 'From ₱' . number_format($basePrice, 2) : '' ?>
+                                </div>
                                 <div class="product-footer">
                                     <?php
-                                    // $variants should be an array; prepare a JSON-safe string for a data-attribute
-                                    $variants_json = isset($variants) ? json_encode($variants, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) : 'null';
+                                    // Prepare variants JSON for data-attribute
+                                    $variants_json = !empty($variants)
+                                        ? json_encode($variants, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)
+                                        : 'null';
                                     $basePrice = isset($basePrice) ? $basePrice : 0;
                                     $imgSrc = isset($imgSrc) ? $imgSrc : '';
                                     ?>

@@ -395,6 +395,36 @@ class Database
         return $map;
     }
 
+    /** Get product data_type for latest version of a product_id. */
+    public function get_product_data_type(string $product_id): ?string
+    {
+        $con = $this->opencon();
+        $st = $con->prepare("SELECT data_type FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+        $st->execute([$product_id]);
+        $dt = $st->fetchColumn();
+        return $dt !== false ? strtolower((string)$dt) : null;
+    }
+
+    /** Get pastry variant price by label for the active/latest products_pk. */
+    public function get_pastry_variant_price_for_active(string $product_id, string $label): float
+    {
+        $con = $this->opencon();
+        $label = trim($label);
+        if ($label === '') return 0.0;
+        try {
+            $pk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+            $pk->execute([$product_id]);
+            $pPk = $pk->fetchColumn();
+            if (!$pPk) return 0.0;
+            $st = $con->prepare("SELECT price FROM product_pastry_variants WHERE products_pk = ? AND label = ? LIMIT 1");
+            $st->execute([$pPk, $label]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            return $row && isset($row['price']) ? (float)$row['price'] : 0.0;
+        } catch (Throwable $e) {
+            return 0.0;
+        }
+    }
+
     // Fetch all locations (PDO)
     public function fetch_locations_pdo()
     {
@@ -766,14 +796,28 @@ public function createPickupOrder(
         // Normalize pickup time (assume HH:MM from form)
         $pickup_datetime = date('Y-m-d') . ' ' . preg_replace('/[^0-9:]/', '', $pickup_time) . ':00';
 
-        // Calculate total
+        // Calculate total (pastries use variant price; drinks use size-based price)
         $total_amount = 0.0;
+        $dtypeCache = [];
         foreach ($cart_items as $item) {
             $qty = max(1, (int)($item['quantity'] ?? 1));
             // Enforce server-side base price from DB by product + size
             $pid  = $item['product_id'] ?? '';
             $sz   = strtolower($item['size'] ?? '');
-            $base = $pid ? $this->get_size_price_for_active($pid, $sz) : (float)($item['basePrice'] ?? $item['price'] ?? 0);
+            $base = 0.0;
+            if ($pid) {
+                if (!isset($dtypeCache[$pid])) {
+                    $dtypeCache[$pid] = $this->get_product_data_type($pid) ?: '';
+                }
+                if ($dtypeCache[$pid] === 'pastries') {
+                    // here $sz carries the variant label from the cart
+                    $base = $this->get_pastry_variant_price_for_active($pid, $sz);
+                } else {
+                    $base = $this->get_size_price_for_active($pid, $sz);
+                }
+            } else {
+                $base = (float)($item['basePrice'] ?? $item['price'] ?? 0);
+            }
             $tSum = 0.0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -823,8 +867,16 @@ public function createPickupOrder(
             $item_sugar = isset($item['sugar']) && $item['sugar'] !== '' ? trim($item['sugar']) : null;
 
             // Calculate per item price (base + toppings)
-            // Re-fetch authoritative base price from DB using size
-            $basePrice = $this->get_size_price_for_active($product_id, $size);
+            // Re-fetch authoritative base price from DB using size/label
+            $basePrice = 0.0;
+            if (!isset($dtypeCache[$product_id])) {
+                $dtypeCache[$product_id] = $this->get_product_data_type($product_id) ?: '';
+            }
+            if ($dtypeCache[$product_id] === 'pastries') {
+                $basePrice = $this->get_pastry_variant_price_for_active($product_id, $size);
+            } else {
+                $basePrice = $this->get_size_price_for_active($product_id, $size);
+            }
             $tSum = 0.0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
@@ -958,8 +1010,16 @@ public function createPickupOrder(
                         $computed_toppings_sum += ($t_price * $t_qty);
                     }
                 }
-                // Authoritative base price from DB for the given size
-                $base_from_db = $product_id ? $this->get_size_price_for_active($product_id, $size) : 0.00;
+                // Authoritative base price from DB for the given size/label
+                $base_from_db = 0.00;
+                if ($product_id) {
+                    $ptype = $this->get_product_data_type($product_id) ?: '';
+                    if ($ptype === 'pastries') {
+                        $base_from_db = $this->get_pastry_variant_price_for_active($product_id, $size);
+                    } else {
+                        $base_from_db = $this->get_size_price_for_active($product_id, $size);
+                    }
+                }
                 $price_to_store = $base_from_db + $computed_toppings_sum;
 
                 // Resolve active products_pk
