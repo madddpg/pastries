@@ -75,14 +75,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // If this is the products filter tabs, filter rows by data_type
       if (tabGroup && tabGroup.id === 'products-filter-tabs') {
         const filter = (this.dataset.filter || 'all').toLowerCase();
-        const table = document.querySelector('#products-section .products-table tbody');
-        if (table) {
-          table.querySelectorAll('tr').forEach(tr => {
-            const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
-            const show = filter === 'all' || type === filter;
-            tr.style.display = show ? '' : 'none';
-          });
-        }
+        // Use pagination-aware flow
+        applyProductsFilterAndPaginate(filter);
+        return;
       }
     });
   });
@@ -98,20 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
       // Activate
       this.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       a.classList.add('active');
-      // Apply filter
+      // Apply filter + pagination
       const filter = (a.dataset.filter || 'all').toLowerCase();
-      const tbody = document.querySelector('#products-section .products-table tbody');
-      if (tbody) {
-        tbody.querySelectorAll('tr').forEach(tr => {
-          const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
-          tr.style.display = (filter === 'all' || type === filter) ? '' : 'none';
-        });
-      }
+      applyProductsFilterAndPaginate(filter);
     }, true); // capture to beat other handlers
     // Apply initial filter based on current active tab
     const active = productsTabs.querySelector('.tab.active');
     if (active) {
       applyProductsFilterAndPaginate((active.dataset.filter || 'all').toLowerCase());
+    } else {
+      applyProductsFilterAndPaginate('all');
     }
   }
 
@@ -197,15 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderProductsPage(rows, 1);
   }
 
-  // Hook filtering to pagination
-  if (productsTabs) {
-    productsTabs.addEventListener('click', function (e) {
-      const a = e.target.closest('.tab');
-      if (!a) return;
-      const filter = (a.dataset.filter || 'all').toLowerCase();
-      applyProductsFilterAndPaginate(filter);
-    });
-  }
+  // Hook handled in delegated productsTabs listener above
 
   // Live Orders Tabs: SPA behavior (no page reload)
   const liveOrdersTabs = document.querySelectorAll('#live-orders-tabs .tab');
