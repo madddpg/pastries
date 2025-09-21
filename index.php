@@ -24,6 +24,13 @@ try {
     $sizePriceMap = [];
 }
 
+// Fetch pastry variants map: [product_id => [ {variant_id,label,price}, ... ]]
+try {
+    $pastryVariantsMap = method_exists($db, 'get_all_pastry_variants') ? $db->get_all_pastry_variants() : [];
+} catch (Throwable $e) {
+    $pastryVariantsMap = [];
+}
+
 // Derive a base price per product from sizePriceMap (prefer grande, then supreme)
 foreach ($allProducts as $row) {
     $pid = $row['product_id'];
@@ -129,6 +136,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         }
         echo json_encode($safeMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     ?>;
+    window.PASTRY_VARIANTS_MAP = <?php echo json_encode($pastryVariantsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
 
 <body>
@@ -836,7 +844,19 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 ['label' => 'Whole', 'price' => 380],
                             ];
                         }
-                        $basePrice = $variants[0]['price'];
+                        // Determine a safe base price: if variants are defined, use the first; otherwise fall back
+                        if (!empty($variants) && isset($variants[0]['price'])) {
+                            $basePrice = $variants[0]['price'];
+                        } else {
+                            $fallbackPid = $product['product_id'];
+                            $fallback = 0;
+                            if (isset($productPrices) && isset($productPrices[$fallbackPid])) {
+                                $fallback = (float)$productPrices[$fallbackPid];
+                            } elseif (isset($product['price'])) {
+                                $fallback = (float)$product['price'];
+                            }
+                            $basePrice = $fallback;
+                        }
                 ?>
                         <div class="product-item" data-type="pastries" data-category="7">
                             <div class="product-image">

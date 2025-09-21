@@ -550,6 +550,35 @@ function fetch_locations_pdo($con)
                             <div id="editProductResult" style="margin-top:14px;color:#059669;font-weight:600;font-size:0.95rem;"></div>
                         </div>
                     </div>
+
+                    <!-- Edit Pastry Variants Modal -->
+                    <div id="editPastryModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10000;align-items:center;justify-content:center;background:rgba(0,0,0,0.15);">
+                        <div class="modal-content" style="background:#fff;padding:24px;border-radius:16px;max-width:560px;width:100%;position:relative;box-shadow:0 6px 22px rgba(0,0,0,0.12);">
+                            <button id="closeEditPastryModal" type="button" style="position:absolute;top:12px;right:12px;font-size:1.5rem;background:none;border:none;color:#555;cursor:pointer">&times;</button>
+                            <h2 style="margin-bottom:14px;font-size:1.2rem;font-weight:600;">Edit Pastry Options</h2>
+                            <div style="font-size:0.9rem;color:#444;margin-bottom:10px;">Configure labels and prices for this pastry (e.g. Per piece, Box of 4, Box of 6).</div>
+                            <input type="hidden" id="pastryProductId" value="">
+                            <div class="table-container" style="max-height:320px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;">
+                                <table class="products-table" style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:55%">Label</th>
+                                            <th style="width:30%;text-align:right;">Price (₱)</th>
+                                            <th style="width:15%"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pastryVariantsBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div style="display:flex;gap:10px;margin-top:12px;">
+                                <button type="button" id="addPastryVariantRow" class="btn-secondary">+ Add Option</button>
+                                <div style="flex:1"></div>
+                                <button type="button" id="savePastryVariantsBtn" class="btn-primary">Save Variants</button>
+                            </div>
+                            <div id="savePastryResult" style="margin-top:10px;font-weight:600;"></div>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -992,6 +1021,14 @@ function fetch_locations_pdo($con)
             const editGrandePrice = document.getElementById('editGrandePrice');
             const editSupremePrice = document.getElementById('editSupremePrice');
             const closeEditModalBtn = document.getElementById('closeEditProductModal');
+            // Pastry modal elements
+            const pastryModal = document.getElementById('editPastryModal');
+            const closePastryModalBtn = document.getElementById('closeEditPastryModal');
+            const pastryVariantsBody = document.getElementById('pastryVariantsBody');
+            const savePastryBtn = document.getElementById('savePastryVariantsBtn');
+            const addPastryRowBtn = document.getElementById('addPastryVariantRow');
+            const pastryProductIdInput = document.getElementById('pastryProductId');
+            const savePastryResult = document.getElementById('savePastryResult');
 
             if (editModal && editForm && closeEditModalBtn) {
                 document.querySelectorAll('.edit-product-btn').forEach(function(btn) {
@@ -999,7 +1036,32 @@ function fetch_locations_pdo($con)
                         e.preventDefault();
                         e.stopPropagation();
                         var row = btn.closest('tr');
-                        document.getElementById('editProductId').value = row.getAttribute('data-product-id');
+                        const pid = row.getAttribute('data-product-id');
+                        const dtype = (row.getAttribute('data-product-type')||'').toLowerCase();
+                        // For pastries, open the pastry variants modal instead of the regular edit
+                        if (dtype === 'pastries' && pastryModal) {
+                            pastryProductIdInput.value = pid;
+                            // load existing variants
+                            pastryVariantsBody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:10px;">Loading…</td></tr>';
+                            fetch('AJAX/pastry_variants.php?action=list&product_id='+encodeURIComponent(pid))
+                                .then(r=>r.json())
+                                .then(js=>{
+                                    const list = (js && js.variants && Array.isArray(js.variants)) ? js.variants : [];
+                                    pastryVariantsBody.innerHTML = '';
+                                    if (!list.length) {
+                                        // default common rows
+                                        addVariantRow('Per piece', '0.00');
+                                        addVariantRow('Box of 4', '0.00');
+                                        addVariantRow('Box of 6', '0.00');
+                                    } else {
+                                        list.forEach(v => addVariantRow(v.label, Number(v.price).toFixed(2)));
+                                    }
+                                })
+                                .catch(()=>{ pastryVariantsBody.innerHTML = ''; addVariantRow('Per piece','0.00'); });
+                            pastryModal.style.display = 'flex';
+                            return;
+                        }
+                        document.getElementById('editProductId').value = pid;
                         document.getElementById('editProductName').value = row.getAttribute('data-product-name');
                         // Prefill grande/supreme prices (if available)
                         const g = row.getAttribute('data-price-grande') || '';
@@ -1067,6 +1129,66 @@ function fetch_locations_pdo($con)
                         })
                         .catch(() => alert('Request failed'));
                 };
+            }
+
+            // Helpers for pastry modal rows
+            function addVariantRow(label = '', price = '') {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" class="pv-label" value="${label.replace(/"/g,'&quot;')}" style="width:100%;padding:8px;border:1px solid #e5e7eb;border-radius:8px"></td>
+                    <td style="text-align:right;"><input type="number" step="0.01" class="pv-price" value="${price}" style="width:120px;padding:8px;border:1px solid #e5e7eb;border-radius:8px;text-align:right"></td>
+                    <td style="text-align:center;"><button type="button" class="btn-secondary pv-remove">Remove</button></td>
+                `;
+                pastryVariantsBody.appendChild(tr);
+            }
+
+            if (addPastryRowBtn) {
+                addPastryRowBtn.addEventListener('click', function(){ addVariantRow('', '0.00'); });
+            }
+
+            if (pastryVariantsBody) {
+                pastryVariantsBody.addEventListener('click', function(e){
+                    const btn = e.target.closest('.pv-remove');
+                    if (!btn) return;
+                    const tr = btn.closest('tr');
+                    tr && tr.remove();
+                });
+            }
+
+            if (savePastryBtn) {
+                savePastryBtn.addEventListener('click', function(){
+                    const pid = pastryProductIdInput.value;
+                    const rows = Array.from(pastryVariantsBody.querySelectorAll('tr'));
+                    const variants = rows.map(tr => {
+                        const label = tr.querySelector('.pv-label')?.value?.trim() || '';
+                        const price = parseFloat(tr.querySelector('.pv-price')?.value || '0');
+                        return { label, price };
+                    }).filter(v => v.label && !isNaN(v.price));
+
+                    savePastryResult.textContent = '';
+                    fetch('AJAX/pastry_variants.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ action:'save', product_id: pid, variants: JSON.stringify(variants) })
+                    }).then(r=>r.json()).then(js=>{
+                        if (js && js.success) {
+                            savePastryResult.style.color = '#059669';
+                            savePastryResult.textContent = 'Saved variants successfully';
+                            setTimeout(()=>{ savePastryResult.textContent=''; pastryModal.style.display='none'; }, 700);
+                        } else {
+                            savePastryResult.style.color = '#dc2626';
+                            savePastryResult.textContent = (js && js.message) ? js.message : 'Failed to save variants';
+                        }
+                    }).catch(()=>{
+                        savePastryResult.style.color = '#dc2626';
+                        savePastryResult.textContent = 'Request failed';
+                    });
+                });
+            }
+
+            if (closePastryModalBtn && pastryModal) {
+                closePastryModalBtn.addEventListener('click', ()=>{ pastryModal.style.display='none'; });
+                pastryModal.addEventListener('click', (e)=>{ if (e.target === pastryModal) pastryModal.style.display='none'; });
             }
 
             // Add Product Modal logic

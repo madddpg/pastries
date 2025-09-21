@@ -164,7 +164,18 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       if (Array.isArray(variants) && variants.length) {
         v = variants;
       } else {
-        v = [{ label: 'Standard', price: currentProduct.price }];
+        // Try global map emitted from PHP
+        const map = (typeof window !== 'undefined' && window.PASTRY_VARIANTS_MAP) ? window.PASTRY_VARIANTS_MAP : {};
+        const fromMap = Array.isArray(map[id]) ? map[id] : null;
+        if (fromMap && fromMap.length) {
+          v = fromMap.map(x => ({ label: x.label, price: Number(x.price) || 0 }));
+        } else {
+          v = [
+            { label: 'Per piece', price: currentProduct.price || 0 },
+            { label: 'Box of 4', price: (currentProduct.price || 0) * 4 },
+            { label: 'Box of 6', price: (currentProduct.price || 0) * 6 }
+          ];
+        }
       }
       currentProduct.variants = v.slice();
       selectedSize = v[0].label;

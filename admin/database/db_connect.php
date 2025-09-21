@@ -21,6 +21,7 @@ class Database
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         // Ensure supporting tables/schemas exist or are updated
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -48,6 +49,7 @@ class Database
             ]
         );
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -156,6 +158,27 @@ class Database
             // Add composite index to speed up active lookups
             $pdo->exec("ALTER TABLE `{$tbl}` ADD INDEX `idx_psp_active` (`products_pk`,`size`,`effective_to`)");
         } catch (Throwable $_) { /* ignore if exists */ }
+    }
+
+    /** Ensure table for pastry variants exists. */
+    private function ensurePastryVariantsSchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS product_pastry_variants (
+                    variant_id INT NOT NULL AUTO_INCREMENT,
+                    products_pk INT NOT NULL,
+                    label VARCHAR(64) NOT NULL,
+                    price DECIMAL(10,2) NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (variant_id),
+                    KEY idx_ppv_products_pk (products_pk),
+                    CONSTRAINT fk_ppv_products FOREIGN KEY (products_pk) REFERENCES products(products_pk)
+                        ON DELETE CASCADE ON UPDATE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $e) { /* ignore */ }
     }
 
     // Fetch all picked up orders 
@@ -379,6 +402,85 @@ class Database
         $stmt = $con->prepare("SELECT * FROM locations ORDER BY location_id DESC");
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // ---------- Pastry Variants ----------
+    /** Fetch variants for a given product_id (resolves latest products_pk). */
+    public function fetch_pastry_variants(string $product_id): array
+    {
+        $con = $this->opencon();
+        try {
+            $pkStmt = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+            $pkStmt->execute([$product_id]);
+            $pk = $pkStmt->fetchColumn();
+            if (!$pk) return [];
+            $st = $con->prepare("SELECT variant_id, label, price FROM product_pastry_variants WHERE products_pk = ? ORDER BY variant_id ASC");
+            $st->execute([$pk]);
+            return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    /** Replace all variants for a pastry product by product_id. */
+    public function save_pastry_variants(string $product_id, array $variants): bool
+    {
+        $con = $this->opencon();
+        try {
+            $con->beginTransaction();
+            $pkStmt = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+            $pkStmt->execute([$product_id]);
+            $pk = $pkStmt->fetchColumn();
+            if (!$pk) { $con->rollBack(); return false; }
+            $del = $con->prepare("DELETE FROM product_pastry_variants WHERE products_pk = ?");
+            $del->execute([$pk]);
+            if (!empty($variants)) {
+                $ins = $con->prepare("INSERT INTO product_pastry_variants (products_pk, label, price) VALUES (?, ?, ?)");
+                foreach ($variants as $v) {
+                    $label = isset($v['label']) ? trim($v['label']) : '';
+                    $price = isset($v['price']) ? (float)$v['price'] : 0.0;
+                    if ($label === '' || $price < 0) continue;
+                    $ins->execute([$pk, $label, number_format($price, 2, '.', '')]);
+                }
+            }
+            $con->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($con->inTransaction()) $con->rollBack();
+            return false;
+        }
+    }
+
+    /** Get all variants keyed by product_id for active pastries. */
+    public function get_all_pastry_variants(): array
+    {
+        $con = $this->opencon();
+        $map = [];
+        try {
+            $sql = "SELECT p.product_id, v.variant_id, v.label, v.price
+                    FROM products p
+                    JOIN (
+                        SELECT product_id, MAX(created_at) AS latest
+                        FROM products
+                        GROUP BY product_id
+                    ) latest ON latest.product_id = p.product_id AND latest.latest = p.created_at
+                    LEFT JOIN product_pastry_variants v ON v.products_pk = p.products_pk
+                    WHERE p.status = 'active' AND p.data_type = 'pastries'
+                    ORDER BY p.product_id, v.variant_id";
+            $st = $con->query($sql);
+            while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+                $pid = $row['product_id'];
+                if (!isset($map[$pid])) $map[$pid] = [];
+                if ($row['variant_id'] !== null) {
+                    $map[$pid][] = [
+                        'variant_id' => (int)$row['variant_id'],
+                        'label' => $row['label'],
+                        'price' => (float)$row['price']
+                    ];
+                }
+            }
+        } catch (Throwable $e) { /* ignore */ }
+        return $map;
     }
 
     public function fetch_pickedup_orders()
