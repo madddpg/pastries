@@ -309,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const idVal = t?.topping_id ?? '';
         const safeName = (t.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         return `<label style="display:block;margin-bottom:6px;">
-          <input type="checkbox" class="topping-checkbox" data-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
+          <input type="checkbox" class="topping-checkbox" data-topping-id="${idVal}" data-price="${Number(t.price).toFixed(2)}"> 
           ${safeName} — ₱${Number(t.price).toFixed(2)}
         </label>`;
       }).join('');
@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function bindToppingCheckboxes() {
     document.querySelectorAll('.topping-checkbox').forEach(cb => {
       cb.onchange = function () {
-        const key = cb.getAttribute('data-id');
+        const key = cb.getAttribute('data-topping-id');
         const price = parseFloat(cb.getAttribute('data-price')) || 0;
         if (cb.checked) {
           modalSelectedToppings[key] = { price, qty: 1, name: cb.parentNode.textContent.trim() };

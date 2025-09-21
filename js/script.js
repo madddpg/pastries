@@ -296,12 +296,14 @@ function addProductToCart() {
 
   const toppingsArr = Object.keys(modalSelectedToppings || {}).map(k => {
     const t = modalSelectedToppings[k];
-    return {
-      id: k,
+    const obj = {
       name: t.name,
       price: Number(t.price || 0),
       quantity: Number(t.qty || 1)
     };
+    // Prefer numeric topping_id when available
+    if (/^\d+$/.test(String(k))) obj.topping_id = Number(k);
+    return obj;
   });
   const toppingsSum = toppingsArr.reduce((s, t) => s + (t.price * t.quantity), 0);
   const itemPrice = Number((base + toppingsSum).toFixed(2));
