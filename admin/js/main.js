@@ -2,6 +2,8 @@ console.info('[admin] main.js loaded');
 
 document.addEventListener("DOMContentLoaded", () => {
   console.info('[admin] DOMContentLoaded fired');
+  // Products pagination page size (must be defined before initial apply)
+  const PRODUCTS_PER_PAGE = 5;
 
   // Track current section safely
   let currentSection = null;
@@ -107,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- Products pagination (5 per page) ---
-  const PRODUCTS_PER_PAGE = 5;
   function getFilteredProductRows(filter = 'all') {
     const tbody = document.querySelector('#products-section .products-table tbody');
     if (!tbody) return [];
