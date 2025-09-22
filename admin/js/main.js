@@ -917,24 +917,91 @@ document.addEventListener("DOMContentLoaded", () => {
   updateDashboardStats();
   setInterval(updateDashboardStats, 15000);
 
-  // Promo upload confirmation
+  // Promo upload: confirm + AJAX (no reload)
   const promoUploadForm = document.querySelector("form[action='upload_promo.php']");
   if (promoUploadForm) {
-    promoUploadForm.addEventListener('submit', function (e) {
+    promoUploadForm.addEventListener('submit', async function (e) {
       const titleInput = promoUploadForm.querySelector("input[name='title']");
       const fileInput = promoUploadForm.querySelector("input[name='promoImage']");
       const title = titleInput ? (titleInput.value || '').trim() : '';
-      const fileName = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : '';
+      const file = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+
+      // Require a file client-side too
+      if (!file) {
+        // let the native validation handle if attribute required; just guard
+        return;
+      }
+
+      // Confirmation prompt
       const lines = ['Add this promo?'];
       if (title) lines.push('Title: ' + title);
-      if (fileName) lines.push('File: ' + fileName);
+      lines.push('File: ' + file.name);
       lines.push('', 'Proceed to upload?');
       const confirmed = window.confirm(lines.join('\n'));
       if (!confirmed) {
         e.preventDefault();
         e.stopPropagation();
+        return;
+      }
+
+      // Submit via fetch to avoid page reload
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        const formData = new FormData(promoUploadForm);
+        const res = await fetch('upload_promo.php', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+          body: formData
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.success) {
+          const msg = (data && data.message) ? data.message : (`Upload failed (${res.status})`);
+          alert(msg);
+          return;
+        }
+        // Append new card to promos grid
+        const grid = document.getElementById('promos-grid');
+        if (grid) {
+          const imgSrc = '/' + (data.image || '');
+          const safeTitle = (data.title || '').toString();
+          const wrapper = document.createElement('div');
+          wrapper.style.width = '200px';
+          wrapper.style.border = '1px solid #eefaf0';
+          wrapper.style.padding = '8px';
+          wrapper.style.borderRadius = '8px';
+          wrapper.style.background = '#fff';
+          wrapper.innerHTML = ""
+            + `<img src="${imgSrc}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;">`
+            + `<div style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">${escapeHtml(safeTitle)}</div>`
+            + `<div style="display:flex;gap:6px;">`
+            + `  <form method="post" action="delete_promo.php" style="margin:0;">`
+            + `    <input type="hidden" name="id" value="${data.promo_id}">`
+            + `    <button class="btn-secondary" type="submit" style="padding:6px 8px;">Delete</button>`
+            + `  </form>`
+            + `  <form method="post" action="update_promos.php" style="margin:0;">`
+            + `    <input type="hidden" name="id" value="${data.promo_id}">`
+            + `    <input type="hidden" name="active" value="0">`
+            + `    <button class="btn-primary" type="submit" style="padding:6px 8px;">Set Inactive</button>`
+            + `  </form>`
+            + `</div>`;
+          grid.prepend(wrapper);
+        }
+        // Reset form after successful upload
+        promoUploadForm.reset();
+        showNotification('Promo uploaded');
+      } catch (err) {
+        console.error('[admin] promo upload error', err);
+        alert('Upload error: ' + (err && err.message ? err.message : 'Unknown error'));
       }
     });
+  }
+
+  // util to escape HTML when injecting strings
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
   }
 });
 

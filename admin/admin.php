@@ -676,7 +676,7 @@ function fetch_locations_pdo($con)
                     </div>
 
                     <div class="card" style="padding:18px;">
-                        <div style="display:flex;flex-wrap:wrap;gap:12px;">
+                        <div id="promos-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
                             $promos = $db->fetch_locations_pdo($con); 
                             // Better: query directly:
