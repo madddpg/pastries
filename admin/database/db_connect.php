@@ -160,9 +160,10 @@ class Database
         } catch (Throwable $_) { /* ignore if exists */ }
     }
 
-    /** Ensure table for pastry variants exists. */
+    /** Ensure table for pastry variants exists and supports history via effective dates. */
     private function ensurePastryVariantsSchema(PDO $pdo): void
     {
+        // 1) Create table if it does not exist (with effective dates)
         try {
             $pdo->exec(
                 "CREATE TABLE IF NOT EXISTS product_pastry_variants (
@@ -170,15 +171,35 @@ class Database
                     products_pk INT NOT NULL,
                     label VARCHAR(64) NOT NULL,
                     price DECIMAL(10,2) NOT NULL,
+                    effective_from DATE NOT NULL,
+                    effective_to DATE DEFAULT NULL,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     PRIMARY KEY (variant_id),
                     KEY idx_ppv_products_pk (products_pk),
+                    KEY idx_ppv_active (products_pk, label, effective_to),
                     CONSTRAINT fk_ppv_products FOREIGN KEY (products_pk) REFERENCES products(products_pk)
                         ON DELETE CASCADE ON UPDATE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
             );
         } catch (Throwable $e) { /* ignore */ }
+
+        // 2) Migrate: add effective_from/effective_to if missing, plus helpful index
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'product_pastry_variants'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (!in_array('effective_from', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE product_pastry_variants ADD COLUMN effective_from DATE NOT NULL AFTER price"); } catch (Throwable $_) {}
+                // Backfill: set effective_from to CURRENT_DATE for existing rows
+                try { $pdo->exec("UPDATE product_pastry_variants SET effective_from = CURDATE() WHERE effective_from IS NULL"); } catch (Throwable $_) {}
+            }
+            if (!in_array('effective_to', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE product_pastry_variants ADD COLUMN effective_to DATE NULL AFTER effective_from"); } catch (Throwable $_) {}
+            }
+        } catch (Throwable $_) { /* ignore */ }
+
+        // 3) Ensure active index exists
+        try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
     }
 
     // Fetch all picked up orders 
@@ -416,7 +437,11 @@ class Database
             $pk->execute([$product_id]);
             $pPk = $pk->fetchColumn();
             if (!$pPk) return 0.0;
-            $st = $con->prepare("SELECT price FROM product_pastry_variants WHERE products_pk = ? AND label = ? LIMIT 1");
+            $st = $con->prepare("SELECT price
+                                  FROM product_pastry_variants
+                                 WHERE products_pk = ? AND label = ? AND effective_to IS NULL
+                              ORDER BY effective_from DESC, variant_id DESC
+                                 LIMIT 1");
             $st->execute([$pPk, $label]);
             $row = $st->fetch(PDO::FETCH_ASSOC);
             return $row && isset($row['price']) ? (float)$row['price'] : 0.0;
@@ -444,7 +469,10 @@ class Database
             $pkStmt->execute([$product_id]);
             $pk = $pkStmt->fetchColumn();
             if (!$pk) return [];
-            $st = $con->prepare("SELECT variant_id, label, price FROM product_pastry_variants WHERE products_pk = ? ORDER BY variant_id ASC");
+            $st = $con->prepare("SELECT variant_id, label, price
+                                   FROM product_pastry_variants
+                                  WHERE products_pk = ? AND effective_to IS NULL
+                               ORDER BY variant_id ASC");
             $st->execute([$pk]);
             return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable $e) {
@@ -462,10 +490,12 @@ class Database
             $pkStmt->execute([$product_id]);
             $pk = $pkStmt->fetchColumn();
             if (!$pk) { $con->rollBack(); return false; }
-            $del = $con->prepare("DELETE FROM product_pastry_variants WHERE products_pk = ?");
-            $del->execute([$pk]);
+            // End-date existing active variants to preserve history
+            $con->prepare("UPDATE product_pastry_variants SET effective_to = CURDATE() WHERE products_pk = ? AND effective_to IS NULL")
+                ->execute([$pk]);
+            // Insert new active set (effective_from = today)
             if (!empty($variants)) {
-                $ins = $con->prepare("INSERT INTO product_pastry_variants (products_pk, label, price) VALUES (?, ?, ?)");
+                $ins = $con->prepare("INSERT INTO product_pastry_variants (products_pk, label, price, effective_from, effective_to) VALUES (?, ?, ?, CURDATE(), NULL)");
                 foreach ($variants as $v) {
                     $label = isset($v['label']) ? trim($v['label']) : '';
                     $price = isset($v['price']) ? (float)$v['price'] : 0.0;
@@ -494,7 +524,7 @@ class Database
                         FROM products
                         GROUP BY product_id
                     ) latest ON latest.product_id = p.product_id AND latest.latest = p.created_at
-                    LEFT JOIN product_pastry_variants v ON v.products_pk = p.products_pk
+                    LEFT JOIN product_pastry_variants v ON v.products_pk = p.products_pk AND v.effective_to IS NULL
                     WHERE p.status = 'active' AND p.data_type = 'pastries'
                     ORDER BY p.product_id, v.variant_id";
             $st = $con->query($sql);

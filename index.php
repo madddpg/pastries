@@ -98,9 +98,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 <html lang="en">
 
 <head>
-
-
-    </script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cups & Cuddles </title>

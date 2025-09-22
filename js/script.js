@@ -259,6 +259,16 @@ function selectSize(size) {
     btn.classList.remove("active");
     if (btn.textContent.trim() === size) btn.classList.add("active");
   });
+  // If product is a pastry, update currentProduct.price to the selected variant's price
+  try {
+    if (currentProduct && currentProduct.dataType === 'pastries' && Array.isArray(currentProduct.variants)) {
+      const match = currentProduct.variants.find(v => (v.label || '').toString().trim().toLowerCase() === (size || '').toString().trim().toLowerCase());
+      if (match) {
+        currentProduct.price = Number(match.price || 0);
+      }
+    }
+  } catch {}
+  if (typeof recalcModalTotal === 'function') recalcModalTotal();
 }
 
 
@@ -348,6 +358,18 @@ document.addEventListener('click', function (e) {
     // update variant label if present
     const pv = document.getElementById('modalPriceVariant');
     if (pv) pv.textContent = `(${selectedSize})`;
+    // For pastries, update price based on selected button's data-price
+    try {
+      if (currentProduct && currentProduct.dataType === 'pastries') {
+        const p = Number(sizeBtn.dataset.price || 0);
+        if (!isNaN(p) && p >= 0) {
+          currentProduct.price = p;
+        } else if (Array.isArray(currentProduct.variants)) {
+          const match = currentProduct.variants.find(v => (v.label || '').toString().trim().toLowerCase() === selectedSize.toLowerCase());
+          if (match) currentProduct.price = Number(match.price || 0);
+        }
+      }
+    } catch {}
     if (window.recalcModalTotal) window.recalcModalTotal();
     return;
   }
