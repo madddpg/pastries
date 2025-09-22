@@ -1458,6 +1458,11 @@ function fetch_locations_pdo($con)
                     if (editLocationResult) editLocationResult.textContent = '';
                     const formData = new FormData(editLocationForm);
                     formData.append('action', 'edit');
+                    // Ensure expected field naming
+                    if (!formData.has('location_id')) {
+                        formData.append('location_id', formData.get('id') || document.getElementById('editLocationId').value);
+                        formData.delete('id');
+                    }
                     fetch('locations.php', {
                             method: 'POST',
                             body: formData
@@ -1493,7 +1498,7 @@ function fetch_locations_pdo($con)
                                 headers: {
                                     'Content-Type': 'application/x-www-form-urlencoded'
                                 },
-                                body: 'action=delete&id=' + encodeURIComponent(id)
+                                body: 'action=delete&location_id=' + encodeURIComponent(id)
                             })
                             .then(res => res.json())
                             .then(data => {
@@ -1526,7 +1531,7 @@ function fetch_locations_pdo($con)
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded'
                             },
-                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                            body: 'action=toggle_status&location_id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
                         })
                         .then(res => res.json().catch(() => ({
                             success: false,
