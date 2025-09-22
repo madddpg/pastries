@@ -841,12 +841,12 @@ class Database
         if (!$order) return null;
         // Fetch items for this order
         $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price,
-                COALESCE(p.name, p2.name) AS name
+                COALESCE(
+                    p.name,
+                    (SELECT p2.name FROM products p2 WHERE p2.product_id = ti.product_id ORDER BY p2.created_at DESC LIMIT 1)
+                ) AS name
             FROM transaction_items ti
-            LEFT JOIN products p
-                ON ti.products_pk IS NOT NULL AND p.products_pk = ti.products_pk
-            LEFT JOIN products p2
-                ON ti.products_pk IS NULL AND p2.product_id = ti.product_id AND p2.effective_to IS NULL
+            LEFT JOIN products p ON p.products_pk = ti.products_pk
             WHERE ti.transaction_id = ?");
         $itemStmt->execute([$transac_id]);
         $order['items'] = $itemStmt->fetchAll(PDO::FETCH_ASSOC);
