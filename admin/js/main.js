@@ -207,7 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Show section and load orders
   const status = this.dataset.status || '';
   showSection('live-orders');
-  try { fetchOrders(status); } catch (e) { /* fetchOrders defined later */ }
+  try { fetchOrders(status, 1); } catch (e) { /* fetchOrders defined later */ }
 
   // Update URL without navigating, preserving location filter
   const locSel = document.getElementById('live-location-filter');
@@ -226,7 +226,7 @@ document.addEventListener("DOMContentLoaded", () => {
     liveLocationFilter.addEventListener('change', () => {
       const activeTab = document.querySelector('#live-orders-tabs .tab.active');
       const status = activeTab ? (activeTab.dataset.status || '') : '';
-      try { fetchOrders(status); } catch (e) {}
+      try { fetchOrders(status, 1); } catch (e) {}
       // Keep URL in sync
       const params = new URLSearchParams(window.location.search);
       params.set('status', status);
@@ -707,7 +707,63 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  function fetchOrders(status = '') {
+  // --- Live Orders pagination state ---
+  let LIVE_ORDERS_PER_PAGE = 8;
+  let liveOrdersState = {
+    page: 1,
+    perPage: LIVE_ORDERS_PER_PAGE,
+    status: '',
+    location: ''
+  };
+
+  function renderLiveOrdersPagination(totalPages, currentPage) {
+    const pagEl = document.getElementById('live-orders-pagination');
+    if (!pagEl) return;
+    pagEl.innerHTML = '';
+    if (!totalPages || totalPages <= 1) return; // nothing to render
+
+    const makeBtn = (label, page, disabled = false, active = false) => {
+      const btn = document.createElement('button');
+      btn.className = 'pager-btn' + (active ? ' active' : '');
+      btn.type = 'button';
+      btn.textContent = label;
+      btn.disabled = !!disabled;
+      if (!disabled) btn.dataset.page = String(page);
+      btn.style.padding = '6px 10px';
+      btn.style.border = '1px solid #e5e7eb';
+      btn.style.borderRadius = '6px';
+      return btn;
+    };
+
+    // Prev
+    pagEl.appendChild(makeBtn('Prev', Math.max(1, currentPage - 1), currentPage <= 1, false));
+
+    // Windowed numeric buttons (max 7)
+    const windowSize = 7;
+    const half = Math.floor(windowSize / 2);
+    let start = Math.max(1, currentPage - half);
+    let end = Math.min(totalPages, start + windowSize - 1);
+    start = Math.max(1, end - windowSize + 1);
+    for (let p = start; p <= end; p++) {
+      pagEl.appendChild(makeBtn(String(p), p, false, p === currentPage));
+    }
+
+    // Next
+    pagEl.appendChild(makeBtn('Next', Math.min(totalPages, currentPage + 1), currentPage >= totalPages, false));
+
+    // Clicks
+    pagEl.onclick = (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const p = target.dataset.page ? parseInt(target.dataset.page, 10) : NaN;
+      if (!isNaN(p) && p !== liveOrdersState.page) {
+        liveOrdersState.page = p;
+        fetchOrders(liveOrdersState.status, p);
+      }
+    };
+  }
+
+  function fetchOrders(status = '', page = null) {
     // Use the same container your initial render uses (do not change wrapper)
     const listContainer = document.querySelector('.live-orders-grid'); // or '#live-orders-list' if that is your inner list
     if (!listContainer) {
@@ -716,13 +772,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const locSel = document.getElementById('live-location-filter');
     const location = locSel ? locSel.value : '';
-    const url = 'AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status) + (location ? ('&location=' + encodeURIComponent(location)) : '');
+    // Update state
+    if (typeof status === 'string') liveOrdersState.status = status;
+    liveOrdersState.location = location;
+    if (page !== null) liveOrdersState.page = page;
+    const url = 'AJAX/fetch_live_orders.php?status=' + encodeURIComponent(liveOrdersState.status)
+      + (location ? ('&location=' + encodeURIComponent(location)) : '')
+      + '&page=' + encodeURIComponent(liveOrdersState.page)
+      + '&perPage=' + encodeURIComponent(liveOrdersState.perPage);
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(res => res.text())
-      .then(html => {
+      .then(async res => {
+        // Read pagination headers before consuming body
+        const totalPages = parseInt(res.headers.get('X-Total-Pages') || '0', 10) || 0;
+        const currentPage = parseInt(res.headers.get('X-Page') || String(liveOrdersState.page), 10) || liveOrdersState.page;
+        const html = await res.text();
+        return { html, totalPages, currentPage };
+      })
+      .then(({ html, totalPages, currentPage }) => {
         // Replace only the inner content so layout styles remain
         listContainer.innerHTML = html;
         // Delegated click handler covers new buttons
+        renderLiveOrdersPagination(totalPages, currentPage);
       })
       .catch(err => console.error('[admin] fetchOrders error', err));
   }

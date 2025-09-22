@@ -376,6 +376,7 @@ function fetch_locations_pdo($con)
                         require __DIR__ . '/AJAX/markup.php';
                         ?>
                     </div>
+                    <div id="live-orders-pagination" class="pagination" aria-label="Live orders pagination" style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;"></div>
                 </div>
 
                 <!-- Products Section -->
