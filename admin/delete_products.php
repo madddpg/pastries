@@ -21,8 +21,9 @@ if (!Database::isSuperAdmin()) {
 }
 
 $action = $_POST['action'] ?? 'delete';
-$id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-if ($id <= 0) {
+// Accept string product IDs (stable product_id), not only integers
+$id = isset($_POST['id']) ? trim((string)$_POST['id']) : '';
+if ($id === '') {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid id']);
     exit;
@@ -46,8 +47,8 @@ try {
         }
 
         // safe to delete
-        $del = $con->prepare("DELETE FROM products WHERE product_id = ?");
-        $del->execute([$id]);
+    $del = $con->prepare("DELETE FROM products WHERE product_id = ?");
+    $del->execute([$id]);
         if ($del->rowCount() > 0) {
             echo json_encode(['success' => true, 'message' => 'Product deleted']);
         } else {

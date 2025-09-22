@@ -484,12 +484,6 @@ function fetch_locations_pdo($con)
                                                         style="flex: 1; padding: 10px 16px; background: none; border: 1px solid #fee2e2; border-radius:8px; font-size: 14px; color: #dc2626; cursor: pointer; white-space: nowrap;">
                                                         Delete
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        class="menu-item force-delete-product-btn"
-                                                        style="flex: 1; padding: 10px 16px; background: none; border: 1px solid #fecaca; border-radius:8px; font-size: 14px; color: #b91c1c; cursor: pointer; white-space: nowrap;">
-                                                        Force Delete
-                                                    </button>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
