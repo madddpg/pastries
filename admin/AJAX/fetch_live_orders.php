@@ -10,19 +10,20 @@ $location = isset($_GET['location']) ? trim($_GET['location']) : '';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['perPage']) ? max(1, min(50, (int)$_GET['perPage'])) : 8; // clamp 1..50
 $allowed = ['pending', 'preparing', 'ready'];
-$params  = [];
-$where   = "WHERE t.status IN ('pending','preparing','ready')";
+// Build WHERE with named binds to avoid mixing placeholders
+$bind = [];
+$clauses = [];
 if ($status !== '' && in_array($status, $allowed, true)) {
-    $where = "WHERE t.status = ?";
-    $params[] = $status;
+    $clauses[] = 't.status = :status';
+    $bind[':status'] = $status;
+} else {
+    $clauses[] = "t.status IN ('pending','preparing','ready')";
 }
-
-// Optional location filter (prefix match to handle stored phone suffixes)
 if ($location !== '') {
-    // $where always starts with a WHERE status clause; safely append AND
-    $where .= " AND p.pickup_location LIKE ?";
-    $params[] = $location . '%';
+    $clauses[] = 'p.pickup_location LIKE :location';
+    $bind[':location'] = $location . '%';
 }
+$where = 'WHERE ' . implode(' AND ', $clauses);
 
 try {
     $db  = new Database();
@@ -37,10 +38,13 @@ try {
                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
                 $where";
         $countStmt = $con->prepare($countSql);
-        $countStmt->execute($params);
+        foreach ($bind as $k => $v) { $countStmt->bindValue($k, $v); }
+        $countStmt->execute();
         $total = (int)$countStmt->fetchColumn();
 
         // Full dataset with pagination (safe aliases and backticks)
+        $limit = (int)$perPage;
+        $offset = (int)(($page - 1) * $perPage);
         $sql = "SELECT
                   t.transac_id,
                   t.transac_id AS reference_number,
@@ -58,15 +62,9 @@ try {
                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
                 $where
                 ORDER BY t.created_at DESC
-                LIMIT :limit OFFSET :offset";
+                LIMIT $limit OFFSET $offset";
         $stmt = $con->prepare($sql);
-        // Bind status/location params
-        $idx = 1;
-        foreach ($params as $p) {
-            $stmt->bindValue($idx++, $p);
-        }
-        $stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)(($page - 1) * $perPage), PDO::PARAM_INT);
+        foreach ($bind as $k => $v) { $stmt->bindValue($k, $v); }
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
         // Set pagination headers
@@ -82,7 +80,8 @@ try {
         try {
             $countSql = "SELECT COUNT(*) FROM `transaction` t LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id $where";
             $countStmt = $con->prepare($countSql);
-            $countStmt->execute($params);
+            foreach ($bind as $k => $v) { $countStmt->bindValue($k, $v); }
+            $countStmt->execute();
             $total = (int)$countStmt->fetchColumn();
             header('X-Total-Count: ' . $total);
             $totalPages = (int)ceil($total / max(1, $perPage));
@@ -91,6 +90,8 @@ try {
             header('X-Per-Page: ' . $perPage);
         } catch (Throwable $e2) { /* ignore */ }
 
+        $limit = (int)$perPage;
+        $offset = (int)(($page - 1) * $perPage);
         $sql = "SELECT
                                     t.transac_id,
                                     t.transac_id AS reference_number,
@@ -102,12 +103,9 @@ try {
                                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
                 $where
                 ORDER BY t.created_at DESC
-                LIMIT :limit OFFSET :offset";
+                LIMIT $limit OFFSET $offset";
         $stmt = $con->prepare($sql);
-        $idx = 1;
-        foreach ($params as $p) { $stmt->bindValue($idx++, $p); }
-        $stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)(($page - 1) * $perPage), PDO::PARAM_INT);
+        foreach ($bind as $k => $v) { $stmt->bindValue($k, $v); }
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
