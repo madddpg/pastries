@@ -3155,7 +3155,8 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 .carousel-track {
   display: flex;
-  animation: scrollLoop 40s linear infinite;
+  /* Use CSS var for duration; JS will set --marquee-duration to match content width */
+  animation: scrollLoop var(--marquee-duration, 40s) linear infinite;
   width: max-content;
   align-items: center;
 }
@@ -3217,7 +3218,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 .carousel-track {
   display: flex;
-  animation: scrollLoop 40s linear infinite; /* Continuous scrolling animation */
+  animation: scrollLoop var(--marquee-duration, 40s) linear infinite; /* Continuous scrolling animation */
   width: max-content;
   align-items: center;
 }

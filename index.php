@@ -1633,6 +1633,58 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     });
 })();
 
+// ---------------- INFINITE PROMO CAROUSEL ----------------
+(function initInfiniteCarousel(){
+    const container = document.querySelector('.impact-stories');
+    const track = container && container.querySelector('.carousel-track');
+    if (!track) return;
+
+    // If already initialized, skip
+    if (track.dataset.infinite === '1') return;
+
+    const pxPerSec = 80; // speed: pixels per second
+
+    // Ensure the first set is at least as wide as the container; then duplicate it once
+    // to create a seamless loop where animation translates by -50%.
+    const origItems = Array.from(track.children);
+    if (!origItems.length) return;
+
+    // Grow the base set to be at least as wide as the container
+    let safety = 0;
+    while (track.scrollWidth < (container.clientWidth || window.innerWidth)) {
+        // Append a copy of the original set until we fill container width
+        for (const node of origItems) {
+            const clone = node.cloneNode(true);
+            clone.setAttribute('aria-hidden', 'true');
+            clone.dataset.basefill = '1';
+            track.appendChild(clone);
+        }
+        if (++safety > 6) break; // avoid runaway if styles change
+    }
+
+    // Take a snapshot of the current first "set" width
+    const baseNodes = Array.from(track.children);
+    const baseWidth = track.scrollWidth; // current total width
+
+    // Duplicate the entire set once more to enable seamless -50% translate loop
+    for (const node of baseNodes) {
+        const clone = node.cloneNode(true);
+        clone.setAttribute('aria-hidden', 'true');
+        clone.dataset.clone = '1';
+        track.appendChild(clone);
+    }
+
+    // After duplication, total width is 2 * baseWidth; move by -50% equals baseWidth.
+    const distance = baseWidth; // pixels to travel per cycle
+    const duration = Math.max(10, Math.round(distance / pxPerSec));
+    track.style.setProperty('--marquee-duration', duration + 's');
+    track.dataset.infinite = '1';
+
+    // Pause on hover (CSS already handles .carousel-track:hover), but also support touch
+    track.addEventListener('touchstart', () => { track.style.animationPlayState = 'paused'; }, { passive: true });
+    track.addEventListener('touchend', () => { track.style.animationPlayState = ''; });
+})();
+
     </script>
 </body>
 
