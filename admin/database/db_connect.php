@@ -248,7 +248,7 @@ class Database
     public function fetchAllUsers(): array
     {
         $pdo = $this->opencon();
-        $st = $pdo->prepare("SELECT user_id, user_FN, user_LN, user_email, COALESCE(is_blocked,0) AS is_blocked, blocked_at FROM users ORDER BY user_LN, user_FN");
+        $st = $pdo->prepare("SELECT user_id, user_FN, user_LN, user_email, COALESCE(is_blocked,0) AS is_blocked, blocked_at FROM users ORDER BY user_id ASC");
         $st->execute();
         return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
