@@ -476,6 +476,21 @@ function fetch_locations_pdo($con)
                                                         style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer; white-space: nowrap;">
                                                         Set <?= $product['status'] === 'active' ? 'Inactive' : 'Active' ?>
                                                     </button>
+
+                                                    <?php if (Database::isSuperAdmin()): ?>
+                                                    <button
+                                                        type="button"
+                                                        class="menu-item delete-product-btn"
+                                                        style="flex: 1; padding: 10px 16px; background: none; border: 1px solid #fee2e2; border-radius:8px; font-size: 14px; color: #dc2626; cursor: pointer; white-space: nowrap;">
+                                                        Delete
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="menu-item force-delete-product-btn"
+                                                        style="flex: 1; padding: 10px 16px; background: none; border: 1px solid #fecaca; border-radius:8px; font-size: 14px; color: #b91c1c; cursor: pointer; white-space: nowrap;">
+                                                        Force Delete
+                                                    </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </td>
@@ -1021,6 +1036,70 @@ function fetch_locations_pdo($con)
                     .catch(function() {
                         alert('Request failed');
                     });
+                });
+            });
+
+            // Super admin: delete / force-delete product handlers
+            document.addEventListener('click', function(e) {
+                const delBtn = e.target.closest('.delete-product-btn');
+                const forceBtn = e.target.closest('.force-delete-product-btn');
+                if (!delBtn && !forceBtn) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const btn = delBtn || forceBtn;
+                const row = btn.closest('tr');
+                if (!row) return;
+                const id = row.getAttribute('data-product-id');
+                if (!id) return;
+
+                const action = delBtn ? 'delete' : 'force_delete';
+                const confirmMsg = action === 'delete'
+                    ? 'Delete this product? This will fail if it has references in past transactions.'
+                    : 'Force delete this product and remove references from past transactions? This cannot be undone.';
+                if (!confirm(confirmMsg)) return;
+
+                const dropdown = btn.closest('.dropdown-menu');
+                if (dropdown) dropdown.style.display = 'none';
+
+                function postDelete(act) {
+                    return fetch('delete_products.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: 'action=' + encodeURIComponent(act) + '&id=' + encodeURIComponent(id)
+                    }).then(res => res.text().then(txt => {
+                        let data = {};
+                        try { data = JSON.parse(txt); } catch (_) {}
+                        return { ok: res.ok, status: res.status, data, raw: txt };
+                    }));
+                }
+
+                postDelete(action).then(result => {
+                    const { ok, status, data } = result;
+                    if (ok && data && data.success) {
+                        row.remove();
+                        alert(data.message || 'Product deleted');
+                        return;
+                    }
+                    // If normal delete failed with conflict, offer force delete
+                    if (action === 'delete' && status === 409) {
+                        if (confirm('Delete failed due to references. Force delete instead? This will remove references and cannot be undone.')) {
+                            return postDelete('force_delete').then(fr => {
+                                if (fr.ok && fr.data && fr.data.success) {
+                                    row.remove();
+                                    alert(fr.data.message || 'Force-deleted product');
+                                } else {
+                                    alert((fr.data && fr.data.message) ? fr.data.message : 'Force delete failed');
+                                }
+                            });
+                        }
+                        return;
+                    }
+                    alert((data && data.message) ? data.message : 'Delete failed');
+                }).catch(err => {
+                    console.error('delete product error', err);
+                    alert('Delete request failed');
                 });
             });
 
