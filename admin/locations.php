@@ -7,6 +7,10 @@ $db = new Database();
 $pdo = $db->opencon();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Backward compatibility: accept 'id' as an alias for 'location_id'
+    if (isset($_POST['id']) && !isset($_POST['location_id'])) {
+        $_POST['location_id'] = $_POST['id'];
+    }
     // Add Location
     if (isset($_POST['name']) && !isset($_POST['action'])) {
         $name = $_POST['name'];
@@ -210,6 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-echo json_encode(['success' => false, 'message' => 'Invalid request.']);
+echo json_encode([
+    'success' => false,
+    'message' => 'Unsupported action or missing parameters. Please check your request and try again.'
+]);
 exit;
 ?>

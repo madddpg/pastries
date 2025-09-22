@@ -998,7 +998,7 @@ function fetch_locations_pdo($con)
             document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
+                    e.stopImmediatePropagation();
                     var row = btn.closest('tr');
                     if (!row) return;
                     var id = row.getAttribute('data-location-id');
@@ -1011,7 +1011,7 @@ function fetch_locations_pdo($con)
                             headers: {
                                 'Content-Type': 'application/x-www-form-urlencoded'
                             },
-                            body: 'action=toggle_status&id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
+                            body: 'action=toggle_status&location_id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
                         })
                         .then(res => res.json())
                         .then(data => {
