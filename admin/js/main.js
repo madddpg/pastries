@@ -1003,6 +1003,102 @@ document.addEventListener("DOMContentLoaded", () => {
     div.textContent = s;
     return div.innerHTML;
   }
+
+  // --- Customers (block/unblock) ---
+  (function customersInit() {
+    const tbody = document.getElementById('customers-tbody');
+    if (!tbody) return; // section not on page
+    const search = document.getElementById('customers-search');
+    const refreshBtn = document.getElementById('refresh-customers');
+
+    let allUsers = [];
+
+    function render(list) {
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 5;
+        td.style.textAlign = 'center';
+        td.textContent = 'No users found.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+      list.forEach(u => {
+        const tr = document.createElement('tr');
+        const name = `${u.user_FN || ''} ${u.user_LN || ''}`.trim();
+        const blocked = !!(u.is_blocked === 1 || u.is_blocked === '1' || u.is_blocked === true);
+        tr.innerHTML =
+          `<td>${u.user_id}</td>` +
+          `<td>${escapeHtml(name)}</td>` +
+          `<td>${escapeHtml(u.user_email || '')}</td>` +
+          `<td style="text-align:center;">` +
+            `<span class="status-badge ${blocked ? 'inactive' : 'active'}">${blocked ? 'Blocked' : 'Active'}</span>` +
+          `</td>` +
+          `<td style="text-align:center;">` +
+            `<button type="button" class="btn-${blocked ? 'primary' : 'secondary'} btn-toggle-block" data-id="${u.user_id}" data-block="${blocked ? '0' : '1'}">` +
+              `${blocked ? 'Unblock' : 'Block'}` +
+            `</button>` +
+          `</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('AJAX/customers.php?action=list', { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+        allUsers = data.users || [];
+        applyFilter();
+      } catch (err) {
+        console.error('[admin] customers load error', err);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;">Failed to load users</td></tr>';
+      }
+    }
+
+    function applyFilter() {
+      const q = (search?.value || '').toLowerCase().trim();
+      if (!q) return render(allUsers);
+      const filtered = allUsers.filter(u => {
+        const name = `${u.user_FN || ''} ${u.user_LN || ''}`.toLowerCase();
+        const email = (u.user_email || '').toLowerCase();
+        return name.includes(q) || email.includes(q) || String(u.user_id).includes(q);
+      });
+      render(filtered);
+    }
+
+    tbody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.btn-toggle-block');
+      if (!btn) return;
+      const id = parseInt(btn.dataset.id || '0', 10) || 0;
+      const block = btn.dataset.block === '1';
+      if (!id) return;
+      const confirmMsg = block ? 'Block this user from ordering?' : 'Unblock this user?';
+      if (!window.confirm(confirmMsg)) return;
+      try {
+        const fd = new FormData();
+        fd.append('action', block ? 'block' : 'unblock');
+        fd.append('user_id', String(id));
+        const res = await fetch('AJAX/customers.php', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+        // Update the local cache
+        const idx = allUsers.findIndex(u => String(u.user_id) === String(id));
+        if (idx >= 0) allUsers[idx] = data.user;
+        applyFilter();
+        showNotification(block ? 'User blocked' : 'User unblocked');
+      } catch (err) {
+        console.error('[admin] toggle block error', err);
+        alert('Failed to update user status.');
+      }
+    });
+
+    if (search) search.addEventListener('input', applyFilter);
+    if (refreshBtn) refreshBtn.addEventListener('click', load);
+    load();
+  })();
 });
 
 function getOrderIdFrom(el) {

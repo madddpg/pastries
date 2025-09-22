@@ -879,6 +879,34 @@ function fetch_locations_pdo($con)
                         </form>
                     </div>
                 </div>
+
+                <!-- Customers Section -->
+                <div id="block-users-section" class="content-section">
+                    <h1 style="margin-bottom:12px;">Customers</h1>
+                    <div class="card" style="background:#fff;border-radius:12px;padding:18px;box-shadow:0 4px 14px rgba(0,0,0,0.06);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:12px;flex-wrap:wrap;">
+                            <div style="font-weight:600;color:#374151;">All Registered Users</div>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input id="customers-search" type="text" placeholder="Search name or email" style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;min-width:220px;">
+                                <button id="refresh-customers" class="btn-secondary" type="button">Refresh</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="products-table" style="width:100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="width:90px;">User ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th style="width:120px;text-align:center;">Status</th>
+                                        <th style="width:160px;text-align:center;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customers-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>

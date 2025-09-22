@@ -22,6 +22,7 @@ class Database
         // Ensure supporting tables/schemas exist or are updated
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -50,6 +51,7 @@ class Database
         );
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -200,6 +202,55 @@ class Database
 
         // 3) Ensure active index exists
         try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
+    }
+
+    /** Ensure users table has is_blocked/blocked_at columns for blocking feature. */
+    private function ensureUsersBlockSchema(PDO $pdo): void
+    {
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (!in_array('is_blocked', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE users ADD COLUMN is_blocked TINYINT(1) NOT NULL DEFAULT 0 AFTER user_password"); } catch (Throwable $_) {}
+            }
+            if (!in_array('blocked_at', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE users ADD COLUMN blocked_at DATETIME NULL AFTER is_blocked"); } catch (Throwable $_) {}
+            }
+        } catch (Throwable $_) { /* ignore */ }
+        // Helpful index for admin listing/filtering
+        try { $pdo->exec("ALTER TABLE users ADD INDEX idx_users_block (is_blocked, user_id)"); } catch (Throwable $_) {}
+    }
+
+    /** Check if a user is blocked from ordering. */
+    public function isUserBlocked(int $user_id): bool
+    {
+        if ($user_id <= 0) return false;
+        $pdo = $this->opencon();
+        $st = $pdo->prepare("SELECT is_blocked FROM users WHERE user_id = ? LIMIT 1");
+        $st->execute([$user_id]);
+        $v = $st->fetchColumn();
+        return (bool)$v;
+    }
+
+    /** Toggle a user's blocked status. Optionally record blocked_at timestamp. */
+    public function setUserBlocked(int $user_id, bool $blocked): bool
+    {
+        $pdo = $this->opencon();
+        if ($blocked) {
+            $st = $pdo->prepare("UPDATE users SET is_blocked = 1, blocked_at = NOW() WHERE user_id = ?");
+        } else {
+            $st = $pdo->prepare("UPDATE users SET is_blocked = 0, blocked_at = NULL WHERE user_id = ?");
+        }
+        return $st->execute([$user_id]) === true;
+    }
+
+    /** Fetch all users for admin listing. */
+    public function fetchAllUsers(): array
+    {
+        $pdo = $this->opencon();
+        $st = $pdo->prepare("SELECT user_id, user_FN, user_LN, user_email, COALESCE(is_blocked,0) AS is_blocked, blocked_at FROM users ORDER BY user_LN, user_FN");
+        $st->execute();
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     // Fetch all picked up orders 
@@ -816,6 +867,10 @@ public function createPickupOrder(
     $con->beginTransaction();
 
     try {
+        // Blocked user guard
+        if ($user_id && $this->isUserBlocked((int)$user_id)) {
+            throw new Exception("Your account is blocked from placing orders. Please contact support.");
+        }
         if (!$pickup_name || !$pickup_location || !$pickup_time) {
             throw new Exception("Missing required pickup details.");
         }
@@ -1004,6 +1059,10 @@ public function createPickupOrder(
         $con = $this->opencon();
         $con->beginTransaction();
         try {
+            // Blocked user guard
+            if ($user_id && $this->isUserBlocked((int)$user_id)) {
+                throw new Exception("Your account is blocked from placing orders. Please contact support.");
+            }
             // Insert base transaction
             $stmt = $con->prepare("INSERT INTO transaction (user_id, total_amount, status, created_at) VALUES (?, ?, 'pending', NOW())");
             $stmt->execute([$user_id, $total]);
