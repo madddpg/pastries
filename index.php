@@ -1642,7 +1642,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     // If already initialized, skip
     if (track.dataset.infinite === '1') return;
 
-    const pxPerSec = 10; // speed: pixels per second (slower)
+    const pxPerSec = 2; // speed
 
     // Ensure the first set is at least as wide as the container; then duplicate it once
     // to create a seamless loop where animation translates by -50%.
