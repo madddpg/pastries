@@ -1642,7 +1642,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     // If already initialized, skip
     if (track.dataset.infinite === '1') return;
 
-    const pxPerSec = 1; // super slow speed in pixels per second
+    const pxPerSec = 0.2; // very slow speed in pixels per second
 
     // Ensure the first set is at least as wide as the container; then duplicate it once
     // to create a seamless loop where animation translates by -50%.
@@ -1678,8 +1678,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     function applyDuration() {
         const total = track.scrollWidth; // 2 * baseWidth ideally
         const half = Math.max(1, Math.round(total / 2));
-        const duration = Math.max(10, Math.round(half / pxPerSec));
+        // Ensure at least 60s per half-loop for user-friendly speed
+        const duration = Math.max(60, Math.round(half / pxPerSec));
+        // Apply both the CSS var and inline duration to override any conflicting rules
         track.style.setProperty('--marquee-duration', duration + 's');
+        track.style.animationDuration = duration + 's';
     }
     applyDuration();
     track.dataset.infinite = '1';
