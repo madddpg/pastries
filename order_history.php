@@ -29,6 +29,7 @@ if (count($orders) > 0) {
     <title>Order History - Cups & Cuddles</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
+      <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
 <body>
 <div class="container my-5">

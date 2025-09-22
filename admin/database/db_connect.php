@@ -253,6 +253,66 @@ class Database
         return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
+    /** Fetch users with server-side pagination and optional search. */
+    public function fetchUsersPaginated(int $page = 1, int $perPage = 10, ?string $q = null): array
+    {
+        $pdo = $this->opencon();
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(100, (int)$perPage));
+        $offset = ($page - 1) * $perPage;
+
+        $where = '1=1';
+        $params = [];
+        $idExact = null;
+        if (is_string($q)) {
+            $q = trim($q);
+            if ($q !== '') {
+                $where .= ' AND (user_FN LIKE :q OR user_LN LIKE :q OR user_email LIKE :q';
+                $params[':q'] = '%' . $q . '%';
+                if (ctype_digit($q)) {
+                    $where .= ' OR user_id = :idExact';
+                    $idExact = (int)$q;
+                }
+                $where .= ')';
+            }
+        }
+
+        // total count
+        $sqlCount = "SELECT COUNT(*) FROM users WHERE $where";
+        $st = $pdo->prepare($sqlCount);
+        if (array_key_exists(':q', $params)) { $st->bindValue(':q', $params[':q'], PDO::PARAM_STR); }
+        if (!is_null($idExact)) { $st->bindValue(':idExact', $idExact, PDO::PARAM_INT); }
+        $st->execute();
+        $total = (int)$st->fetchColumn();
+
+        // clamp page if out of range
+        $totalPages = (int)max(1, (int)ceil($total / $perPage));
+        if ($page > $totalPages) {
+            $page = $totalPages;
+            $offset = ($page - 1) * $perPage;
+        }
+
+        // data page
+        $sql = "SELECT user_id, user_FN, user_LN, user_email, COALESCE(is_blocked,0) AS is_blocked, blocked_at
+                FROM users
+                WHERE $where
+                ORDER BY user_id ASC
+                LIMIT $offset, $perPage"; // integers already sanitized
+        $st = $pdo->prepare($sql);
+        if (array_key_exists(':q', $params)) { $st->bindValue(':q', $params[':q'], PDO::PARAM_STR); }
+        if (!is_null($idExact)) { $st->bindValue(':idExact', $idExact, PDO::PARAM_INT); }
+        $st->execute();
+        $users = $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        return [
+            'users' => $users,
+            'total' => $total,
+            'page' => $page,
+            'perPage' => $perPage,
+            'totalPages' => $totalPages,
+        ];
+    }
+
     // Fetch all picked up orders 
     public function fetch_pickedup_orders_pdo()
     {

@@ -895,7 +895,7 @@ function fetch_locations_pdo($con)
                             <table class="products-table" style="width:100%;">
                                 <thead>
                                     <tr>
-                                        <th style="width:90px;">User ID</th>
+                                        <th style="width:90px;">User</th>
                                         <th>Name</th>
                                         <th>Email</th>
                                         <th style="width:120px;text-align:center;">Status</th>
@@ -904,6 +904,7 @@ function fetch_locations_pdo($con)
                                 </thead>
                                 <tbody id="customers-tbody"></tbody>
                             </table>
+                            <div id="customers-pagination" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end;margin-top:10px;"></div>
                         </div>
                     </div>
                 </div>

@@ -18,8 +18,12 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
     if ($method === 'GET' && ($action === '' || $action === 'list')) {
-        $users = $db->fetchAllUsers();
-        echo json_encode(['success' => true, 'users' => $users]);
+        // Support pagination and search
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        $perPage = isset($_GET['perPage']) ? (int)$_GET['perPage'] : 10;
+        $q = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
+        $result = $db->fetchUsersPaginated($page, $perPage, $q);
+        echo json_encode(['success' => true] + $result);
         exit;
     }
 

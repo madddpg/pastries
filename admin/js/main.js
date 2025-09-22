@@ -1010,8 +1010,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!tbody) return; // section not on page
     const search = document.getElementById('customers-search');
     const refreshBtn = document.getElementById('refresh-customers');
+    const pager = document.getElementById('customers-pagination');
 
-    let allUsers = [];
+    // Pagination state
+    const state = { page: 1, perPage: 10, q: '' };
+    let lastResponse = { users: [], total: 0, page: 1, perPage: 10, totalPages: 1 };
 
     function render(list) {
       tbody.innerHTML = '';
@@ -1045,29 +1048,57 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    async function load() {
+    function renderPager(meta) {
+      if (!pager) return;
+      pager.innerHTML = '';
+      const totalPages = meta.totalPages || 1;
+      const current = meta.page || 1;
+      if (totalPages <= 1) return;
+      const mk = (label, page, disabled = false, active = false) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = label;
+        b.disabled = !!disabled;
+        b.dataset.page = String(page);
+        b.className = 'pager-btn' + (active ? ' active' : '');
+        b.style.cssText = 'padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;';
+        if (!disabled && !active) b.addEventListener('click', () => load(page));
+        return b;
+      };
+      pager.appendChild(mk('Prev', Math.max(1, current - 1), current <= 1));
+      // show up to 7 windowed numbers
+      const windowSize = 7;
+      let start = Math.max(1, current - Math.floor(windowSize / 2));
+      let end = Math.min(totalPages, start + windowSize - 1);
+      start = Math.max(1, end - windowSize + 1);
+      for (let p = start; p <= end; p++) pager.appendChild(mk(String(p), p, false, p === current));
+      pager.appendChild(mk('Next', Math.min(totalPages, current + 1), current >= totalPages));
+    }
+
+    async function load(page = null) {
+      if (page != null) state.page = page;
+      // keep q from input
+      state.q = (search?.value || '').trim();
       try {
-        const res = await fetch('AJAX/customers.php?action=list', { headers: { 'Accept': 'application/json' } });
+        const url = new URL('AJAX/customers.php', window.location.href);
+        url.searchParams.set('action', 'list');
+        url.searchParams.set('page', String(state.page));
+        url.searchParams.set('perPage', String(state.perPage));
+        if (state.q) url.searchParams.set('q', state.q);
+        const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
         const data = await res.json();
         if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
-        allUsers = data.users || [];
-        applyFilter();
+        lastResponse = { users: data.users || [], total: data.total || 0, page: data.page || 1, perPage: data.perPage || state.perPage, totalPages: data.totalPages || 1 };
+        render(lastResponse.users);
+        renderPager(lastResponse);
       } catch (err) {
         console.error('[admin] customers load error', err);
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#dc2626;">Failed to load users</td></tr>';
+        if (pager) pager.innerHTML = '';
       }
     }
-
-    function applyFilter() {
-      const q = (search?.value || '').toLowerCase().trim();
-      if (!q) return render(allUsers);
-      const filtered = allUsers.filter(u => {
-        const name = `${u.user_FN || ''} ${u.user_LN || ''}`.toLowerCase();
-        const email = (u.user_email || '').toLowerCase();
-        return name.includes(q) || email.includes(q) || String(u.user_id).includes(q);
-      });
-      render(filtered);
-    }
+    // Search will reload from page 1
+    function applyFilter() { load(1); }
 
     tbody.addEventListener('click', async (e) => {
       const btn = e.target.closest('.btn-toggle-block');
@@ -1084,10 +1115,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch('AJAX/customers.php', { method: 'POST', body: fd, headers: { 'Accept': 'application/json' } });
         const data = await res.json();
         if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
-        // Update the local cache
-        const idx = allUsers.findIndex(u => String(u.user_id) === String(id));
-        if (idx >= 0) allUsers[idx] = data.user;
-        applyFilter();
+        // After toggle, reload current page to reflect changes
+        load(state.page);
         showNotification(block ? 'User blocked' : 'User unblocked');
       } catch (err) {
         console.error('[admin] toggle block error', err);
@@ -1095,9 +1124,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    if (search) search.addEventListener('input', applyFilter);
-    if (refreshBtn) refreshBtn.addEventListener('click', load);
-    load();
+    if (search) search.addEventListener('input', () => applyFilter());
+    if (refreshBtn) refreshBtn.addEventListener('click', () => load(1));
+    load(1);
   })();
 });
 
