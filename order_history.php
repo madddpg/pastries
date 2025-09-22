@@ -7,7 +7,13 @@ if (!isset($_SESSION['user'])) {
 $user_id = $_SESSION['user']['user_id'];
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
-$orders = $db->fetchUserOrders($user_id);
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$perPage = 5;
+$total = 0;
+$orders = method_exists($db, 'fetchUserOrdersPaginated')
+    ? $db->fetchUserOrdersPaginated($user_id, $page, $perPage, $total)
+    : $db->fetchUserOrders($user_id);
+$totalPages = method_exists($db, 'fetchUserOrdersPaginated') ? (int)ceil(($total ?: 0) / $perPage) : 1;
 $latest_ready = false;
 if (count($orders) > 0) {
     $latest_order = $orders[0];
@@ -90,6 +96,33 @@ if (count($orders) > 0) {
             </tbody>
         </table>
         </div>
+        <?php if ($totalPages > 1): ?>
+        <nav aria-label="Order history pagination" class="mt-3">
+            <ul class="pagination">
+                <?php
+                $cur = $page;
+                $base = 'order_history.php';
+                $mk = function($p, $label = null, $disabled = false, $active = false) use ($base) {
+                    $label = $label ?? (string)$p;
+                    $href = $disabled ? '#' : $base . '?page=' . $p;
+                    $liCls = 'page-item' . ($disabled ? ' disabled' : '') . ($active ? ' active' : '');
+                    $aCls = 'page-link';
+                    return "<li class='{$liCls}'><a class='{$aCls}' href='{$href}'>" . htmlspecialchars($label) . "</a></li>";
+                };
+                echo $mk(max(1, $cur - 1), 'Prev', $cur <= 1, false);
+                // Windowed numbers (max 7)
+                $window = 7; $half = (int)floor($window/2);
+                $start = max(1, $cur - $half);
+                $end = min($totalPages, $start + $window - 1);
+                $start = max(1, $end - $window + 1);
+                for ($p = $start; $p <= $end; $p++) {
+                    echo $mk($p, (string)$p, false, $p === $cur);
+                }
+                echo $mk(min($totalPages, $cur + 1), 'Next', $cur >= $totalPages, false);
+                ?>
+            </ul>
+        </nav>
+        <?php endif; ?>
     <?php endif; ?>
     <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
 </div>

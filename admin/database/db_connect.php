@@ -831,6 +831,31 @@ class Database
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Fetch user orders with pagination; returns array and sets $total via reference
+    public function fetchUserOrdersPaginated(int $user_id, int $page, int $perPage, int &$total = 0): array
+    {
+        $page = max(1, (int)$page);
+        $perPage = max(1, min(100, (int)$perPage));
+        $offset = ($page - 1) * $perPage;
+
+        $con = $this->opencon();
+        // Total count
+        $stmt = $con->prepare("SELECT COUNT(*) FROM transaction t WHERE t.user_id = ?");
+        $stmt->execute([$user_id]);
+        $total = (int)$stmt->fetchColumn();
+
+        // Page data
+        // Important: LIMIT/OFFSET must be integers; we inject them after clamping
+        $sql = "SELECT t.transac_id, t.reference_number, t.created_at, t.total_amount, t.status
+                FROM transaction t
+                WHERE t.user_id = ?
+                ORDER BY t.created_at DESC
+                LIMIT {$perPage} OFFSET {$offset}";
+        $st2 = $con->prepare($sql);
+        $st2->execute([$user_id]);
+        return $st2->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
     // Fetch order details for a specific transaction and user
     public function fetchOrderDetail($user_id, $transac_id)
     {
