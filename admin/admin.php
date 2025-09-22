@@ -66,7 +66,8 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
         $params = [];
     }
     if ($location !== '') {
-        $where .= ($params ? " AND" : " WHERE") . " p.pickup_location LIKE ?";
+        // $where always starts with WHERE (status condition), so we can safely append AND
+        $where .= " AND p.pickup_location LIKE ?";
         $params[] = $location . '%';
     }
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
