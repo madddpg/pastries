@@ -28,8 +28,9 @@ if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin
 $db = new Database();
 $con = $db->opencon();
 
-// Get status filter from GET parameter for live orders
+// Get status and location filters from GET parameters for live orders
 $live_status = isset($_GET['status']) ? $_GET['status'] : '';
+$live_location = isset($_GET['location']) ? trim($_GET['location']) : '';
 $allowed_statuses = ['pending', 'preparing', 'ready'];
 
 function fetch_pickedup_orders_pdo($con)
@@ -54,7 +55,7 @@ function fetch_pickedup_orders_pdo($con)
     return $orders;
 }
 
-function fetch_live_orders_pdo($con, $status = '')
+function fetch_live_orders_pdo($con, $status = '', $location = '')
 {
     $allowed_statuses = ['pending', 'preparing', 'ready'];
     if ($status !== '' && in_array($status, $allowed_statuses)) {
@@ -63,6 +64,10 @@ function fetch_live_orders_pdo($con, $status = '')
     } else {
         $where = "WHERE t.status IN ('pending','preparing','ready')";
         $params = [];
+    }
+    if ($location !== '') {
+        $where .= ($params ? " AND" : " WHERE") . " p.pickup_location LIKE ?";
+        $params[] = $location . '%';
     }
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
         u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
@@ -345,10 +350,28 @@ function fetch_locations_pdo($con)
                         <a href="?status=pending" class="tab<?= $live_status === 'pending' ? ' active' : '' ?>" data-status="pending">Pending</a>
                     </div>
 
+                    <div class="live-orders-filters" style="display:flex;gap:10px;align-items:center;margin:10px 0 18px;">
+                        <label for="live-location-filter" style="font-weight:600;">Location:</label>
+                        <select id="live-location-filter" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;min-width:220px;">
+                            <option value="">All locations</option>
+                            <?php
+                            try {
+                                $locStmt = $con->prepare("SELECT name FROM locations WHERE status='open' ORDER BY name ASC");
+                                $locStmt->execute();
+                                $locs = $locStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                                foreach ($locs as $lname) {
+                                    $sel = ($live_location !== '' && $live_location === $lname) ? ' selected' : '';
+                                    echo '<option value="' . htmlspecialchars($lname, ENT_QUOTES, 'UTF-8') . '"' . $sel . '>' . htmlspecialchars($lname) . '</option>';
+                                }
+                            } catch (Throwable $e) { /* ignore */ }
+                            ?>
+                        </select>
+                    </div>
+
                     <div class="live-orders-grid">
                         <?php
                         // Use the same data + template as AJAX to keep design identical
-                        $orders = fetch_live_orders_pdo($con, $live_status);
+                        $orders = fetch_live_orders_pdo($con, $live_status, $live_location);
                         require __DIR__ . '/AJAX/markup.php';
                         ?>
                     </div>

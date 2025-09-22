@@ -5,12 +5,20 @@ require_once __DIR__ . '/../database/db_connect.php';
 header('Content-Type: text/html; charset=UTF-8');
 
 $status  = isset($_GET['status']) ? trim($_GET['status']) : '';
+$location = isset($_GET['location']) ? trim($_GET['location']) : '';
 $allowed = ['pending', 'preparing', 'ready'];
 $params  = [];
 $where   = "WHERE t.status IN ('pending','preparing','ready')";
 if ($status !== '' && in_array($status, $allowed, true)) {
     $where = "WHERE t.status = ?";
     $params[] = $status;
+}
+
+// Optional location filter (prefix match to handle stored phone suffixes)
+if ($location !== '') {
+    // Ensure pickup_detail is joined; it's already LEFT JOINed below
+    $where .= ($params ? " AND" : " WHERE") . " p.pickup_location LIKE ?";
+    $params[] = $location . '%';
 }
 
 try {
@@ -37,8 +45,8 @@ try {
                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
                 $where
                 ORDER BY t.created_at DESC";
-        $stmt = $con->prepare($sql);
-        $stmt->execute($params);
+    $stmt = $con->prepare($sql);
+    $stmt->execute($params);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $primaryQueryError) {
         error_log('fetch_live_orders full query failed: ' . $primaryQueryError->getMessage());

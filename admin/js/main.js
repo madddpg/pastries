@@ -204,16 +204,49 @@ document.addEventListener("DOMContentLoaded", () => {
       liveOrdersTabs.forEach(t => t.classList.remove('active'));
       this.classList.add('active');
 
-      // Show section and load orders
-      const status = this.dataset.status || '';
-      showSection('live-orders');
-      try { fetchOrders(status); } catch (e) { /* fetchOrders defined later */ }
+  // Show section and load orders
+  const status = this.dataset.status || '';
+  showSection('live-orders');
+  try { fetchOrders(status); } catch (e) { /* fetchOrders defined later */ }
 
-      // Update URL without navigating
-      const newUrl = status ? ('?status=' + encodeURIComponent(status)) : '?status=';
-      history.replaceState(null, '', newUrl);
+  // Update URL without navigating, preserving location filter
+  const locSel = document.getElementById('live-location-filter');
+  const location = locSel ? locSel.value : '';
+  const params = new URLSearchParams();
+  params.set('status', status);
+  if (location) params.set('location', location);
+  const newUrl = '?' + params.toString();
+  history.replaceState(null, '', newUrl);
     }, true); // capture phase
   });
+
+  // Location filter change handler for Live Orders
+  const liveLocationFilter = document.getElementById('live-location-filter');
+  if (liveLocationFilter) {
+    liveLocationFilter.addEventListener('change', () => {
+      const activeTab = document.querySelector('#live-orders-tabs .tab.active');
+      const status = activeTab ? (activeTab.dataset.status || '') : '';
+      try { fetchOrders(status); } catch (e) {}
+      // Keep URL in sync
+      const params = new URLSearchParams(window.location.search);
+      params.set('status', status);
+      const locVal = liveLocationFilter.value || '';
+      if (locVal) params.set('location', locVal); else params.delete('location');
+      history.replaceState(null, '', '?' + params.toString());
+    });
+  }
+
+  // Initialize location selector from URL on load
+  (function initLiveLocationFromUrl() {
+    const sel = document.getElementById('live-location-filter');
+    if (!sel) return;
+    const params = new URLSearchParams(window.location.search);
+    const loc = params.get('location') || '';
+    if (!loc) return;
+    for (const opt of sel.options) {
+      if (opt.value === loc) { sel.value = loc; break; }
+    }
+  })();
 
   // Busy Mode Toggle (optional)
   const busyModeToggle = document.querySelector(".toggle input");
@@ -681,7 +714,10 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn('[admin] live-orders container not found');
       return;
     }
-    fetch('AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const locSel = document.getElementById('live-location-filter');
+    const location = locSel ? locSel.value : '';
+    const url = 'AJAX/fetch_live_orders.php?status=' + encodeURIComponent(status) + (location ? ('&location=' + encodeURIComponent(location)) : '');
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(res => res.text())
       .then(html => {
         // Replace only the inner content so layout styles remain
