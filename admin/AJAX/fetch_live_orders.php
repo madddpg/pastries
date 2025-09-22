@@ -20,7 +20,7 @@ try {
     $orders = [];
     try {
         // Full dataset (safe aliases and backticks)
-        $sql = "SELECT
+                $sql = "SELECT
                   t.transac_id,
                   t.transac_id AS reference_number,
                   t.user_id,
@@ -29,6 +29,7 @@ try {
                   t.created_at,
                   t.payment_method,
                   u.user_FN AS customer_name,
+                                    p.pickup_location,
                   p.pickup_time,
                   p.special_instructions
                 FROM `transaction` t

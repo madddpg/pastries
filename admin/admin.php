@@ -65,7 +65,7 @@ function fetch_live_orders_pdo($con, $status = '')
         $params = [];
     }
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
-           u.user_FN AS customer_name, p.pickup_time, p.special_instructions,
+        u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
            a.admin_id AS approved_by_admin_id, a.username AS approved_by
         FROM transaction t
         LEFT JOIN users u ON t.user_id = u.user_id

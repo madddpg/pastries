@@ -14,7 +14,18 @@ foreach ($orders as $order):
   $time   = esc($order['created_at'] ?? '');
   $name   = esc($order['customer_name'] ?? 'Guest');
   $total  = number_format((float)($order['total_amount'] ?? 0), 2);
-  $pickup = trim((string)($order['pickup_time'] ?? ''));
+  $pickupRaw = trim((string)($order['pickup_time'] ?? ''));
+  $pickupLoc = trim((string)($order['pickup_location'] ?? ''));
+  // Format pickup time to 12-hour with AM/PM if it's a valid date/time string
+  $pickup = '';
+  if ($pickupRaw !== '') {
+    $ts = strtotime($pickupRaw);
+    if ($ts !== false) {
+      $pickup = date('g:i A', $ts);
+    } else {
+      $pickup = $pickupRaw; // fallback
+    }
+  }
   $note   = trim((string)($order['special_instructions'] ?? ''));
   $method = strtolower(trim((string)($order['payment_method'] ?? 'cash')));
 ?>
@@ -31,6 +42,7 @@ foreach ($orders as $order):
       <p>Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span></p>
     </div>
     <div class="pickup-info" style="margin: 10px 0;">
+      <?php if ($pickupLoc !== ''): ?><div>Pickup Location: <?= esc($pickupLoc) ?></div><?php endif; ?>
       <?php if ($pickup !== ''): ?><div>Pickup Time: <?= esc($pickup) ?></div><?php endif; ?>
       <?php if ($note !== ''): ?><div>Note: <?= esc($note) ?></div><?php endif; ?>
     </div>

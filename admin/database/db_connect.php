@@ -247,7 +247,7 @@ class Database
 
         // Added payment_method to the SELECT statement
         $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, 
-            t.payment_method, p.pickup_name AS customer_name, p.pickup_time, p.special_instructions,
+            t.payment_method, p.pickup_name AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
             a.admin_id AS approved_by_admin_id, a.username AS approved_by
             FROM transaction t
             LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
