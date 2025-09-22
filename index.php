@@ -1642,7 +1642,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     // If already initialized, skip
     if (track.dataset.infinite === '1') return;
 
-    const pxPerSec = 2; // speed
+    const pxPerSec = 1; // super slow speed in pixels per second
 
     // Ensure the first set is at least as wide as the container; then duplicate it once
     // to create a seamless loop where animation translates by -50%.
@@ -1675,14 +1675,25 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     }
 
     // After duplication, total width is 2 * baseWidth; move by -50% equals baseWidth.
-    const distance = baseWidth; // pixels to travel per cycle
-    const duration = Math.max(10, Math.round(distance / pxPerSec));
-    track.style.setProperty('--marquee-duration', duration + 's');
+    function applyDuration() {
+        const total = track.scrollWidth; // 2 * baseWidth ideally
+        const half = Math.max(1, Math.round(total / 2));
+        const duration = Math.max(10, Math.round(half / pxPerSec));
+        track.style.setProperty('--marquee-duration', duration + 's');
+    }
+    applyDuration();
     track.dataset.infinite = '1';
 
     // Pause on hover (CSS already handles .carousel-track:hover), but also support touch
     track.addEventListener('touchstart', () => { track.style.animationPlayState = 'paused'; }, { passive: true });
     track.addEventListener('touchend', () => { track.style.animationPlayState = ''; });
+
+    // Recalculate duration on resize to avoid any timing mismatch or perceived gaps
+    let _rz;
+    window.addEventListener('resize', () => {
+        clearTimeout(_rz);
+        _rz = setTimeout(applyDuration, 150);
+    });
 })();
 
     </script>
