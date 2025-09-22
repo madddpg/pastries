@@ -916,6 +916,26 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   updateDashboardStats();
   setInterval(updateDashboardStats, 15000);
+
+  // Promo upload confirmation
+  const promoUploadForm = document.querySelector("form[action='upload_promo.php']");
+  if (promoUploadForm) {
+    promoUploadForm.addEventListener('submit', function (e) {
+      const titleInput = promoUploadForm.querySelector("input[name='title']");
+      const fileInput = promoUploadForm.querySelector("input[name='promoImage']");
+      const title = titleInput ? (titleInput.value || '').trim() : '';
+      const fileName = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : '';
+      const lines = ['Add this promo?'];
+      if (title) lines.push('Title: ' + title);
+      if (fileName) lines.push('File: ' + fileName);
+      lines.push('', 'Proceed to upload?');
+      const confirmed = window.confirm(lines.join('\n'));
+      if (!confirmed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+  }
 });
 
 function getOrderIdFrom(el) {
