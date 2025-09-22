@@ -16,8 +16,8 @@ if ($status !== '' && in_array($status, $allowed, true)) {
 
 // Optional location filter (prefix match to handle stored phone suffixes)
 if ($location !== '') {
-    // Ensure pickup_detail is joined; it's already LEFT JOINed below
-    $where .= ($params ? " AND" : " WHERE") . " p.pickup_location LIKE ?";
+    // $where always starts with a WHERE status clause; safely append AND
+    $where .= " AND p.pickup_location LIKE ?";
     $params[] = $location . '%';
 }
 
@@ -51,16 +51,17 @@ try {
     } catch (Throwable $primaryQueryError) {
         error_log('fetch_live_orders full query failed: ' . $primaryQueryError->getMessage());
         // Minimal fallback (no optional columns)
-        $sql = "SELECT
-                  t.transac_id,
-                  t.transac_id AS reference_number,
-                  t.user_id,
-                  t.total_amount,
-                  t.status,
-                  t.created_at
-                FROM `transaction` t
-                $where
-                ORDER BY t.created_at DESC";
+                $sql = "SELECT
+                                    t.transac_id,
+                                    t.transac_id AS reference_number,
+                                    t.user_id,
+                                    t.total_amount,
+                                    t.status,
+                                    t.created_at
+                                FROM `transaction` t
+                                LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
+                                $where
+                                ORDER BY t.created_at DESC";
         $stmt = $con->prepare($sql);
         $stmt->execute($params);
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
