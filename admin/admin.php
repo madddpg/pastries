@@ -189,10 +189,6 @@ function fetch_locations_pdo($con)
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
                     <span>Customers</span>
                 </a>
-                <a href="#" class="nav-item" data-section="stocks">
-                    <span class="nav-icon"><i class="bi bi-box"></i></span>
-                    <span>Stocks</span>
-                </a>
                 <a href="#" class="nav-item" data-section="reports">
                     <span class="nav-icon"><i class="bi bi-graph-up"></i></span>
                     <span>Reports</span>
@@ -710,30 +706,6 @@ function fetch_locations_pdo($con)
                     </div>
                 </div>
 
-                <!-- Stocks Section -->
-                <div id="stocks-section" class="content-section">
-                    <h1>Product Stocks</h1>
-                    <div style="margin:12px 0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                        <button id="stocks-refresh" class="btn-primary" style="padding:8px 14px;">Refresh</button>
-                        <div id="stocks-saving" style="display:none;color:#059669;font-weight:600;">Saving...</div>
-                        <div id="stocks-error" style="display:none;color:#dc2626;font-weight:600;">Error</div>
-                    </div>
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%;border-collapse:collapse;min-width:640px;">
-                            <thead>
-                                <tr style="background:#f3f4f6;">
-                                    <th style="text-align:left;padding:8px;font-size:0.75rem;letter-spacing:0.5px;text-transform:uppercase;">Product</th>
-                                    <th style="text-align:left;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Status</th>
-                                    <th style="text-align:right;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Quantity</th>
-                                    <th style="text-align:center;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Update</th>
-                                </tr>
-                            </thead>
-                            <tbody id="stocks-body">
-                                <tr><td colspan="4" style="text-align:center;padding:12px;">Loading…</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
 
                     <!-- Toppings Section (admin) -->
@@ -807,117 +779,24 @@ function fetch_locations_pdo($con)
                     <div class="card" style="padding:18px;">
                         <div id="promos-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
-                            $promos = $db->fetch_locations_pdo($con); 
-                            // Better: query directly:
-                            $stmt = $con->prepare("SELECT * FROM promos ORDER BY created_at DESC");
+                            $stmt = $con->prepare("SELECT promo_id, title, image, created_at FROM promos ORDER BY created_at DESC");
                             $stmt->execute();
                             $promos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             if (empty($promos)) {
                                 echo '<div>No promos yet.</div>';
                             } else {
                                 foreach ($promos as $pr) {
-                                    $img = "/" . htmlspecialchars($pr['image']);
-
-
-                                    $title = htmlspecialchars($pr['title']);
-                                    $active = $pr['active'] ? 'Active' : 'Inactive';
-
-                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>
-            <img src=" . $img . " style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>
-            <div style='font-size:0.9rem;font-weight:600;margin-bottom:6px;'>{$title}</div>
-            <div style='display:flex;gap:6px;'>
-              <form method='post' action='delete_promo.php' style='margin:0;'>
-                <input type='hidden' name='id' value='{$pr['promo_id']}'>
-                <button class='btn-secondary' type='submit' style='padding:6px 8px;'>Delete</button>
-              </form>
-              <form method='post' action='update_promos.php' style='margin:0;'>
-                <input type='hidden' name='id' value='{$pr['promo_id']}'>
-                <input type='hidden' name='active' value='" . ($pr['active'] ? '0' : '1') . "'>
-                <button class='btn-primary' type='submit' style='padding:6px 8px;'>" . ($pr['active'] ? 'Set Inactive' : 'Set Active') . "</button>
-              </form>
-            </div>
-          </div>";
+                                    $img = htmlspecialchars($pr['image']);
+                                    $title = htmlspecialchars($pr['title'] ?: '');
+                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>\n".
+                                         ( $img ? "<img src='{$img}' alt='' style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>" : "" ) .
+                                         "<div style='font-size:0.8rem;font-weight:600;margin-bottom:4px;'>$title</div>\n".
+                                         "<div style='font-size:0.65rem;color:#555;'>".htmlspecialchars(date('Y-m-d', strtotime($pr['created_at'])))."</div>\n".
+                                         "</div>";
                                 }
                             }
                             ?>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Active Location Section -->
-                <div id="active-location-section" class="content-section">
-                    <h1>Active Locations</h1>
-                    <div class="page-header">
-                        <button id="showAddLocationModalBtn" class="btn-primary" style="margin: 20px;">+ Add Location</button>
-                    </div>
-                    <div class="tabs">
-                        <a href="#" class="tab active">All Locations</a>
-                    </div>
-                    <div class="table-container">
-                        <table class="products-table">
-                            <thead>
-                                <tr>
-                                    <th>Location Name</th>
-                                    <th>Status</th>
-                                    <th>Image</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="locationsTableBody">
-                                <?php
-                                $locations = $db->fetch_locations_pdo();
-                                if (empty($locations)) {
-                                    echo '<tr><td colspan="4" style="text-align:center;">No locations found.</td></tr>';
-                                } else {
-                                    foreach ($locations as $loc): ?>
-                                        <tr data-location-id="<?= $loc['location_id'] ?>"
-                                            data-location-name="<?= htmlspecialchars($loc['name']) ?>"
-                                            data-location-status="<?= htmlspecialchars($loc['status']) ?>">
-                                            <td><?= htmlspecialchars($loc['name']) ?></td>
-                                            <td>
-                                                <span class="status-badge <?= $loc['status'] === 'open' ? 'active' : 'inactive' ?>">
-                                                    <?= ucfirst($loc['status']) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($loc['image'])): ?>
-                                                    <img src="<?= htmlspecialchars($loc['image']) ?>" alt="Location Image" style="width:60px;height:40px;object-fit:cover;border-radius:6px;">
-                                                <?php else: ?>
-                                                    <span style="color:#aaa;">No image</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <div class="action-menu" style="position: relative; display: inline-block;">
-                                                    <button class="action-btn" type="button"
-                                                        style="background-color: #f3f4f6; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 20px; cursor: pointer; transition: background 0.3s;">
-                                                        ⋮
-                                                    </button>
-                                                    <div class="dropdown-menu"
-                                                        style="display: none; position: absolute; z-index: 10; top: 0; right: 100%; background: white; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; padding: 8px; display: flex; flex-direction: row; gap: 8px; width: 300px;">
-
-                                                        <button type="button" class="menu-item edit-location-btn"
-                                                            style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #374151; cursor: pointer;">
-                                                            Edit
-                                                        </button>
-                                                        <?php if (Database::isSuperAdmin()): ?>
-                                                            <button type="button" class="menu-item delete-location-btn"
-                                                                style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #ef4444; cursor: pointer;">
-                                                                Delete
-                                                            </button>
-                                                        <?php endif; ?>
-                                                        <button type="button" class="menu-item toggle-location-status-btn"
-                                                            style="padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer;">
-                                                            Set <?= $loc['status'] === 'open' ? 'Closed' : 'Open' ?>
-                                                        </button>
-
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                <?php endforeach;
-                                } ?>
-                            </tbody>
-                        </table>
                     </div>
 
                     <!-- Add Location Modal -->

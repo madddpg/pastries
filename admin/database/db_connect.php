@@ -23,7 +23,6 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
-        try { $this->ensureProductInventoryColumnSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -53,7 +52,6 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
-        try { $this->ensureProductInventoryColumnSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -206,64 +204,6 @@ class Database
         try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
     }
 
-    /** Ensure products table uses only `quantity` column (migrates/drops legacy inventory_qty). */
-    private function ensureProductInventoryColumnSchema(PDO $pdo): void
-    {
-        try {
-            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
-            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
-            $hasQuantity = in_array('quantity', $cols, true);
-            $hasInventoryQty = in_array('inventory_qty', $cols, true);
-            if (!$hasQuantity && $hasInventoryQty) {
-                // Rename legacy inventory_qty to quantity
-                try { $pdo->exec("ALTER TABLE products CHANGE inventory_qty quantity INT NOT NULL DEFAULT 0"); $hasQuantity = true; $hasInventoryQty = false; } catch (Throwable $_) {}
-            }
-            if (!$hasQuantity && !$hasInventoryQty) {
-                try { $pdo->exec("ALTER TABLE products ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER status"); $hasQuantity = true; } catch (Throwable $_) {}
-            }
-            // If both exist (rare), migrate then drop inventory_qty
-            if ($hasQuantity && $hasInventoryQty) {
-                try { $pdo->exec("UPDATE products SET quantity = inventory_qty WHERE (quantity IS NULL OR quantity=0) AND inventory_qty IS NOT NULL"); } catch (Throwable $_) {}
-                try { $pdo->exec("ALTER TABLE products DROP COLUMN inventory_qty"); } catch (Throwable $_) {}
-            }
-        } catch (Throwable $_) { /* ignore */ }
-    }
-
-    /** Fetch inventory list (single source: products.quantity) */
-    public function fetch_inventory_list(): array
-    {
-        $pdo = $this->opencon();
-        $sql = "SELECT product_id, name, status, quantity FROM products WHERE name != '__placeholder__' ORDER BY name ASC";
-        try {
-            $st = $pdo->prepare($sql);
-            $st->execute();
-            return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
-        } catch (Throwable $e) {
-            return [];
-        }
-    }
-
-    /** Update quantity (single column). */
-    public function set_inventory_quantity(string $product_id, int $qty): bool
-    {
-        $qty = max(0, $qty);
-        $pdo = $this->opencon();
-        // Detect available column
-        try {
-            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
-            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
-            if (!in_array('quantity', $cols, true)) {
-                // Attempt to add if missing
-                try { $pdo->exec("ALTER TABLE products ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER status"); } catch (Throwable $_) {}
-            }
-            $hasUpdated = in_array('updated_at', $cols, true);
-            $sql = "UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
-            $st = $pdo->prepare($sql);
-            return $st->execute([$qty, $qty, $product_id]);
-        } catch (Throwable $e) {
-            return false;
-        }
-    }
 
     /** Ensure users table has is_blocked/blocked_at columns for blocking feature. */
     private function ensureUsersBlockSchema(PDO $pdo): void
@@ -1133,6 +1073,12 @@ public function createPickupOrder(
             status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
             updated_at = NOW()
         WHERE products_pk = ?");
+    // Fallback decrement by product_id (if products_pk not resolved)
+    $decrementStockByPid = $con->prepare("UPDATE products
+        SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
+            status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
+            updated_at = NOW()
+        WHERE product_id = ?");
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -1187,6 +1133,19 @@ public function createPickupOrder(
                         throw new Exception('Product ' . $rw['product_id'] . ' needs ' . $quantity . ' but only ' . $curQty . ' left');
                     }
                 }
+            } else { // Fallback validation by product_id
+                $chk2 = $con->prepare("SELECT quantity, product_id FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+                $chk2->execute([$product_id]);
+                $rw2 = $chk2->fetch(PDO::FETCH_ASSOC);
+                if ($rw2 && $rw2['quantity'] !== null) {
+                    $curQty = (int)$rw2['quantity'];
+                    if ($curQty <= 0) {
+                        throw new Exception('Product ' . $rw2['product_id'] . ' is out of stock');
+                    }
+                    if ($quantity > $curQty) {
+                        throw new Exception('Product ' . $rw2['product_id'] . ' needs ' . $quantity . ' but only ' . $curQty . ' left');
+                    }
+                }
             }
 
             // Save item with products_pk
@@ -1228,9 +1187,19 @@ public function createPickupOrder(
             if ($products_pk_val) {
                 try {
                     $decrementStock->execute([$quantity, $quantity, $products_pk_val]);
+                    if ($decrementStock->rowCount() === 0) {
+                        // fallback attempt
+                        $decrementStockByPid->execute([$quantity, $quantity, $product_id]);
+                    }
                 } catch (Exception $e) {
                     // Log but do not abort the whole order if stock update fails
                     error_log('Stock decrement failed for products_pk ' . $products_pk_val . ': ' . $e->getMessage());
+                }
+            } else {
+                try {
+                    $decrementStockByPid->execute([$quantity, $quantity, $product_id]);
+                } catch (Exception $e) {
+                    error_log('Stock decrement (by product_id) failed for ' . $product_id . ': ' . $e->getMessage());
                 }
             }
         }
