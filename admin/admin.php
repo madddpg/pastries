@@ -224,22 +224,22 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             <!-- Page Content -->
             <!-- Locations Management (restored original style) -->
             <div id="active-location-section" class="content-section">
-                <h1>Locations Management</h1>
+                <h1 style="margin-bottom:10px;">Locations Management</h1>
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
-                    <div style="font-size:0.85rem;color:#475a52;max-width:520px;">
-                        Manage pickup locations. Set a location Open or Closed; closed locations are hidden from customers.
+                    <div style="font-size:0.95rem;color:#475a52;max-width:520px;line-height:1.5;">
+                        Manage pickup locations. <span style="font-weight:500;">Set a location Open or Closed</span>; closed locations are hidden from customers.
                     </div>
-                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 16px;border-radius:10px;">+ Add Location</button>
+                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 20px;border-radius:10px;font-size:1rem;box-shadow:0 2px 8px rgba(34,160,107,0.08);">+ Add Location</button>
                 </div>
-                <div class="card" style="padding:18px;overflow-x:auto;">
-                    <table class="products-table" id="locationsTable" style="min-width:640px;">
+                <div class="card" style="padding:24px 18px 18px 18px;overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 2px 16px rgba(34,160,107,0.08);">
+                    <table class="products-table" id="locationsTable" style="min-width:700px;font-size:1.05rem;">
                         <thead>
-                            <tr>
-                                <th style="width:70px;">ID</th>
-                                <th>Name</th>
-                                <th style="width:110px;">Image</th>
-                                <th style="width:120px;">Status</th>
-                                <th style="width:140px;">Action</th>
+                            <tr style="background:#f7fafc;">
+                                <th style="width:70px;padding:12px 8px;">ID</th>
+                                <th style="padding:12px 8px;">Name</th>
+                                <th style="width:110px;padding:12px 8px;">Image</th>
+                                <th style="width:120px;padding:12px 8px;">Status</th>
+                                <th style="width:140px;padding:12px 8px;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -249,8 +249,9 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                             $locStmt->execute();
                             $locRows = $locStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
                             if (empty($locRows)) {
-                                echo '<tr><td colspan="5" style="text-align:center;padding:14px;">No locations yet.</td></tr>';
+                                echo '<tr><td colspan="5" style="text-align:center;padding:18px;">No locations yet.</td></tr>';
                             } else {
+                                $rowIdx = 0;
                                 foreach ($locRows as $lr) {
                                     $lid = (int)$lr['location_id'];
                                     $lname = htmlspecialchars($lr['name']);
@@ -260,23 +261,34 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     $imgTag = '';
                                     if (!empty($lr['image'])) {
                                         $rel = htmlspecialchars($lr['image']);
-                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' style='width:70px;height:50px;object-fit:cover;border-radius:6px;' onerror=\"this.style.display='none'\">";
+                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' style='width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;' onerror=\"this.style.display='none'\">";
                                     }
-                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
-                                         "<td>{$lid}</td>".
-                                         "<td>{$lname}</td>".
-                                         "<td>".($imgTag ?: '<span style=\'font-size:11px;color:#64748b;\'>No Image</span>')."</td>".
-                                         "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
-                                         "<td><button class='btn-secondary toggle-location-status-btn' style='padding:8px 12px;'>{$nextLabel}</button></td>".
+                                    $rowBg = $rowIdx % 2 === 0 ? 'background:#fcfdfc;' : 'background:#f7fafc;';
+                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}' style='{$rowBg}transition:background 0.2s;'>".
+                                         "<td style='padding:14px 8px;'>{$lid}</td>".
+                                         "<td style='padding:14px 8px;'>{$lname}</td>".
+                                         "<td style='padding:10px 8px;'>".($imgTag ?: '<span style=\'font-size:12px;color:#64748b;\'>No Image</span>')."</td>".
+                                         "<td style='padding:14px 8px;'><span class='status-badge {$badgeClass}' style='display:inline-block;padding:6px 18px;border-radius:16px;font-weight:600;font-size:1rem;".
+                                         ($lstatus === 'open' ? "background:#eafbe6;color:#22a06b;border:1px solid #b6e4c7;" : "background:#fbeaea;color:#dc2626;border:1px solid #f5bdbd;") .
+                                         "box-shadow:0 1px 4px rgba(0,0,0,0.03);letter-spacing:0.5px;'>".ucfirst($lstatus)."</span></td>".
+                                         "<td style='padding:14px 8px;'><button class='btn-secondary toggle-location-status-btn' style='padding:8px 18px;border-radius:8px;font-size:1rem;font-weight:500;box-shadow:0 1px 4px rgba(34,160,107,0.07);transition:background 0.2s;'>{$nextLabel}</button></td>".
                                          "</tr>";
+                                    $rowIdx++;
                                 }
                             }
                         } catch (Throwable $e) {
-                            echo '<tr><td colspan="5" style="text-align:center;padding:14px;color:#dc2626;">Error loading locations</td></tr>';
+                            echo '<tr><td colspan="5" style="text-align:center;padding:18px;color:#dc2626;">Error loading locations</td></tr>';
                         }
                         ?>
                         </tbody>
                     </table>
+                    <style>
+                        #locationsTable tbody tr:hover { background: #f0fdf4 !important; }
+                        #locationsTable .btn-secondary.toggle-location-status-btn:hover {
+                            background: #059669 !important;
+                            color: #fff !important;
+                        }
+                    </style>
                 </div>
             </div>
             <div class="page-content">
