@@ -206,14 +206,26 @@ class Database
         try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
     }
 
-    /** Ensure products table has inventory_qty column; migrate from product_inventory if present. */
+    /** Ensure products table has a usable quantity column (prefers existing `quantity`; fallback create `inventory_qty`). */
     private function ensureProductInventoryColumnSchema(PDO $pdo): void
     {
         try {
             $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
             $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
-            if (!in_array('inventory_qty', $cols, true)) {
-                try { $pdo->exec("ALTER TABLE products ADD COLUMN inventory_qty INT NOT NULL DEFAULT 0 AFTER status"); } catch (Throwable $_) {}
+            $hasQuantity = in_array('quantity', $cols, true);
+            $hasInventoryQty = in_array('inventory_qty', $cols, true);
+            if (!$hasQuantity && !$hasInventoryQty) {
+                // create inventory_qty as fallback if neither exists
+                try { $pdo->exec("ALTER TABLE products ADD COLUMN inventory_qty INT NOT NULL DEFAULT 0 AFTER status"); $hasInventoryQty = true; } catch (Throwable $_) {}
+            }
+            // If both exist and quantity is all zeros but inventory_qty has data, migrate over
+            if ($hasQuantity && $hasInventoryQty) {
+                try {
+                    $needMig = $pdo->query("SELECT CASE WHEN SUM(CASE WHEN quantity IS NULL OR quantity=0 THEN 0 ELSE 1 END)=0 AND SUM(CASE WHEN inventory_qty IS NULL OR inventory_qty=0 THEN 0 ELSE 1 END)>0 THEN 1 ELSE 0 END AS do_mig FROM products")->fetchColumn();
+                    if ((int)$needMig === 1) {
+                        $pdo->exec("UPDATE products SET quantity = inventory_qty WHERE (quantity IS NULL OR quantity=0) AND inventory_qty IS NOT NULL");
+                    }
+                } catch (Throwable $_) {}
             }
         } catch (Throwable $_) { /* ignore */ }
         // Migrate any existing product_inventory table data once
@@ -221,17 +233,20 @@ class Database
             $exists = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='product_inventory'")->fetchColumn();
             if ($exists) {
                 try {
-                    $pdo->exec("UPDATE products p JOIN product_inventory pi ON p.product_id = pi.product_id SET p.inventory_qty = pi.quantity WHERE p.inventory_qty = 0");
+                    // Prefer migrating into quantity if it exists else inventory_qty
+                    $pdo->exec("UPDATE products p JOIN product_inventory pi ON p.product_id = pi.product_id SET p.quantity = COALESCE(p.quantity,0) + pi.quantity WHERE (p.quantity IS NULL OR p.quantity=0)");
+                    $pdo->exec("UPDATE products p JOIN product_inventory pi ON p.product_id = pi.product_id SET p.inventory_qty = pi.quantity WHERE (p.inventory_qty IS NULL OR p.inventory_qty=0) AND (p.quantity IS NULL OR p.quantity=0)");
                 } catch (Throwable $_) {}
             }
         } catch (Throwable $_) { /* ignore */ }
     }
 
-    /** Fetch inventory list using products.inventory_qty */
+    /** Fetch inventory list using priority: products.quantity then products.inventory_qty */
     public function fetch_inventory_list(): array
     {
         $pdo = $this->opencon();
-        $sql = "SELECT product_id, name, status, inventory_qty AS quantity
+        $sql = "SELECT product_id, name, status,
+                       CASE WHEN quantity IS NOT NULL THEN quantity ELSE inventory_qty END AS quantity
                 FROM products
                 WHERE name != '__placeholder__'
                 ORDER BY name ASC";
@@ -244,13 +259,26 @@ class Database
         }
     }
 
-    /** Update quantity in products table */
+    /** Update quantity (prefers products.quantity column; fallback to inventory_qty). */
     public function set_inventory_quantity(string $product_id, int $qty): bool
     {
         $qty = max(0, $qty);
         $pdo = $this->opencon();
-        $st = $pdo->prepare("UPDATE products SET inventory_qty = ? WHERE product_id = ? LIMIT 1");
-        return $st->execute([$qty, $product_id]);
+        // Detect available column
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (in_array('quantity', $cols, true)) {
+                $st = $pdo->prepare("UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
+                return $st->execute([$qty, $qty, $product_id]);
+            } elseif (in_array('inventory_qty', $cols, true)) {
+                $st = $pdo->prepare("UPDATE products SET inventory_qty = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
+                return $st->execute([$qty, $qty, $product_id]);
+            }
+            return false;
+        } catch (Throwable $e) {
+            return false;
+        }
     }
 
     /** Ensure users table has is_blocked/blocked_at columns for blocking feature. */
@@ -1018,6 +1046,9 @@ public function createPickupOrder(
         // Calculate total (pastries use variant price; drinks use size-based price)
         $total_amount = 0.0;
         $dtypeCache = [];
+        // Pre-collect desired quantities for stock validation
+        $productPkCache = [];
+        $needed = [];
         foreach ($cart_items as $item) {
             $qty = max(1, (int)($item['quantity'] ?? 1));
             // Enforce server-side base price from DB by product + size
@@ -1046,6 +1077,44 @@ public function createPickupOrder(
                 }
             }
             $total_amount += ($base + $tSum) * $qty;
+
+            if ($pid) {
+                if (!isset($productPkCache[$pid])) {
+                    $findActiveProductPkTmp = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+                    $findActiveProductPkTmp->execute([$pid]);
+                    $rowTmp = $findActiveProductPkTmp->fetch(PDO::FETCH_ASSOC);
+                    $productPkCache[$pid] = $rowTmp['products_pk'] ?? null;
+                }
+                $pkTmp = $productPkCache[$pid];
+                if ($pkTmp) {
+                    if (!isset($needed[$pkTmp])) $needed[$pkTmp] = 0;
+                    $needed[$pkTmp] += $qty;
+                }
+            }
+        }
+
+        // Validate aggregated stock before creating transaction
+        if (!empty($needed)) {
+            $in = implode(',', array_fill(0, count($needed), '?'));
+            $stq = $con->prepare("SELECT products_pk, quantity, product_id FROM products WHERE products_pk IN ($in)");
+            $stq->execute(array_keys($needed));
+            $issues = [];
+            while ($r = $stq->fetch(PDO::FETCH_ASSOC)) {
+                $pk = (int)$r['products_pk'];
+                $want = $needed[$pk] ?? 0;
+                $cur = $r['quantity'];
+                if ($cur !== null) { // null means unlimited
+                    $curInt = (int)$cur;
+                    if ($curInt <= 0) {
+                        $issues[] = $r['product_id'] . ' out of stock';
+                    } elseif ($want > $curInt) {
+                        $issues[] = $r['product_id'] . ' needs ' . $want . ' but only ' . $curInt . ' left';
+                    }
+                }
+            }
+            if (!empty($issues)) {
+                throw new Exception('Insufficient stock: ' . implode('; ', $issues));
+            }
         }
 
         // Insert transaction
@@ -1074,6 +1143,12 @@ public function createPickupOrder(
 
     $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
     $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+    // Prepared statement to decrement stock and auto-inactivate when quantity reaches 0
+    $decrementStock = $con->prepare("UPDATE products
+        SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
+            status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
+            updated_at = NOW()
+        WHERE products_pk = ?");
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -1114,6 +1189,22 @@ public function createPickupOrder(
                 $products_pk_val = (int)$pkRow['products_pk'];
             }
 
+            // Per-item validation (in case stock changed between aggregate check and insert)
+            if ($products_pk_val) {
+                $chk = $con->prepare("SELECT quantity, product_id FROM products WHERE products_pk = ? LIMIT 1");
+                $chk->execute([$products_pk_val]);
+                $rw = $chk->fetch(PDO::FETCH_ASSOC);
+                if ($rw && $rw['quantity'] !== null) {
+                    $curQty = (int)$rw['quantity'];
+                    if ($curQty <= 0) {
+                        throw new Exception('Product ' . $rw['product_id'] . ' is out of stock');
+                    }
+                    if ($quantity > $curQty) {
+                        throw new Exception('Product ' . $rw['product_id'] . ' needs ' . $quantity . ' but only ' . $curQty . ' left');
+                    }
+                }
+            }
+
             // Save item with products_pk
             $insertItem->execute([
                 $transaction_id,
@@ -1146,6 +1237,16 @@ public function createPickupOrder(
                         $t_price,
                         $item_sugar
                     ]);
+                }
+            }
+
+            // Decrement stock if the product has a finite quantity
+            if ($products_pk_val) {
+                try {
+                    $decrementStock->execute([$quantity, $quantity, $products_pk_val]);
+                } catch (Exception $e) {
+                    // Log but do not abort the whole order if stock update fails
+                    error_log('Stock decrement failed for products_pk ' . $products_pk_val . ': ' . $e->getMessage());
                 }
             }
         }
@@ -1213,6 +1314,12 @@ public function createPickupOrder(
 
             // Insert items and their toppings (if any)
             $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
+            // Prepared statement to decrement stock and auto-inactivate when quantity reaches 0
+            $decrementStock = $con->prepare("UPDATE products
+                SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
+                    status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
+                    updated_at = NOW()
+                WHERE products_pk = ?");
             foreach ($items as $item) {
                 $size = '';
                 if (isset($item['size']) && $item['size']) {
@@ -1286,6 +1393,15 @@ public function createPickupOrder(
 
                         // insert topping record including sugar_level
                         $toppingInsert->execute([$transaction_item_id, $topping_id, $t_qty, $t_price, $item_sugar]);
+                    }
+                }
+
+                // Decrement stock if the product has a finite quantity
+                if ($products_pk_val) {
+                    try {
+                        $decrementStock->execute([$quantity, $quantity, $products_pk_val]);
+                    } catch (Exception $e) {
+                        error_log('Stock decrement failed for products_pk ' . $products_pk_val . ': ' . $e->getMessage());
                     }
                 }
             }

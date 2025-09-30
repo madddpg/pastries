@@ -14,6 +14,17 @@ $action = $_REQUEST['action'] ?? 'list';
 try {
     if ($action === 'list') {
         $items = $db->fetch_inventory_list();
+        // annotate low-stock (<=5) & out-of-stock
+        foreach ($items as &$it) {
+            $q = isset($it['quantity']) ? (int)$it['quantity'] : null;
+            if ($q !== null) {
+                $it['low_stock'] = ($q <= 5);
+                $it['out_of_stock'] = ($q <= 0);
+            } else {
+                $it['low_stock'] = false; // unlimited
+                $it['out_of_stock'] = false;
+            }
+        }
         echo json_encode(['success'=>true,'items'=>$items]);
         exit;
     }
@@ -22,6 +33,31 @@ try {
         $qty = (int)$_POST['quantity'];
         $ok = $db->set_inventory_quantity($pid, $qty);
         echo json_encode(['success'=>$ok,'product_id'=>$pid,'quantity'=>$qty]);
+        exit;
+    }
+    if ($action === 'restock' && isset($_POST['product_id'], $_POST['add'])) {
+        $pid = trim($_POST['product_id']);
+        $add = max(0, (int)$_POST['add']);
+        if ($add === 0) { echo json_encode(['success'=>false,'message'=>'Nothing to add']); exit; }
+        // fetch current
+        $pdo = (new Database())->opencon();
+        $st = $pdo->prepare("SELECT quantity, inventory_qty FROM products WHERE product_id = ? LIMIT 1");
+        $st->execute([$pid]);
+        $row = $st->fetch(PDO::FETCH_ASSOC);
+        if (!$row) { echo json_encode(['success'=>false,'message'=>'Product not found']); exit; }
+        $current = null;
+        $col = 'quantity';
+        if (array_key_exists('quantity', $row) && $row['quantity'] !== null) {
+            $current = (int)$row['quantity'];
+        } elseif (array_key_exists('inventory_qty', $row)) {
+            $current = (int)$row['inventory_qty'];
+            $col = 'inventory_qty';
+        }
+        if ($current === null) { echo json_encode(['success'=>false,'message'=>'Unlimited stock product']); exit; }
+        $newQty = $current + $add;
+        $up = $pdo->prepare("UPDATE products SET $col = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
+        $ok = $up->execute([$newQty, $newQty, $pid]);
+        echo json_encode(['success'=>$ok,'product_id'=>$pid,'quantity'=>$newQty,'added'=>$add]);
         exit;
     }
     echo json_encode(['success'=>false,'message'=>'Unsupported action']);
