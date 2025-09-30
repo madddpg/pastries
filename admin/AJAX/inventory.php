@@ -32,7 +32,11 @@ try {
         $pid = trim($_POST['product_id']);
         $qty = (int)$_POST['quantity'];
         $ok = $db->set_inventory_quantity($pid, $qty);
-        echo json_encode(['success'=>$ok,'product_id'=>$pid,'quantity'=>$qty]);
+        if (!$ok) {
+            echo json_encode(['success'=>false,'product_id'=>$pid,'quantity'=>$qty,'message'=>'Update failed (product may not exist or schema missing updated_at).']);
+        } else {
+            echo json_encode(['success'=>true,'product_id'=>$pid,'quantity'=>$qty]);
+        }
         exit;
     }
     if ($action === 'restock' && isset($_POST['product_id'], $_POST['add'])) {
@@ -55,7 +59,14 @@ try {
         }
         if ($current === null) { echo json_encode(['success'=>false,'message'=>'Unlimited stock product']); exit; }
         $newQty = $current + $add;
-        $up = $pdo->prepare("UPDATE products SET $col = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
+        // detect updated_at column
+        $hasUpdated = false;
+        try {
+            $cst = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
+            $cCols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $cst->fetchAll(PDO::FETCH_ASSOC));
+            $hasUpdated = in_array('updated_at', $cCols, true);
+        } catch (Throwable $_) {}
+        $up = $pdo->prepare("UPDATE products SET $col = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1");
         $ok = $up->execute([$newQty, $newQty, $pid]);
         echo json_encode(['success'=>$ok,'product_id'=>$pid,'quantity'=>$newQty,'added'=>$add]);
         exit;

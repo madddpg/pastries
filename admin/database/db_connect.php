@@ -269,11 +269,17 @@ class Database
             $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
             $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
             if (in_array('quantity', $cols, true)) {
-                $st = $pdo->prepare("UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
-                return $st->execute([$qty, $qty, $product_id]);
+                $hasUpdated = in_array('updated_at', $cols, true);
+                $sql = "UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $ok = $st->execute([$qty, $qty, $product_id]);
+                return $ok;
             } elseif (in_array('inventory_qty', $cols, true)) {
-                $st = $pdo->prepare("UPDATE products SET inventory_qty = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END, updated_at = NOW() WHERE product_id = ? LIMIT 1");
-                return $st->execute([$qty, $qty, $product_id]);
+                $hasUpdated = in_array('updated_at', $cols, true);
+                $sql = "UPDATE products SET inventory_qty = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
+                $st = $pdo->prepare($sql);
+                $ok = $st->execute([$qty, $qty, $product_id]);
+                return $ok;
             }
             return false;
         } catch (Throwable $e) {
