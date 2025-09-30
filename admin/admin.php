@@ -129,7 +129,6 @@ function fetch_locations_pdo($con)
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
-// ...existing code...
 
 // Set live order filters from query or default
 $live_status = isset($_GET['status']) ? $_GET['status'] : '';
@@ -785,11 +784,10 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                             <th class="text-right">Orders</th>
                                             <th class="text-right">Items</th>
                                             <th class="text-right">Revenue (₱)</th>
-                                            <th class="text-right">Avg Order (₱)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="report-daily-body">
-                                        <tr><td colspan="5" class="empty-row">No data</td></tr>
+                                        <tr><td colspan="4" class="empty-row">No data</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -802,11 +800,10 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                         <tr>
                                             <th>Product</th>
                                             <th class="text-right">Qty</th>
-                                            <th class="text-right">Gross (₱)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="report-products-body">
-                                        <tr><td colspan="3" class="empty-row">No data</td></tr>
+                                        <tr><td colspan="2" class="empty-row">No data</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -1903,7 +1900,6 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                             { icon:'💰', label:'Total Revenue', value: money(t.revenue||0) },
                             { icon:'📦', label:'Total Orders', value: (t.orders||0).toLocaleString() },
                             { icon:'🧁', label:'Items Sold', value: (t.items_sold||0).toLocaleString() },
-                            { icon:'🧾', label:'Avg Order Value', value: money(t.avg_order_value||0) },
                             { icon:'👥', label:'Distinct Customers', value: (t.distinct_customers||0).toLocaleString() }
                         ];
                         reportSummary.innerHTML = cards.map(c => `
@@ -1918,16 +1914,14 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         // Daily
                         const daily = Array.isArray(data.daily) ? data.daily : [];
                         if (!daily.length) {
-                            reportDailyBody.innerHTML = '<tr><td colspan="5" class="empty-row">No daily data</td></tr>';
+                            reportDailyBody.innerHTML = '<tr><td colspan="4" class="empty-row">No daily data</td></tr>';
                         } else {
                             reportDailyBody.innerHTML = daily.map(d => {
-                                const avg = d.orders > 0 ? (d.revenue / d.orders) : 0;
                                 return `<tr>
                                     <td>${d.d}</td>
                                     <td class="text-right">${d.orders}</td>
                                     <td class="text-right">${d.items}</td>
                                     <td class="text-right">${money(d.revenue)}</td>
-                                    <td class="text-right">${money(avg)}</td>
                                 </tr>`;
                             }).join('');
                         }
@@ -1935,12 +1929,11 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         // Products
                         const prods = Array.isArray(data.products) ? data.products : [];
                         if (!prods.length) {
-                            reportProductsBody.innerHTML = '<tr><td colspan="3" class="empty-row">No products sold</td></tr>';
+                            reportProductsBody.innerHTML = '<tr><td colspan="2" class="empty-row">No products sold</td></tr>';
                         } else {
                             reportProductsBody.innerHTML = prods.map(p => `<tr>
                                 <td>${p.name}</td>
                                 <td class="text-right">${p.qty}</td>
-                                <td class="text-right">${money(p.gross)}</td>
                             </tr>`).join('');
                         }
                     })
