@@ -218,6 +218,21 @@ function fetch_locations_pdo($con)
         <main class="main-content">
             <header class="header"></header>
             <!-- Page Content -->
+            <!-- Active Location Section -->
+            <div id="active-location" class="content-section" style="display:none;">
+                <h1 style="margin-bottom:14px;">Active Locations</h1>
+                <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;margin-bottom:18px;">
+                    <button id="refreshLocations" class="btn-secondary" style="padding:8px 14px;">Refresh</button>
+                    <div id="locations-loading" style="display:none;color:#059669;font-weight:600;">Loading...</div>
+                    <div id="locations-error" style="display:none;color:#dc2626;font-weight:600;">Error loading locations</div>
+                </div>
+                <div class="card" style="padding:18px;">
+                    <div id="locations-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
+                </div>
+                <div style="margin-top:20px;font-size:0.7rem;color:#64748b;">
+                    Toggle a location between Open and Closed. Closed locations will not appear for pickup selection.
+                </div>
+            </div>
             <div class="page-content">
                 <!-- Dashboard Overview Section -->
                 <div id="dashboard-overview-section" class="content-section active">
@@ -1854,6 +1869,84 @@ function fetch_locations_pdo($con)
                     // Delay to allow section to show
                     setTimeout(() => loadMonthlyReport(), 50);
                 });
+            }
+
+            // Active Locations logic
+            const locationsGrid = document.getElementById('locations-grid');
+            const locationsLoading = document.getElementById('locations-loading');
+            const locationsError = document.getElementById('locations-error');
+            const refreshLocationsBtn = document.getElementById('refreshLocations');
+
+            function fetchLocations(){
+                if(!locationsGrid) return;
+                locationsError && (locationsError.style.display='none');
+                locationsLoading && (locationsLoading.style.display='block');
+                // Get list of locations via direct SQL through lightweight inline endpoint (reuse existing DB connection by AJAX to a tiny internal script?)
+                fetch('AJAX/fetch_locations.php').then(r=>r.json()).then(js=>{
+                    locationsLoading.style.display='none';
+                    if(!js || !js.success){
+                        locationsError.style.display='block';
+                        locationsGrid.innerHTML='';
+                        return;
+                    }
+                    const items = js.locations || [];
+                    if(!items.length){
+                        locationsGrid.innerHTML = '<div style="grid-column:1/-1;padding:12px;font-size:0.85rem;color:#64748b;">No locations found.</div>';
+                        return;
+                    }
+                    locationsGrid.innerHTML = items.map(loc=>{
+                        const statusClass = loc.status === 'open' ? 'loc-open' : 'loc-closed';
+                        const btnLabel = loc.status === 'open' ? 'Close' : 'Open';
+                        const img = loc.image ? `<div class="loc-img-wrap"><img loading="lazy" src="../${loc.image}" alt="${loc.name}" onerror="this.style.display='none';"></div>` : '<div class="loc-img-fallback">No Image</div>';
+                        return `<div class="loc-card ${statusClass}" data-location-id="${loc.location_id}">
+                            ${img}
+                            <div class="loc-meta">
+                                <div class="loc-name">${loc.name}</div>
+                                <div class="loc-status">Status: <span>${loc.status}</span></div>
+                            </div>
+                            <div class="loc-actions">
+                                <button class="toggle-location btn-secondary" data-status="${loc.status}">${btnLabel}</button>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }).catch(err=>{
+                    console.error('locations load error', err);
+                    if(locationsLoading) locationsLoading.style.display='none';
+                    if(locationsError){ locationsError.style.display='block'; locationsError.textContent='Failed to load'; }
+                });
+            }
+
+            if(refreshLocationsBtn){ refreshLocationsBtn.addEventListener('click', fetchLocations); }
+
+            // Delegate toggle
+            if(locationsGrid){
+                locationsGrid.addEventListener('click', e=>{
+                    const btn = e.target.closest('.toggle-location');
+                    if(!btn) return;
+                    const card = btn.closest('.loc-card');
+                    if(!card) return;
+                    const id = card.getAttribute('data-location-id');
+                    const current = btn.getAttribute('data-status');
+                    const next = current === 'open' ? 'closed' : 'open';
+                    btn.disabled = true; btn.textContent='Saving...';
+                    const formData = new FormData();
+                    formData.append('action','toggle_status');
+                    formData.append('location_id', id);
+                    formData.append('status', next);
+                    fetch('locations.php', { method:'POST', body: formData })
+                      .then(r=>r.json())
+                      .then(js=>{
+                          btn.disabled=false;
+                          if(js && js.success){ fetchLocations(); } else { btn.textContent='Retry'; }
+                      })
+                      .catch(err=>{ console.error(err); btn.disabled=false; btn.textContent='Error'; });
+                });
+            }
+
+            // Auto-load when nav clicked
+            const navActiveLoc = document.querySelector('.nav-item[data-section="active-location"]');
+            if(navActiveLoc){
+                navActiveLoc.addEventListener('click', ()=>{ setTimeout(fetchLocations, 60); });
             }
 
             // Inventory (Stocks) logic
