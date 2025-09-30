@@ -16,23 +16,8 @@ if (!empty($_SESSION['flash'])) {
     $flash = $_SESSION['flash'];
     unset($_SESSION['flash']);
 }
-// Ensure the Database helper is available so we can check admin role
-require_once __DIR__ . '/database/db_connect.php';
 
-// Server-side access control: redirect any non-admin visitor
-if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin_id']) && $_SESSION['admin_id']))) {
-    // Adjust destination to your admin login page if you have one, e.g. 'admin/login.php'
-    header('Location: ../index.php');
-    exit;
-}
-$db = new Database();
-$con = $db->opencon();
-
-// Get status and location filters from GET parameters for live orders
-$live_status = isset($_GET['status']) ? $_GET['status'] : '';
-$live_location = isset($_GET['location']) ? trim($_GET['location']) : '';
-$allowed_statuses = ['pending', 'preparing', 'ready'];
-
+// Helper: picked up orders
 function fetch_pickedup_orders_pdo($con)
 {
     $orders = [];
@@ -55,6 +40,7 @@ function fetch_pickedup_orders_pdo($con)
     return $orders;
 }
 
+// Helper: live orders
 function fetch_live_orders_pdo($con, $status = '', $location = '')
 {
     $allowed_statuses = ['pending', 'preparing', 'ready'];
@@ -66,7 +52,6 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
         $params = [];
     }
     if ($location !== '') {
-        // $where always starts with WHERE (status condition), so we can safely append AND
         $where .= " AND p.pickup_location LIKE ?";
         $params[] = $location . '%';
     }
@@ -93,15 +78,15 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
     return $orders;
 }
 
+// Helper: products with sales summary + latest effective prices
 function fetch_products_with_sales_pdo($con)
 {
-    // Resolve size price table name similarly to Database helper
     $tbl = 'product_size_prices';
     try {
         $q = $con->query("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('product_sizes_prices','product_size_prices') LIMIT 1");
         $name = $q->fetchColumn();
         if ($name) { $tbl = $name; }
-    } catch (Throwable $e) { /* default stays */ }
+    } catch (Throwable $e) { /* ignore */ }
 
     $sql = "SELECT 
                 p.product_id,
@@ -218,19 +203,61 @@ function fetch_locations_pdo($con)
         <main class="main-content">
             <header class="header"></header>
             <!-- Page Content -->
-            <!-- Active Location Section -->
+            <!-- Locations Management (restored original style) -->
             <div id="active-location-section" class="content-section">
-                <h1 style="margin-bottom:14px;">Active Locations</h1>
-                <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;margin-bottom:18px;">
-                    <button id="refreshLocations" class="btn-secondary" style="padding:8px 14px;">Refresh</button>
-                    <div id="locations-loading" style="display:none;color:#059669;font-weight:600;">Loading...</div>
-                    <div id="locations-error" style="display:none;color:#dc2626;font-weight:600;">Error loading locations</div>
+                <h1>Locations Management</h1>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
+                    <div style="font-size:0.85rem;color:#475a52;max-width:520px;">
+                        Manage pickup locations. Set a location Open or Closed; closed locations are hidden from customers.
+                    </div>
+                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 16px;border-radius:10px;">+ Add Location</button>
                 </div>
-                <div class="card" style="padding:18px;">
-                    <div id="locations-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;"></div>
-                </div>
-                <div style="margin-top:20px;font-size:0.7rem;color:#64748b;">
-                    Toggle a location between Open and Closed. Closed locations will not appear for pickup selection.
+                <div class="card" style="padding:18px;overflow-x:auto;">
+                    <table class="products-table" id="locationsTable" style="min-width:640px;">
+                        <thead>
+                            <tr>
+                                <th style="width:70px;">ID</th>
+                                <th>Name</th>
+                                <th style="width:110px;">Image</th>
+                                <th style="width:120px;">Status</th>
+                                <th style="width:140px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php
+                        try {
+                            $locStmt = $con->prepare("SELECT location_id, name, status, image, admin_id FROM locations ORDER BY location_id DESC");
+                            $locStmt->execute();
+                            $locRows = $locStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                            if (empty($locRows)) {
+                                echo '<tr><td colspan="5" style="text-align:center;padding:14px;">No locations yet.</td></tr>';
+                            } else {
+                                foreach ($locRows as $lr) {
+                                    $lid = (int)$lr['location_id'];
+                                    $lname = htmlspecialchars($lr['name']);
+                                    $lstatus = strtolower($lr['status']) === 'open' ? 'open' : 'closed';
+                                    $badgeClass = $lstatus === 'open' ? 'active' : 'inactive';
+                                    $nextLabel = $lstatus === 'open' ? 'Set Closed' : 'Set Open';
+                                    $imgTag = '';
+                                    if (!empty($lr['image'])) {
+                                        $rel = htmlspecialchars($lr['image']);
+                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' style='width:70px;height:50px;object-fit:cover;border-radius:6px;' onerror=\"this.style.display='none'\">";
+                                    }
+                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
+                                         "<td>{$lid}</td>".
+                                         "<td>{$lname}</td>".
+                                         "<td>".($imgTag ?: '<span style=\'font-size:11px;color:#64748b;\'>No Image</span>')."</td>".
+                                         "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
+                                         "<td><button class='btn-secondary toggle-location-status-btn' style='padding:8px 12px;'>{$nextLabel}</button></td>".
+                                         "</tr>";
+                                }
+                            }
+                        } catch (Throwable $e) {
+                            echo '<tr><td colspan="5" style="text-align:center;padding:14px;color:#dc2626;">Error loading locations</td></tr>';
+                        }
+                        ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <div class="page-content">
@@ -1871,87 +1898,7 @@ function fetch_locations_pdo($con)
                 });
             }
 
-            // Active Locations logic
-            const locationsGrid = document.getElementById('locations-grid');
-            const locationsLoading = document.getElementById('locations-loading');
-            const locationsError = document.getElementById('locations-error');
-            const refreshLocationsBtn = document.getElementById('refreshLocations');
-
-            function fetchLocations(){
-                if(!locationsGrid) return;
-                locationsError && (locationsError.style.display='none');
-                locationsLoading && (locationsLoading.style.display='block');
-                // Get list of locations via direct SQL through lightweight inline endpoint (reuse existing DB connection by AJAX to a tiny internal script?)
-                fetch('AJAX/fetch_locations.php').then(r=>r.json()).then(js=>{
-                    locationsLoading.style.display='none';
-                    if(!js || !js.success){
-                        locationsError.style.display='block';
-                        locationsGrid.innerHTML='';
-                        return;
-                    }
-                    const items = js.locations || [];
-                    if(!items.length){
-                        locationsGrid.innerHTML = '<div style="grid-column:1/-1;padding:12px;font-size:0.85rem;color:#64748b;">No locations found.</div>';
-                        return;
-                    }
-                    locationsGrid.innerHTML = items.map(loc=>{
-                        const statusClass = loc.status === 'open' ? 'loc-open' : 'loc-closed';
-                        const btnLabel = loc.status === 'open' ? 'Close' : 'Open';
-                        const img = loc.image ? `<div class="loc-img-wrap"><img loading="lazy" src="../${loc.image}" alt="${loc.name}" onerror="this.style.display='none';"></div>` : '<div class="loc-img-fallback">No Image</div>';
-                        return `<div class="loc-card ${statusClass}" data-location-id="${loc.location_id}">
-                            ${img}
-                            <div class="loc-meta">
-                                <div class="loc-name">${loc.name}</div>
-                                <div class="loc-status">Status: <span>${loc.status}</span></div>
-                            </div>
-                            <div class="loc-actions">
-                                <button class="toggle-location btn-secondary" data-status="${loc.status}">${btnLabel}</button>
-                            </div>
-                        </div>`;
-                    }).join('');
-                }).catch(err=>{
-                    console.error('locations load error', err);
-                    if(locationsLoading) locationsLoading.style.display='none';
-                    if(locationsError){ locationsError.style.display='block'; locationsError.textContent='Failed to load'; }
-                });
-            }
-
-            if(refreshLocationsBtn){ refreshLocationsBtn.addEventListener('click', fetchLocations); }
-
-            // Delegate toggle
-            if(locationsGrid){
-                locationsGrid.addEventListener('click', e=>{
-                    const btn = e.target.closest('.toggle-location');
-                    if(!btn) return;
-                    const card = btn.closest('.loc-card');
-                    if(!card) return;
-                    const id = card.getAttribute('data-location-id');
-                    const current = btn.getAttribute('data-status');
-                    const next = current === 'open' ? 'closed' : 'open';
-                    btn.disabled = true; btn.textContent='Saving...';
-                    const formData = new FormData();
-                    formData.append('action','toggle_status');
-                    formData.append('location_id', id);
-                    formData.append('status', next);
-                    fetch('locations.php', { method:'POST', body: formData })
-                      .then(r=>r.json())
-                      .then(js=>{
-                          btn.disabled=false;
-                          if(js && js.success){ fetchLocations(); } else { btn.textContent='Retry'; }
-                      })
-                      .catch(err=>{ console.error(err); btn.disabled=false; btn.textContent='Error'; });
-                });
-            }
-
-            // Auto-load when nav clicked
-            const navActiveLoc = document.querySelector('.nav-item[data-section="active-location"]');
-            if(navActiveLoc){
-                navActiveLoc.addEventListener('click', ()=>{ setTimeout(fetchLocations, 60); });
-            }
-            // If page deep-linked or already selected, fetch once
-            if(document.getElementById('active-location-section')?.classList.contains('active')){
-                fetchLocations();
-            }
+            // Active locations now server-rendered; obsolete dynamic code removed
 
             // Inventory (Stocks) logic
             const stocksBody = document.getElementById('stocks-body');
