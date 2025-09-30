@@ -223,23 +223,20 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             <header class="header"></header>
             <!-- Page Content -->
             <!-- Locations Management (restored original style) -->
-            <div id="active-location-section" class="content-section">
-                <h1 style="margin-bottom:10px;">Locations Management</h1>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;">
-                    <div style="font-size:0.95rem;color:#475a52;max-width:520px;line-height:1.5;">
-                        Manage pickup locations. <span style="font-weight:500;">Set a location Open or Closed</span>; closed locations are hidden from customers.
-                    </div>
-                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 20px;border-radius:10px;font-size:1rem;box-shadow:0 2px 8px rgba(34,160,107,0.08);">+ Add Location</button>
+            <div id="active-location-section" class="content-section locations-mgmt-section">
+                <h1 class="section-title" style="margin-bottom:10px;font-family:'Inter',sans-serif;color:var(--primary-purple);">Locations Management</h1>
+                <div class="locations-mgmt-header">
+                    <button id="showAddLocationModalBtn" class="btn-primary locations-add-btn">+ Add Location</button>
                 </div>
-                <div class="card" style="padding:24px 18px 18px 18px;overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 2px 16px rgba(34,160,107,0.08);">
-                    <table class="products-table" id="locationsTable" style="min-width:700px;font-size:1.05rem;">
+                <div class="locations-mgmt-card">
+                    <table class="products-table locations-table" id="locationsTable">
                         <thead>
-                            <tr style="background:#f7fafc;">
-                                <th style="width:70px;padding:12px 8px;">ID</th>
-                                <th style="padding:12px 8px;">Name</th>
-                                <th style="width:110px;padding:12px 8px;">Image</th>
-                                <th style="width:120px;padding:12px 8px;">Status</th>
-                                <th style="width:140px;padding:12px 8px;">Action</th>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Image</th>
+                                <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -261,17 +258,15 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     $imgTag = '';
                                     if (!empty($lr['image'])) {
                                         $rel = htmlspecialchars($lr['image']);
-                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' style='width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;' onerror=\"this.style.display='none'\">";
+                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' class='location-img' onerror=\"this.style.display='none'\">";
                                     }
-                                    $rowBg = $rowIdx % 2 === 0 ? 'background:#fcfdfc;' : 'background:#f7fafc;';
-                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}' style='{$rowBg}transition:background 0.2s;'>".
-                                         "<td style='padding:14px 8px;'>{$lid}</td>".
-                                         "<td style='padding:14px 8px;'>{$lname}</td>".
-                                         "<td style='padding:10px 8px;'>".($imgTag ?: '<span style=\'font-size:12px;color:#64748b;\'>No Image</span>')."</td>".
-                                         "<td style='padding:14px 8px;'><span class='status-badge {$badgeClass}' style='display:inline-block;padding:6px 18px;border-radius:16px;font-weight:600;font-size:1rem;".
-                                         ($lstatus === 'open' ? "background:#eafbe6;color:#22a06b;border:1px solid #b6e4c7;" : "background:#fbeaea;color:#dc2626;border:1px solid #f5bdbd;") .
-                                         "box-shadow:0 1px 4px rgba(0,0,0,0.03);letter-spacing:0.5px;'>".ucfirst($lstatus)."</span></td>".
-                                         "<td style='padding:14px 8px;'><button class='btn-secondary toggle-location-status-btn' style='padding:8px 18px;border-radius:8px;font-size:1rem;font-weight:500;box-shadow:0 1px 4px rgba(34,160,107,0.07);transition:background 0.2s;'>{$nextLabel}</button></td>".
+                                    $rowBg = $rowIdx % 2 === 0 ? 'locations-row-even' : 'locations-row-odd';
+                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}' class='{$rowBg}'>".
+                                         "<td>{$lid}</td>".
+                                         "<td>{$lname}</td>".
+                                         "<td>".($imgTag ?: '<span class=\'no-img\'>No Image</span>')."</td>".
+                                         "<td><span class='status-badge {$badgeClass} locations-status-badge'>".ucfirst($lstatus)."</span></td>".
+                                         "<td><button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button></td>".
                                          "</tr>";
                                     $rowIdx++;
                                 }
@@ -282,14 +277,52 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         ?>
                         </tbody>
                     </table>
-                    <style>
-                        #locationsTable tbody tr:hover { background: #f0fdf4 !important; }
-                        #locationsTable .btn-secondary.toggle-location-status-btn:hover {
-                            background: #059669 !important;
-                            color: #fff !important;
-                        }
-                    </style>
                 </div>
+                <style>
+                .locations-mgmt-section {
+                    font-family: 'Inter',sans-serif;
+                }
+                .locations-mgmt-header {
+                    display:flex;align-items:center;justify-content:flex-end;margin-bottom:18px;gap:12px;
+                }
+                .locations-add-btn {
+                    padding:10px 22px;border-radius:10px;font-size:1rem;font-weight:600;background:var(--primary-purple);color:#fff;box-shadow:0 2px 8px rgba(22,56,41,0.08);border:none;transition:background 0.2s;letter-spacing:0.5px;
+                }
+                .locations-add-btn:hover {
+                    background:var(--secondary-purple);
+                }
+                .locations-mgmt-card {
+                    padding:24px 18px 18px 18px;overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 2px 16px rgba(22,56,41,0.08);
+                }
+                .locations-table {
+                    min-width:700px;font-size:1.05rem;width:100%;border-collapse:separate;border-spacing:0;
+                }
+                .locations-table th, .locations-table td {
+                    padding:14px 10px;text-align:left;
+                }
+                .locations-table th {
+                    background:var(--emerald-50);color:var(--primary-purple);font-weight:700;font-size:1.01rem;border-bottom:2px solid var(--emerald-100);
+                }
+                .locations-row-even { background: #fcfdfc; transition:background 0.2s; }
+                .locations-row-odd { background: #f7fafc; transition:background 0.2s; }
+                .locations-table tbody tr:hover { background: #e9e3c3 !important; }
+                .location-img {
+                    width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;
+                }
+                .no-img { font-size:12px;color:#64748b; }
+                .locations-status-badge.active {
+                    background:var(--emerald-100);color:var(--emerald-700);border:1px solid var(--emerald-200);
+                }
+                .locations-status-badge.inactive {
+                    background:var(--amber-100);color:var(--red-500);border:1px solid var(--amber-50);
+                }
+                .locations-toggle-btn {
+                    padding:8px 18px;border-radius:8px;font-size:1rem;font-weight:500;box-shadow:0 1px 4px rgba(22,56,41,0.07);transition:background 0.2s;border:1px solid var(--primary-purple);background:#fff;color:var(--primary-purple);
+                }
+                .locations-toggle-btn:hover {
+                    background:var(--primary-purple);color:#fff;
+                }
+                </style>
             </div>
             <div class="page-content">
                 <!-- Dashboard Overview Section -->
