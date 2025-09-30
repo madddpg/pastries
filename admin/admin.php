@@ -219,7 +219,7 @@ function fetch_locations_pdo($con)
             <header class="header"></header>
             <!-- Page Content -->
             <!-- Active Location Section -->
-            <div id="active-location" class="content-section" style="display:none;">
+            <div id="active-location-section" class="content-section">
                 <h1 style="margin-bottom:14px;">Active Locations</h1>
                 <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;margin-bottom:18px;">
                     <button id="refreshLocations" class="btn-secondary" style="padding:8px 14px;">Refresh</button>
@@ -1947,6 +1947,10 @@ function fetch_locations_pdo($con)
             const navActiveLoc = document.querySelector('.nav-item[data-section="active-location"]');
             if(navActiveLoc){
                 navActiveLoc.addEventListener('click', ()=>{ setTimeout(fetchLocations, 60); });
+            }
+            // If page deep-linked or already selected, fetch once
+            if(document.getElementById('active-location-section')?.classList.contains('active')){
+                fetchLocations();
             }
 
             // Inventory (Stocks) logic
