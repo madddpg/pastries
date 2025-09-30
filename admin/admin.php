@@ -1784,31 +1784,34 @@ function fetch_locations_pdo($con)
                         }
                         const t = data.totals || {};
                         const cards = [
-                            { label:'Total Revenue', value: money(t.revenue||0) },
-                            { label:'Total Orders', value: (t.orders||0).toLocaleString() },
-                            { label:'Items Sold', value: (t.items_sold||0).toLocaleString() },
-                            { label:'Avg Order Value', value: money(t.avg_order_value||0) },
-                            { label:'Distinct Customers', value: (t.distinct_customers||0).toLocaleString() }
+                            { icon:'💰', label:'Total Revenue', value: money(t.revenue||0) },
+                            { icon:'📦', label:'Total Orders', value: (t.orders||0).toLocaleString() },
+                            { icon:'🧁', label:'Items Sold', value: (t.items_sold||0).toLocaleString() },
+                            { icon:'🧾', label:'Avg Order Value', value: money(t.avg_order_value||0) },
+                            { icon:'👥', label:'Distinct Customers', value: (t.distinct_customers||0).toLocaleString() }
                         ];
                         reportSummary.innerHTML = cards.map(c => `
-                            <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
-                                <span style="font-size:0.75rem;letter-spacing:0.5px;font-weight:600;color:#64748b;text-transform:uppercase;">${c.label}</span>
-                                <span style="font-size:1.15rem;font-weight:700;color:#1e293b;">${c.value}</span>
+                            <div class="report-stat-card">
+                                <div class="report-stat-icon" aria-hidden="true">${c.icon}</div>
+                                <div class="report-stat-meta">
+                                    <span class="report-stat-label">${c.label}</span>
+                                    <span class="report-stat-value">${c.value}</span>
+                                </div>
                             </div>`).join('');
 
                         // Daily
                         const daily = Array.isArray(data.daily) ? data.daily : [];
                         if (!daily.length) {
-                            reportDailyBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:10px;">No daily data</td></tr>';
+                            reportDailyBody.innerHTML = '<tr><td colspan="5" class="empty-row">No daily data</td></tr>';
                         } else {
                             reportDailyBody.innerHTML = daily.map(d => {
                                 const avg = d.orders > 0 ? (d.revenue / d.orders) : 0;
                                 return `<tr>
-                                    <td style="padding:6px 8px;font-size:0.85rem;">${d.d}</td>
-                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${d.orders}</td>
-                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${d.items}</td>
-                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(d.revenue)}</td>
-                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(avg)}</td>
+                                    <td>${d.d}</td>
+                                    <td class="text-right">${d.orders}</td>
+                                    <td class="text-right">${d.items}</td>
+                                    <td class="text-right">${money(d.revenue)}</td>
+                                    <td class="text-right">${money(avg)}</td>
                                 </tr>`;
                             }).join('');
                         }
@@ -1816,13 +1819,12 @@ function fetch_locations_pdo($con)
                         // Products
                         const prods = Array.isArray(data.products) ? data.products : [];
                         if (!prods.length) {
-                            reportProductsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:10px;">No products sold</td></tr>';
+                            reportProductsBody.innerHTML = '<tr><td colspan="3" class="empty-row">No products sold</td></tr>';
                         } else {
                             reportProductsBody.innerHTML = prods.map(p => `<tr>
-                                <td style="padding:6px 8px;font-size:0.85rem;">${p.name}</td>
-                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${p.qty}</td>
-                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(p.gross)}</td>
-                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${(p.share_pct||0).toFixed(2)}%</td>
+                                <td>${p.name}</td>
+                                <td class="text-right">${p.qty}</td>
+                                <td class="text-right">${money(p.gross)}</td>
                             </tr>`).join('');
                         }
                     })
