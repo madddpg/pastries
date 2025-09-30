@@ -17,6 +17,19 @@ if (!empty($_SESSION['flash'])) {
     unset($_SESSION['flash']);
 }
 
+// Ensure Database helper is available
+require_once __DIR__ . '/database/db_connect.php';
+
+// Server-side access control (redirect non-admins)
+if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin_id']) && $_SESSION['admin_id']))) {
+    header('Location: ../index.php');
+    exit;
+}
+
+// Open DB connection for helper functions and later template usage
+$db = new Database();
+$con = $db->opencon();
+
 // Helper: picked up orders
 function fetch_pickedup_orders_pdo($con)
 {
