@@ -129,6 +129,12 @@ function fetch_locations_pdo($con)
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
+// ...existing code...
+
+// Set live order filters from query or default
+$live_status = isset($_GET['status']) ? $_GET['status'] : '';
+$live_location = isset($_GET['location']) ? $_GET['location'] : '';
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
