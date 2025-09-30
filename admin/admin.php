@@ -189,6 +189,10 @@ function fetch_locations_pdo($con)
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
                     <span>Customers</span>
                 </a>
+                <a href="#" class="nav-item" data-section="reports">
+                    <span class="nav-icon"><i class="bi bi-graph-up"></i></span>
+                    <span>Reports</span>
+                </a>
                 <?php if (Database::isSuperAdmin()): ?>
                     <a href="#" class="nav-item" data-section="add-admin">
                         <span class="nav-icon"><i class="bi bi-person-plus-fill"></i></span>
@@ -493,6 +497,7 @@ function fetch_locations_pdo($con)
                             </tbody>
                         </table>
                     </div>
+                    
                     <!-- Products Pagination -->
                     <div id="products-pagination" class="pagination" aria-label="Products pagination" style="margin-top:12px"></div>
 
@@ -611,6 +616,61 @@ function fetch_locations_pdo($con)
                                 <button type="button" id="savePastryVariantsBtn" class="btn-primary">Save Variants</button>
                             </div>
                             <div id="savePastryResult" style="margin-top:10px;font-weight:600;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="reports-section" class="content-section">
+                    <h1>Monthly Sales Report</h1>
+                    <div style="margin:12px 0 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                        <div>
+                            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Select Month</label>
+                            <input type="month" id="report-month" value="<?php echo date('Y-m'); ?>" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;">
+                        </div>
+                        <button id="btn-load-report" class="btn-primary" style="height:40px;">Load Report</button>
+                        <div id="report-loading" style="display:none;color:#059669;font-weight:600;">Loading...</div>
+                    </div>
+
+                    <div id="report-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:28px;"></div>
+
+                    <div style="display:grid;grid-template-columns:1fr;gap:30px;">
+                        <div>
+                            <h3 style="margin-bottom:10px;font-size:1.1rem;">Daily Breakdown</h3>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;min-width:640px;" id="report-daily-table">
+                                    <thead>
+                                        <tr style="background:#f3f4f6;">
+                                            <th style="text-align:left;padding:8px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Date</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Orders</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Items</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Revenue (₱)</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Avg Order (₱)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="report-daily-body">
+                                        <tr><td colspan="5" style="text-align:center;padding:10px;">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="margin-bottom:10px;font-size:1.1rem;">Products Sold (This Month)</h3>
+                            <div style="overflow-x:auto;">
+                                <table style="width:100%;border-collapse:collapse;min-width:680px;" id="report-products-table">
+                                    <thead>
+                                        <tr style="background:#f3f4f6;">
+                                            <th style="text-align:left;padding:8px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Product</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Qty</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Gross (₱)</th>
+                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Share %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="report-products-body">
+                                        <tr><td colspan="4" style="text-align:center;padding:10px;">No data</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1745,6 +1805,90 @@ function fetch_locations_pdo($con)
             }
             updateRevenueOverview();
             setInterval(updateRevenueOverview, 15000);
+
+            // Monthly Report logic
+            const reportMonthInput = document.getElementById('report-month');
+            const reportBtn = document.getElementById('btn-load-report');
+            const reportLoading = document.getElementById('report-loading');
+            const reportSummary = document.getElementById('report-summary');
+            const reportDailyBody = document.getElementById('report-daily-body');
+            const reportProductsBody = document.getElementById('report-products-body');
+
+            function money(v){ return '₱' + Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+            function loadMonthlyReport() {
+                if (!reportMonthInput) return;
+                const m = reportMonthInput.value; // YYYY-MM
+                reportLoading && (reportLoading.style.display = 'block');
+                fetch('AJAX/monthly_report.php?month=' + encodeURIComponent(m))
+                    .then(r=>r.json())
+                    .then(data => {
+                        reportLoading && (reportLoading.style.display = 'none');
+                        if (!data || !data.success) {
+                            reportSummary.innerHTML = '<div style="color:#dc2626;font-weight:600;">Failed to load report</div>';
+                            return;
+                        }
+                        const t = data.totals || {};
+                        const cards = [
+                            { label:'Total Revenue', value: money(t.revenue||0) },
+                            { label:'Total Orders', value: (t.orders||0).toLocaleString() },
+                            { label:'Items Sold', value: (t.items_sold||0).toLocaleString() },
+                            { label:'Avg Order Value', value: money(t.avg_order_value||0) },
+                            { label:'Distinct Customers', value: (t.distinct_customers||0).toLocaleString() }
+                        ];
+                        reportSummary.innerHTML = cards.map(c => `
+                            <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;">
+                                <span style="font-size:0.75rem;letter-spacing:0.5px;font-weight:600;color:#64748b;text-transform:uppercase;">${c.label}</span>
+                                <span style="font-size:1.15rem;font-weight:700;color:#1e293b;">${c.value}</span>
+                            </div>`).join('');
+
+                        // Daily
+                        const daily = Array.isArray(data.daily) ? data.daily : [];
+                        if (!daily.length) {
+                            reportDailyBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:10px;">No daily data</td></tr>';
+                        } else {
+                            reportDailyBody.innerHTML = daily.map(d => {
+                                const avg = d.orders > 0 ? (d.revenue / d.orders) : 0;
+                                return `<tr>
+                                    <td style="padding:6px 8px;font-size:0.85rem;">${d.d}</td>
+                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${d.orders}</td>
+                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${d.items}</td>
+                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(d.revenue)}</td>
+                                    <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(avg)}</td>
+                                </tr>`;
+                            }).join('');
+                        }
+
+                        // Products
+                        const prods = Array.isArray(data.products) ? data.products : [];
+                        if (!prods.length) {
+                            reportProductsBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:10px;">No products sold</td></tr>';
+                        } else {
+                            reportProductsBody.innerHTML = prods.map(p => `<tr>
+                                <td style="padding:6px 8px;font-size:0.85rem;">${p.name}</td>
+                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${p.qty}</td>
+                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${money(p.gross)}</td>
+                                <td style="padding:6px 8px;font-size:0.85rem;text-align:right;">${(p.share_pct||0).toFixed(2)}%</td>
+                            </tr>`).join('');
+                        }
+                    })
+                    .catch(err => {
+                        reportLoading && (reportLoading.style.display = 'none');
+                        console.error('monthly report error', err);
+                        reportSummary.innerHTML = '<div style="color:#dc2626;font-weight:600;">Error loading report</div>';
+                    });
+            }
+
+            if (reportBtn) reportBtn.addEventListener('click', () => loadMonthlyReport());
+
+            // Auto-load the current month when navigating to reports section
+            const navReports = document.querySelector('.nav-item[data-section="reports"]');
+            if (navReports) {
+                navReports.addEventListener('click', () => {
+                    // Delay to allow section to show
+                    setTimeout(() => loadMonthlyReport(), 50);
+                });
+            }
         });
     </script>
     <script src="js/main.js"></script>
