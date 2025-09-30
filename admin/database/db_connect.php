@@ -206,7 +206,7 @@ class Database
         try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
     }
 
-    /** Ensure products table has a usable quantity column (prefers existing `quantity`; fallback create `inventory_qty`). */
+    /** Ensure products table uses only `quantity` column (migrates/drops legacy inventory_qty). */
     private function ensureProductInventoryColumnSchema(PDO $pdo): void
     {
         try {
@@ -214,42 +214,26 @@ class Database
             $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
             $hasQuantity = in_array('quantity', $cols, true);
             $hasInventoryQty = in_array('inventory_qty', $cols, true);
+            if (!$hasQuantity && $hasInventoryQty) {
+                // Rename legacy inventory_qty to quantity
+                try { $pdo->exec("ALTER TABLE products CHANGE inventory_qty quantity INT NOT NULL DEFAULT 0"); $hasQuantity = true; $hasInventoryQty = false; } catch (Throwable $_) {}
+            }
             if (!$hasQuantity && !$hasInventoryQty) {
-                // create inventory_qty as fallback if neither exists
-                try { $pdo->exec("ALTER TABLE products ADD COLUMN inventory_qty INT NOT NULL DEFAULT 0 AFTER status"); $hasInventoryQty = true; } catch (Throwable $_) {}
+                try { $pdo->exec("ALTER TABLE products ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER status"); $hasQuantity = true; } catch (Throwable $_) {}
             }
-            // If both exist and quantity is all zeros but inventory_qty has data, migrate over
+            // If both exist (rare), migrate then drop inventory_qty
             if ($hasQuantity && $hasInventoryQty) {
-                try {
-                    $needMig = $pdo->query("SELECT CASE WHEN SUM(CASE WHEN quantity IS NULL OR quantity=0 THEN 0 ELSE 1 END)=0 AND SUM(CASE WHEN inventory_qty IS NULL OR inventory_qty=0 THEN 0 ELSE 1 END)>0 THEN 1 ELSE 0 END AS do_mig FROM products")->fetchColumn();
-                    if ((int)$needMig === 1) {
-                        $pdo->exec("UPDATE products SET quantity = inventory_qty WHERE (quantity IS NULL OR quantity=0) AND inventory_qty IS NOT NULL");
-                    }
-                } catch (Throwable $_) {}
-            }
-        } catch (Throwable $_) { /* ignore */ }
-        // Migrate any existing product_inventory table data once
-        try {
-            $exists = $pdo->query("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='product_inventory'")->fetchColumn();
-            if ($exists) {
-                try {
-                    // Prefer migrating into quantity if it exists else inventory_qty
-                    $pdo->exec("UPDATE products p JOIN product_inventory pi ON p.product_id = pi.product_id SET p.quantity = COALESCE(p.quantity,0) + pi.quantity WHERE (p.quantity IS NULL OR p.quantity=0)");
-                    $pdo->exec("UPDATE products p JOIN product_inventory pi ON p.product_id = pi.product_id SET p.inventory_qty = pi.quantity WHERE (p.inventory_qty IS NULL OR p.inventory_qty=0) AND (p.quantity IS NULL OR p.quantity=0)");
-                } catch (Throwable $_) {}
+                try { $pdo->exec("UPDATE products SET quantity = inventory_qty WHERE (quantity IS NULL OR quantity=0) AND inventory_qty IS NOT NULL"); } catch (Throwable $_) {}
+                try { $pdo->exec("ALTER TABLE products DROP COLUMN inventory_qty"); } catch (Throwable $_) {}
             }
         } catch (Throwable $_) { /* ignore */ }
     }
 
-    /** Fetch inventory list using priority: products.quantity then products.inventory_qty */
+    /** Fetch inventory list (single source: products.quantity) */
     public function fetch_inventory_list(): array
     {
         $pdo = $this->opencon();
-        $sql = "SELECT product_id, name, status,
-                       CASE WHEN quantity IS NOT NULL THEN quantity ELSE inventory_qty END AS quantity
-                FROM products
-                WHERE name != '__placeholder__'
-                ORDER BY name ASC";
+        $sql = "SELECT product_id, name, status, quantity FROM products WHERE name != '__placeholder__' ORDER BY name ASC";
         try {
             $st = $pdo->prepare($sql);
             $st->execute();
@@ -259,7 +243,7 @@ class Database
         }
     }
 
-    /** Update quantity (prefers products.quantity column; fallback to inventory_qty). */
+    /** Update quantity (single column). */
     public function set_inventory_quantity(string $product_id, int $qty): bool
     {
         $qty = max(0, $qty);
@@ -268,20 +252,14 @@ class Database
         try {
             $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
             $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
-            if (in_array('quantity', $cols, true)) {
-                $hasUpdated = in_array('updated_at', $cols, true);
-                $sql = "UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
-                $st = $pdo->prepare($sql);
-                $ok = $st->execute([$qty, $qty, $product_id]);
-                return $ok;
-            } elseif (in_array('inventory_qty', $cols, true)) {
-                $hasUpdated = in_array('updated_at', $cols, true);
-                $sql = "UPDATE products SET inventory_qty = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
-                $st = $pdo->prepare($sql);
-                $ok = $st->execute([$qty, $qty, $product_id]);
-                return $ok;
+            if (!in_array('quantity', $cols, true)) {
+                // Attempt to add if missing
+                try { $pdo->exec("ALTER TABLE products ADD COLUMN quantity INT NOT NULL DEFAULT 0 AFTER status"); } catch (Throwable $_) {}
             }
-            return false;
+            $hasUpdated = in_array('updated_at', $cols, true);
+            $sql = "UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1";
+            $st = $pdo->prepare($sql);
+            return $st->execute([$qty, $qty, $product_id]);
         } catch (Throwable $e) {
             return false;
         }

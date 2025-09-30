@@ -9,7 +9,7 @@ if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin
     exit;
 }
 $db = new Database();
-// products table already exists; inventory managed via products.inventory_qty column
+// Inventory managed solely via products.quantity column
 $action = $_REQUEST['action'] ?? 'list';
 try {
     if ($action === 'list') {
@@ -43,30 +43,20 @@ try {
         $pid = trim($_POST['product_id']);
         $add = max(0, (int)$_POST['add']);
         if ($add === 0) { echo json_encode(['success'=>false,'message'=>'Nothing to add']); exit; }
-        // fetch current
         $pdo = (new Database())->opencon();
-        $st = $pdo->prepare("SELECT quantity, inventory_qty FROM products WHERE product_id = ? LIMIT 1");
+        $st = $pdo->prepare("SELECT quantity FROM products WHERE product_id = ? LIMIT 1");
         $st->execute([$pid]);
         $row = $st->fetch(PDO::FETCH_ASSOC);
         if (!$row) { echo json_encode(['success'=>false,'message'=>'Product not found']); exit; }
-        $current = null;
-        $col = 'quantity';
-        if (array_key_exists('quantity', $row) && $row['quantity'] !== null) {
-            $current = (int)$row['quantity'];
-        } elseif (array_key_exists('inventory_qty', $row)) {
-            $current = (int)$row['inventory_qty'];
-            $col = 'inventory_qty';
-        }
-        if ($current === null) { echo json_encode(['success'=>false,'message'=>'Unlimited stock product']); exit; }
+        $current = (int)$row['quantity'];
         $newQty = $current + $add;
-        // detect updated_at column
         $hasUpdated = false;
         try {
             $cst = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME='products'");
             $cCols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $cst->fetchAll(PDO::FETCH_ASSOC));
             $hasUpdated = in_array('updated_at', $cCols, true);
         } catch (Throwable $_) {}
-        $up = $pdo->prepare("UPDATE products SET $col = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1");
+        $up = $pdo->prepare("UPDATE products SET quantity = ?, status = CASE WHEN ? > 0 THEN 1 ELSE status END" . ($hasUpdated ? ", updated_at = NOW()" : "") . " WHERE product_id = ? LIMIT 1");
         $ok = $up->execute([$newQty, $newQty, $pid]);
         echo json_encode(['success'=>$ok,'product_id'=>$pid,'quantity'=>$newQty,'added'=>$add]);
         exit;
