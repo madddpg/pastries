@@ -189,6 +189,10 @@ function fetch_locations_pdo($con)
                     <span class="nav-icon"><i class="bi bi-tags-fill"></i></span>
                     <span>Customers</span>
                 </a>
+                <a href="#" class="nav-item" data-section="stocks">
+                    <span class="nav-icon"><i class="bi bi-box"></i></span>
+                    <span>Stocks</span>
+                </a>
                 <a href="#" class="nav-item" data-section="reports">
                     <span class="nav-icon"><i class="bi bi-graph-up"></i></span>
                     <span>Reports</span>
@@ -303,6 +307,13 @@ function fetch_locations_pdo($con)
                                     </div>
                                     <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
                                         <div id="bar-month" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
+                                    </div>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif;">
+                                        <span>This Year</span>
+                                        <span id="revenue-year" style="font-weight:700;color:#22a06b;">₱0.00</span>
+                                    </div>
+                                    <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
+                                        <div id="bar-year" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -625,8 +636,33 @@ function fetch_locations_pdo($con)
                     <h1>Monthly Sales Report</h1>
                     <div style="margin:12px 0 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
                         <div>
-                            <label style="font-weight:600;font-size:0.85rem;display:block;margin-bottom:4px;">Select Month</label>
+                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Select Month</label>
                             <input type="month" id="report-month" value="<?php echo date('Y-m'); ?>" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;">
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Location (optional)</label>
+                            <select id="report-location" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;min-width:180px;">
+                                <option value="">All Locations</option>
+                                <?php
+                                try {
+                                    $locStmt = $con->prepare("SELECT DISTINCT name FROM locations WHERE status='open' ORDER BY name ASC");
+                                    $locStmt->execute();
+                                    $locs = $locStmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+                                    foreach ($locs as $lname) {
+                                        echo '<option value="' . htmlspecialchars($lname, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($lname) . '</option>';
+                                    }
+                                } catch (Throwable $e) { /* ignore */ }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Product Type (optional)</label>
+                            <select id="report-type" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;min-width:150px;">
+                                <option value="">All Types</option>
+                                <option value="hot">Hot</option>
+                                <option value="cold">Cold</option>
+                                <option value="pastries">Pastries</option>
+                            </select>
                         </div>
                         <button id="btn-load-report" class="btn-primary" style="height:40px;">Load Report</button>
                         <div id="report-loading" style="display:none;color:#059669;font-weight:600;">Loading...</div>
@@ -657,21 +693,45 @@ function fetch_locations_pdo($con)
                         <div>
                             <h3 style="margin-bottom:10px;font-size:1.1rem;">Products Sold (This Month)</h3>
                             <div style="overflow-x:auto;">
-                                <table style="width:100%;border-collapse:collapse;min-width:680px;" id="report-products-table">
+                                <table style="width:100%;border-collapse:collapse;min-width:600px;" id="report-products-table">
                                     <thead>
                                         <tr style="background:#f3f4f6;">
                                             <th style="text-align:left;padding:8px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Product</th>
                                             <th style="text-align:right;padding:8px;font-size:0.8rem;">Qty</th>
                                             <th style="text-align:right;padding:8px;font-size:0.8rem;">Gross (₱)</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Share %</th>
                                         </tr>
                                     </thead>
                                     <tbody id="report-products-body">
-                                        <tr><td colspan="4" style="text-align:center;padding:10px;">No data</td></tr>
+                                        <tr><td colspan="3" style="text-align:center;padding:10px;">No data</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Stocks Section -->
+                <div id="stocks-section" class="content-section">
+                    <h1>Product Stocks</h1>
+                    <div style="margin:12px 0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <button id="stocks-refresh" class="btn-primary" style="padding:8px 14px;">Refresh</button>
+                        <div id="stocks-saving" style="display:none;color:#059669;font-weight:600;">Saving...</div>
+                        <div id="stocks-error" style="display:none;color:#dc2626;font-weight:600;">Error</div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%;border-collapse:collapse;min-width:640px;">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th style="text-align:left;padding:8px;font-size:0.75rem;letter-spacing:0.5px;text-transform:uppercase;">Product</th>
+                                    <th style="text-align:left;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Status</th>
+                                    <th style="text-align:right;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Quantity</th>
+                                    <th style="text-align:center;padding:8px;font-size:0.75rem;letter-spacing:0.5px;">Update</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stocks-body">
+                                <tr><td colspan="4" style="text-align:center;padding:12px;">Loading…</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -1792,14 +1852,19 @@ function fetch_locations_pdo($con)
                             const today = data.data.today || 0;
                             const week = data.data.week || 0;
                             const month = data.data.month || 0;
+                            const year = data.data.year || 0;
                             document.getElementById('revenue-today').textContent = `₱${today.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             document.getElementById('revenue-week').textContent = `₱${week.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                             document.getElementById('revenue-month').textContent = `₱${month.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                            if (document.getElementById('revenue-year')) {
+                                document.getElementById('revenue-year').textContent = `₱${year.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                            }
                             // Bar widths (relative to month)
-                            let max = Math.max(today, week, month, 1);
+                            let max = Math.max(today, week, month, year, 1);
                             document.getElementById('bar-today').style.width = (today / max * 100) + '%';
                             document.getElementById('bar-week').style.width = (week / max * 100) + '%';
                             document.getElementById('bar-month').style.width = (month / max * 100) + '%';
+                            if (document.getElementById('bar-year')) document.getElementById('bar-year').style.width = (year / max * 100) + '%';
                         }
                     });
             }
@@ -1813,14 +1878,22 @@ function fetch_locations_pdo($con)
             const reportSummary = document.getElementById('report-summary');
             const reportDailyBody = document.getElementById('report-daily-body');
             const reportProductsBody = document.getElementById('report-products-body');
+                const reportLocation = document.getElementById('report-location');
+                const reportType = document.getElementById('report-type');
 
             function money(v){ return '₱' + Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
 
             function loadMonthlyReport() {
                 if (!reportMonthInput) return;
                 const m = reportMonthInput.value; // YYYY-MM
+                    const loc = reportLocation ? reportLocation.value : '';
+                    const typ = reportType ? reportType.value : '';
                 reportLoading && (reportLoading.style.display = 'block');
-                fetch('AJAX/monthly_report.php?month=' + encodeURIComponent(m))
+                    const params = new URLSearchParams();
+                    params.set('month', m);
+                    if (loc) params.set('location', loc);
+                    if (typ) params.set('type', typ);
+                    fetch('AJAX/monthly_report.php?' + params.toString())
                     .then(r=>r.json())
                     .then(data => {
                         reportLoading && (reportLoading.style.display = 'none');
@@ -1888,6 +1961,87 @@ function fetch_locations_pdo($con)
                     // Delay to allow section to show
                     setTimeout(() => loadMonthlyReport(), 50);
                 });
+            }
+
+            // Inventory (Stocks) logic
+            const stocksBody = document.getElementById('stocks-body');
+            const stocksRefresh = document.getElementById('stocks-refresh');
+            const stocksSaving = document.getElementById('stocks-saving');
+            const stocksError = document.getElementById('stocks-error');
+
+            function loadStocks() {
+                if (!stocksBody) return;
+                stocksBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:12px;">Loading…</td></tr>';
+                fetch('AJAX/inventory.php?action=list')
+                    .then(r=>r.json())
+                    .then(js => {
+                        if (!js || !js.success) {
+                            stocksBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:12px;color:#dc2626;">Failed to load</td></tr>';
+                            return;
+                        }
+                        const rows = js.items.map(it => {
+                            const statusBadge = `<span style=\"display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:${it.status==='active'?'#065f46':'#92400e'};background:${it.status==='active'?'#d1fae5':'#fde68a'};\">${it.status}</span>`;
+                            return `<tr data-product-id=\"${it.product_id}\">
+                                <td style=\"padding:6px 8px;font-size:0.85rem;\">${it.name}</td>
+                                <td style=\"padding:6px 8px;font-size:0.85rem;\">${statusBadge}</td>
+                                <td style=\"padding:6px 8px;font-size:0.85rem;text-align:right;\">
+                                    <input type=\"number\" min=\"0\" value=\"${it.quantity}\" class=\"stock-input\" style=\"width:90px;padding:4px 6px;border:1px solid #ccc;border-radius:6px;text-align:right;\" />
+                                </td>
+                                <td style=\"padding:6px 8px;font-size:0.85rem;text-align:center;\">
+                                    <button class=\"btn-primary btn-update-stock\" style=\"padding:6px 10px;font-size:12px;\">Save</button>
+                                </td>
+                            </tr>`;
+                        }).join('');
+                        stocksBody.innerHTML = rows || '<tr><td colspan="4" style="text-align:center;padding:12px;">No products</td></tr>';
+                    })
+                    .catch(err => {
+                        console.error('inventory list error', err);
+                        stocksBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:12px;color:#dc2626;">Error</td></tr>';
+                    });
+            }
+
+            function saveStock(row) {
+                const pid = row.getAttribute('data-product-id');
+                const input = row.querySelector('.stock-input');
+                if (!pid || !input) return;
+                const qty = parseInt(input.value,10); if (isNaN(qty) || qty < 0) { alert('Invalid quantity'); return; }
+                stocksSaving && (stocksSaving.style.display = 'block');
+                stocksError && (stocksError.style.display = 'none');
+                fetch('AJAX/inventory.php', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                    body:'action=update&product_id=' + encodeURIComponent(pid) + '&quantity=' + encodeURIComponent(qty)
+                }).then(r=>r.json()).then(js => {
+                    stocksSaving && (stocksSaving.style.display = 'none');
+                    if (!js || !js.success) {
+                        stocksError && (stocksError.style.display = 'block');
+                        setTimeout(()=>{ stocksError.style.display='none'; }, 2500);
+                        return;
+                    }
+                    // brief visual cue
+                    row.style.background = '#ecfdf5';
+                    setTimeout(()=>{ row.style.background=''; }, 600);
+                }).catch(err => {
+                    console.error('inventory update error', err);
+                    stocksSaving && (stocksSaving.style.display = 'none');
+                    stocksError && (stocksError.style.display = 'block');
+                    setTimeout(()=>{ stocksError.style.display='none'; }, 2500);
+                });
+            }
+
+            if (stocksRefresh) stocksRefresh.addEventListener('click', loadStocks);
+            if (stocksBody) {
+                stocksBody.addEventListener('click', e => {
+                    const btn = e.target.closest('.btn-update-stock');
+                    if (!btn) return;
+                    const row = btn.closest('tr');
+                    row && saveStock(row);
+                });
+            }
+
+            const navStocks = document.querySelector('.nav-item[data-section="stocks"]');
+            if (navStocks) {
+                navStocks.addEventListener('click', () => setTimeout(loadStocks, 60));
             }
         });
     </script>

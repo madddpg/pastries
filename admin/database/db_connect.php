@@ -23,6 +23,7 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureInventorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -52,6 +53,7 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureInventorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -202,6 +204,44 @@ class Database
 
         // 3) Ensure active index exists
         try { $pdo->exec("ALTER TABLE product_pastry_variants ADD INDEX idx_ppv_active (products_pk, label, effective_to)"); } catch (Throwable $_) {}
+    }
+
+    /** Ensure simple inventory table exists for tracking per-product stock quantity. */
+    private function ensureInventorySchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS product_inventory (
+                product_id VARCHAR(64) NOT NULL PRIMARY KEY,
+                quantity INT NOT NULL DEFAULT 0,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT fk_pi_products FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        } catch (Throwable $e) { /* ignore */ }
+        try { $pdo->exec("ALTER TABLE product_inventory ADD INDEX idx_inventory_qty (quantity)"); } catch (Throwable $_) {}
+    }
+
+    /** Fetch inventory list joined with product name & status. */
+    public function fetch_inventory_list(): array
+    {
+        $pdo = $this->opencon();
+        $sql = "SELECT p.product_id, p.name, p.status, COALESCE(pi.quantity,0) as quantity
+                FROM products p
+                LEFT JOIN product_inventory pi ON p.product_id = pi.product_id
+                WHERE p.name != '__placeholder__'
+                ORDER BY p.name ASC";
+        $st = $pdo->prepare($sql);
+        $st->execute();
+        return $st->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** Update (upsert) inventory quantity for a product. */
+    public function set_inventory_quantity(string $product_id, int $qty): bool
+    {
+        $qty = max(0, $qty);
+        $pdo = $this->opencon();
+        $st = $pdo->prepare("INSERT INTO product_inventory (product_id, quantity) VALUES (?, ?)
+                              ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)");
+        return $st->execute([$product_id, $qty]);
     }
 
     /** Ensure users table has is_blocked/blocked_at columns for blocking feature. */

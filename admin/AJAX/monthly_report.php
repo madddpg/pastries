@@ -39,29 +39,72 @@ try {
     $endDt->modify('first day of next month')->modify('-1 day');
     $end = $endDt->format('Y-m-d');
 
-    // Overall totals (exclude pending / cancelled like revenue overview)
-    $stTotals = $con->prepare("SELECT COUNT(*) orders, COALESCE(SUM(total_amount),0) revenue, COUNT(DISTINCT user_id) customers
-                               FROM transaction
-                               WHERE DATE(created_at) BETWEEN ? AND ?
-                                 AND status NOT IN ('pending','cancelled')");
-    $stTotals->execute([$start, $end]);
-    $totRow = $stTotals->fetch(PDO::FETCH_ASSOC) ?: ['orders'=>0,'revenue'=>0,'customers'=>0];
-    $totalOrders = (int)$totRow['orders'];
-    $totalRevenue = (float)$totRow['revenue'];
-    $distinctCustomers = (int)$totRow['customers'];
+        // Optional filters
+        $location = isset($_GET['location']) ? trim($_GET['location']) : '';
+        $type = isset($_GET['type']) ? strtolower(trim($_GET['type'])) : '';
+        $allowedTypes = ['hot','cold','pastries'];
+        if (!in_array($type, $allowedTypes, true)) { $type = ''; }
 
-    // Total items sold & product breakdown
-    $stProducts = $con->prepare("SELECT ti.product_id, p.name, SUM(ti.quantity) qty,
-                                        SUM(ti.quantity * ti.price) gross
-                                 FROM transaction_items ti
-                                 JOIN transaction t ON ti.transaction_id = t.transac_id
-                                 JOIN products p ON ti.product_id = p.product_id
-                                 WHERE DATE(t.created_at) BETWEEN ? AND ?
-                                   AND t.status NOT IN ('pending','cancelled')
-                                 GROUP BY ti.product_id, p.name
-                                 ORDER BY qty DESC, gross DESC");
-    $stProducts->execute([$start, $end]);
-    $products = $stProducts->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        $baseParams = [$start, $end];
+        $locFilterSql = '';
+        $locJoin = '';
+        if ($location !== '') {
+                $locJoin = ' LEFT JOIN pickup_detail pd ON t.transac_id = pd.transaction_id ';
+                $locFilterSql = ' AND pd.pickup_location = ? ';
+                $baseParams[] = $location;
+        }
+
+        // Totals (branch if type filter present)
+        if ($type !== '') {
+                $totSql = "SELECT COUNT(DISTINCT t.transac_id) orders,
+                                                    COALESCE(SUM(ti.quantity * ti.price),0) revenue,
+                                                    COUNT(DISTINCT t.user_id) customers
+                                     FROM transaction t
+                                     JOIN transaction_items ti ON ti.transaction_id = t.transac_id
+                                     JOIN products p ON ti.product_id = p.product_id
+                                     $locJoin
+                                     WHERE DATE(t.created_at) BETWEEN ? AND ?
+                                         AND t.status NOT IN ('pending','cancelled')
+                                         AND LOWER(p.data_type) = ? $locFilterSql";
+                $totParams = $baseParams; // currently [$start,$end,(maybe location)]
+                $totParams[] = $type; // need to place type before location if location exists? Adjust order.
+                if ($location !== '') {
+                        // reorder to match placeholders: BETWEEN ? AND ? ... data_type=? ... pd.pickup_location = ?
+                        $totParams = [$start,$end,$type,$location];
+                } else {
+                        $totParams = [$start,$end,$type];
+                }
+                $stTotals = $con->prepare($totSql);
+                $stTotals->execute($totParams);
+        } else {
+                $totSql = "SELECT COUNT(*) orders, COALESCE(SUM(t.total_amount),0) revenue, COUNT(DISTINCT t.user_id) customers
+                                     FROM transaction t
+                                     $locJoin
+                                     WHERE DATE(t.created_at) BETWEEN ? AND ?
+                                         AND t.status NOT IN ('pending','cancelled') $locFilterSql";
+                $stTotals = $con->prepare($totSql);
+                $stTotals->execute($baseParams);
+        }
+        $totRow = $stTotals->fetch(PDO::FETCH_ASSOC) ?: ['orders'=>0,'revenue'=>0,'customers'=>0];
+        $totalOrders = (int)$totRow['orders'];
+        $totalRevenue = (float)$totRow['revenue'];
+        $distinctCustomers = (int)$totRow['customers'];
+
+        // Products breakdown (respect filters)
+        $prodSql = "SELECT ti.product_id, p.name, SUM(ti.quantity) qty, SUM(ti.quantity * ti.price) gross
+                                FROM transaction_items ti
+                                JOIN transaction t ON ti.transaction_id = t.transac_id
+                                JOIN products p ON ti.product_id = p.product_id
+                                $locJoin
+                                WHERE DATE(t.created_at) BETWEEN ? AND ?
+                                    AND t.status NOT IN ('pending','cancelled')";
+        $prodParams = [$start,$end];
+        if ($type !== '') { $prodSql .= " AND LOWER(p.data_type) = ?"; $prodParams[] = $type; }
+        if ($location !== '') { $prodSql .= " AND pd.pickup_location = ?"; $prodParams[] = $location; }
+        $prodSql .= " GROUP BY ti.product_id, p.name ORDER BY qty DESC, gross DESC";
+        $stProducts = $con->prepare($prodSql);
+        $stProducts->execute($prodParams);
+        $products = $stProducts->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
     $totalItems = 0;
     foreach ($products as &$pr) {
@@ -72,27 +115,44 @@ try {
     unset($pr);
 
     // Add percentage share to each product
-    foreach ($products as &$pr) {
-        $pr['share_pct'] = ($totalRevenue > 0) ? round(($pr['gross'] / $totalRevenue) * 100, 2) : 0.0;
+    // Daily breakdown (orders + revenue + items) with conditional logic for type / location
+    if ($type !== '') {
+        $dailySql = "SELECT DATE(t.created_at) d,
+                            COUNT(DISTINCT t.transac_id) orders,
+                            COALESCE(SUM(ti.quantity * ti.price),0) revenue,
+                            COALESCE(SUM(ti.quantity),0) items
+                     FROM transaction t
+                     JOIN transaction_items ti ON ti.transaction_id = t.transac_id
+                     JOIN products p ON ti.product_id = p.product_id
+                     $locJoin
+                     WHERE DATE(t.created_at) BETWEEN ? AND ?
+                       AND t.status NOT IN ('pending','cancelled')
+                       AND LOWER(p.data_type) = ?";
+        $dailyParams = [$start,$end,$type];
+        if ($location !== '') { $dailySql .= " AND pd.pickup_location = ?"; $dailyParams[] = $location; }
+        $dailySql .= " GROUP BY DATE(t.created_at) ORDER BY d ASC";
+        $stDaily = $con->prepare($dailySql);
+        $stDaily->execute($dailyParams);
+    } else {
+        $dailySql = "SELECT DATE(t.created_at) d,
+                            COUNT(*) orders,
+                            COALESCE(SUM(t.total_amount),0) revenue,
+                            COALESCE(SUM(itm_qty.total_qty),0) items
+                     FROM transaction t
+                     LEFT JOIN (
+                         SELECT ti.transaction_id, SUM(ti.quantity) total_qty
+                         FROM transaction_items ti
+                         GROUP BY ti.transaction_id
+                     ) itm_qty ON itm_qty.transaction_id = t.transac_id
+                     $locJoin
+                     WHERE DATE(t.created_at) BETWEEN ? AND ?
+                       AND t.status NOT IN ('pending','cancelled')";
+        $dailyParams = [$start,$end];
+        if ($location !== '') { $dailySql .= " AND pd.pickup_location = ?"; $dailyParams[] = $location; }
+        $dailySql .= " GROUP BY DATE(t.created_at) ORDER BY d ASC";
+        $stDaily = $con->prepare($dailySql);
+        $stDaily->execute($dailyParams);
     }
-    unset($pr);
-
-    // Daily breakdown (orders + revenue + items)
-    $stDaily = $con->prepare("SELECT DATE(t.created_at) d,
-                                     COUNT(*) orders,
-                                     COALESCE(SUM(t.total_amount),0) revenue,
-                                     COALESCE(SUM(itm_qty.total_qty),0) items
-                              FROM transaction t
-                              LEFT JOIN (
-                                  SELECT ti.transaction_id, SUM(ti.quantity) total_qty
-                                  FROM transaction_items ti
-                                  GROUP BY ti.transaction_id
-                              ) itm_qty ON itm_qty.transaction_id = t.transac_id
-                              WHERE DATE(t.created_at) BETWEEN ? AND ?
-                                AND t.status NOT IN ('pending','cancelled')
-                              GROUP BY DATE(t.created_at)
-                              ORDER BY d ASC");
-    $stDaily->execute([$start, $end]);
     $daily = $stDaily->fetchAll(PDO::FETCH_ASSOC) ?: [];
     foreach ($daily as &$drow) {
         $drow['orders'] = (int)$drow['orders'];
