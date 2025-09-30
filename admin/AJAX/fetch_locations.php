@@ -11,7 +11,7 @@ try {
     }
     $db = new Database();
     $pdo = $db->opencon();
-    $stmt = $pdo->prepare("SELECT location_id, name, status, image, created_at FROM locations ORDER BY name ASC");
+    $stmt = $pdo->prepare("SELECT location_id, name, status, image FROM locations ORDER BY name ASC");
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     echo json_encode(['success'=>true,'locations'=>$rows]);
