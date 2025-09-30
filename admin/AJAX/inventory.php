@@ -9,6 +9,25 @@ if (!(Database::isAdmin() || Database::isSuperAdmin() || (isset($_SESSION['admin
     exit;
 }
 $db = new Database();
+$pdo = $db->opencon();
+// Defensive: ensure product_inventory table exists even if earlier ensure failed
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS product_inventory (
+        product_id VARCHAR(64) NOT NULL PRIMARY KEY,
+        quantity INT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        CONSTRAINT fk_pi_products FOREIGN KEY (product_id) REFERENCES products(product_id) ON DELETE CASCADE ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+} catch (Throwable $e) {
+    // If FK creation fails (e.g., missing index), fallback to table without FK
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS product_inventory (
+            product_id VARCHAR(64) NOT NULL PRIMARY KEY,
+            quantity INT NOT NULL DEFAULT 0,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (Throwable $_) { /* still ignore; will error later if truly broken */ }
+}
 $action = $_REQUEST['action'] ?? 'list';
 try {
     if ($action === 'list') {
