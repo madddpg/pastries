@@ -235,6 +235,9 @@
 .report-table tbody tr:hover { background:#f4fbf8; }
 .report-table .text-right { text-align:right; }
 .empty-row { text-align:center; padding:12px !important; font-size:0.8rem; color:#64748b; }
+/* Promo cards */
+#promos-grid > div { transition: box-shadow .18s, transform .18s; }
+#promos-grid > div:hover { box-shadow:0 6px 18px rgba(16,185,129,0.12); transform:translateY(-3px); }
 @media (max-width:800px){
   .report-summary-grid { grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); }
   .report-stat-card { padding-left:50px; }

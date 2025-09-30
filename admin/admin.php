@@ -788,12 +788,22 @@ function fetch_locations_pdo($con)
                                 echo '<div>No promos yet.</div>';
                             } else {
                                 foreach ($promos as $pr) {
-                                    $img = htmlspecialchars($pr['image']);
+                                    $pid = (int)$pr['promo_id'];
+                                    $rawImg = $pr['image'];
                                     $title = htmlspecialchars($pr['title'] ?: '');
-                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:8px;background:#fff;'>\n".
-                                         ( $img ? "<img src='{$img}' alt='' style='width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;'>" : "" ) .
-                                         "<div style='font-size:0.8rem;font-weight:600;margin-bottom:4px;'>$title</div>\n".
-                                         "<div style='font-size:0.65rem;color:#555;'>".htmlspecialchars(date('Y-m-d', strtotime($pr['created_at'])))."</div>\n".
+                                    // Fallback path (for very old records) relative to web root
+                                    $fallback = $rawImg ? '../' . ltrim($rawImg, '/') : '';
+                                    $dateLabel = htmlspecialchars(date('Y-m-d', strtotime($pr['created_at'])));
+                                    $imgTag = "<div style='width:100%;height:120px;position:relative;margin-bottom:8px;'>".
+                                              "<img src='serve_promo.php?promo_id={$pid}' alt='".$title."' data-fallback='".htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8')."' " .
+                                              "onerror=\"if(!this.dataset.tried && this.dataset.fallback){this.dataset.tried=1;this.src=this.dataset.fallback;}\" " .
+                                              "style='width:100%;height:100%;object-fit:cover;border-radius:6px;background:#f3f4f6;' loading='lazy'>".
+                                              "</div>";
+
+                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:10px;background:#fff;display:flex;flex-direction:column;'>\n".
+                                         $imgTag .
+                                         "<div style='font-size:0.8rem;font-weight:600;margin-bottom:4px;word-break:break-word;'>$title</div>\n".
+                                         "<div style='font-size:0.65rem;color:#64748b;'>$dateLabel</div>\n".
                                          "</div>";
                                 }
                             }
