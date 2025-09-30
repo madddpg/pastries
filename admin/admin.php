@@ -628,16 +628,16 @@ function fetch_locations_pdo($con)
                 </div>
 
                 <!-- Reports Section -->
-                <div id="reports-section" class="content-section">
-                    <h1>Monthly Sales Report</h1>
-                    <div style="margin:12px 0 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
-                        <div>
-                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Select Month</label>
-                            <input type="month" id="report-month" value="<?php echo date('Y-m'); ?>" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;">
+                <div id="reports-section" class="content-section reports-section">
+                    <h1 class="report-title">Monthly Sales Report</h1>
+                    <div class="report-filters">
+                        <div class="report-filter-group">
+                            <label for="report-month">Select Month</label>
+                            <input type="month" id="report-month" value="<?php echo date('Y-m'); ?>" class="report-field" />
                         </div>
-                        <div>
-                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Location (optional)</label>
-                            <select id="report-location" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;min-width:180px;">
+                        <div class="report-filter-group">
+                            <label for="report-location">Location (optional)</label>
+                            <select id="report-location" class="report-field">
                                 <option value="">All Locations</option>
                                 <?php
                                 try {
@@ -651,54 +651,56 @@ function fetch_locations_pdo($con)
                                 ?>
                             </select>
                         </div>
-                        <div>
-                            <label style="font-weight:600;font-size:0.75rem;display:block;margin-bottom:4px;">Product Type (optional)</label>
-                            <select id="report-type" style="padding:8px 10px;border:1px solid #059669;border-radius:8px;min-width:150px;">
+                        <div class="report-filter-group">
+                            <label for="report-type">Product Type (optional)</label>
+                            <select id="report-type" class="report-field">
                                 <option value="">All Types</option>
                                 <option value="hot">Hot</option>
                                 <option value="cold">Cold</option>
                                 <option value="pastries">Pastries</option>
                             </select>
                         </div>
-                        <button id="btn-load-report" class="btn-primary" style="height:40px;">Load Report</button>
-                        <div id="report-loading" style="display:none;color:#059669;font-weight:600;">Loading...</div>
+                        <div class="report-filter-actions">
+                            <button id="btn-load-report" class="btn-primary report-load-btn">Load Report</button>
+                            <div id="report-loading" class="report-loading">Loading...</div>
+                        </div>
                     </div>
 
-                    <div id="report-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:28px;"></div>
+                    <div id="report-summary" class="report-summary-grid"></div>
 
-                    <div style="display:grid;grid-template-columns:1fr;gap:30px;">
-                        <div>
-                            <h3 style="margin-bottom:10px;font-size:1.1rem;">Daily Breakdown</h3>
-                            <div style="overflow-x:auto;">
-                                <table style="width:100%;border-collapse:collapse;min-width:640px;" id="report-daily-table">
+                    <div class="report-tables-grid">
+                        <div class="report-card-block">
+                            <h3 class="report-block-title">Daily Breakdown</h3>
+                            <div class="table-container">
+                                <table id="report-daily-table" class="report-table">
                                     <thead>
-                                        <tr style="background:#f3f4f6;">
-                                            <th style="text-align:left;padding:8px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Date</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Orders</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Items</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Revenue (₱)</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Avg Order (₱)</th>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th class="text-right">Orders</th>
+                                            <th class="text-right">Items</th>
+                                            <th class="text-right">Revenue (₱)</th>
+                                            <th class="text-right">Avg Order (₱)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="report-daily-body">
-                                        <tr><td colspan="5" style="text-align:center;padding:10px;">No data</td></tr>
+                                        <tr><td colspan="5" class="empty-row">No data</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div>
-                            <h3 style="margin-bottom:10px;font-size:1.1rem;">Products Sold (This Month)</h3>
-                            <div style="overflow-x:auto;">
-                                <table style="width:100%;border-collapse:collapse;min-width:600px;" id="report-products-table">
+                        <div class="report-card-block">
+                            <h3 class="report-block-title">Products Sold (This Month)</h3>
+                            <div class="table-container">
+                                <table id="report-products-table" class="report-table">
                                     <thead>
-                                        <tr style="background:#f3f4f6;">
-                                            <th style="text-align:left;padding:8px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Product</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Qty</th>
-                                            <th style="text-align:right;padding:8px;font-size:0.8rem;">Gross (₱)</th>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th class="text-right">Qty</th>
+                                            <th class="text-right">Gross (₱)</th>
                                         </tr>
                                     </thead>
                                     <tbody id="report-products-body">
-                                        <tr><td colspan="3" style="text-align:center;padding:10px;">No data</td></tr>
+                                        <tr><td colspan="3" class="empty-row">No data</td></tr>
                                     </tbody>
                                 </table>
                             </div>
