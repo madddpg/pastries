@@ -58,8 +58,8 @@ $mail->SMTPOptions = [
     ],
 ];
 
-$mail->Username = 'ahmadpaguta2005@gmail.com';
-$mail->Password = 'unwr kdad ejcd rysq';
+$mail->Username = 'cupsandcuddles@gmail.com';
+$mail->Password = 'ngjo tavi sdsn zpwq';
 
 $mail->setFrom($mail->Username, 'Cups & Cuddles');
 $mail->addReplyTo('no-reply@cupscuddles.local', 'Cups & Cuddles');
