@@ -18,6 +18,15 @@ document.addEventListener("DOMContentLoaded", () => {
       if (sectionName === 'order-history') {
         window.PickedUpOrders?.ensureLoaded();
       }
+      // Ensure live orders list + pagination are populated when the section is shown
+      if (sectionName === 'live-orders') {
+        try {
+          const activeTab = document.querySelector('#live-orders-tabs .tab.active');
+          const status = activeTab ? (activeTab.dataset.status || '') : '';
+          // small defer to allow DOM to settle
+          setTimeout(() => { try { fetchOrders(status, 1); } catch(e) {} }, 0);
+        } catch(_) {}
+      }
     }
     document.querySelectorAll(".nav-item").forEach(item => {
       item.classList.remove("active");
