@@ -108,7 +108,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     <link rel="shortcut icon" href="img/logo.png" type="image/png">
     <link rel="stylesheet" href="./css/style.css">
 </head>
-
 <?php if (!Database::isSuperAdmin()): ?>
     <style>
         .topping-force-delete,
@@ -119,7 +118,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         }
     </style>
 <?php endif; ?>
-
 <script>
     // Expose active size prices to the storefront JS for universal access
     window.SIZE_PRICE_MAP = <?php
@@ -136,7 +134,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     ?>;
     window.PASTRY_VARIANTS_MAP = <?php echo json_encode($pastryVariantsMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 </script>
-
 <body>
     <!-- Header -->
     <header class="header">
@@ -1462,6 +1459,18 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     </script>
     <script src="js/script.js"></script>
     <script src="js/receipt.js"></script>
+    <script>
+        // Remove any accidental stray 'f' text node at the very start of <body>
+        document.addEventListener('DOMContentLoaded', function(){
+            var n = document.body.firstChild;
+            if (n && n.nodeType === 3) { // TEXT_NODE
+                var t = (n.nodeValue || '').trim();
+                if (t === 'f') {
+                    n.parentNode.removeChild(n);
+                }
+            }
+        });
+    </script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const pickupTimeInput = document.getElementById("pickupTime");
