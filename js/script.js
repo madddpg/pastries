@@ -385,6 +385,8 @@ document.addEventListener('click', function (e) {
   }
   const addonBtn = e.target.closest('.add-on-btn');
   if (addonBtn) {
+    const parentGrid = document.getElementById('toppingsList');
+    if (parentGrid && parentGrid.classList.contains('is-disabled')) return;
     addonBtn.classList.toggle('active');
     const key = addonBtn.dataset.key;
     const price = parseFloat(addonBtn.dataset.price || 0);
@@ -2056,8 +2058,10 @@ async function loadActiveToppings() {
     const data = await res.json();
     const container = document.getElementById('toppingsList');
     if (!container) return;
+    container.classList.remove('is-disabled');
     if (!data.success || !Array.isArray(data.toppings) || !data.toppings.length) {
-      container.innerHTML = '<div style="padding:8px 6px;font-size:.9rem;color:#9ca3af;">No toppings available.</div>';
+      container.classList.add('is-disabled');
+      container.innerHTML = '<div style="padding:8px 6px;font-size:.9rem;color:#9ca3af;">No toppings available for this product.</div>';
       return;
     }
     container.innerHTML = data.toppings.map(t => {

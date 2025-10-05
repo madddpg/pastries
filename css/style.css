@@ -2436,6 +2436,11 @@ label[for="acceptTerms"] { white-space: nowrap; }
   gap: 8px;
 }
 
+.add-ons-grid.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .add-on-btn {
   display: flex;
   justify-content: space-between;
