@@ -179,7 +179,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                 </a>
                 <a href="#" class="nav-item" data-section="toppings">
                     <span class="nav-icon"><i class="bi bi-plus-square"></i></span>
-                    <span>Toppings</span>
+                    <span>Add-ons</span>
                 </a>
                 <a href="#" class="nav-item" data-section="active-location">
                     <span class="nav-icon"><i class="bi bi-geo-alt-fill"></i></span>
