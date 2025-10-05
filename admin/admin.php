@@ -1902,6 +1902,18 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             var addAdminForm = document.getElementById('addAdminForm');
             var addAdminResult = document.getElementById('addAdminResult');
 
+            // Small helper: toast fallback if showNotification isn't globally available
+            function notify(msg){
+                if (typeof showNotification === 'function') { try { showNotification(msg); return; } catch(e){} }
+                // Fallback toast using existing .notification styles
+                const n = document.createElement('div');
+                n.className = 'notification';
+                n.textContent = msg;
+                document.body.appendChild(n);
+                requestAnimationFrame(()=> n.classList.add('show'));
+                setTimeout(()=>{ n.classList.remove('show'); setTimeout(()=> n.remove(), 300); }, 3000);
+            }
+
             if (addAdminForm) {
                 addAdminForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
@@ -1913,13 +1925,13 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         try { data = await res.json(); }
                         catch { const txt = await res.text(); data = { success: /success/i.test(txt), message: txt }; }
                         if (data && data.success) {
-                            if (typeof showNotification === 'function') showNotification('Admin added successfully');
+                            notify('Admin added successfully');
                             addAdminForm.reset();
                             if (addAdminResult) addAdminResult.textContent = '';
                         } else {
                             const msg = (data && data.message) ? data.message : 'Failed to add admin.';
                             if (addAdminResult) addAdminResult.textContent = msg;
-                            if (typeof showNotification === 'function') showNotification(msg);
+                            notify(msg);
                         }
                     } catch (err) {
                         if (addAdminResult) addAdminResult.textContent = 'Failed to add admin.';
