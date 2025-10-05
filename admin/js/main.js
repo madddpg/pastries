@@ -388,6 +388,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('toppingId').value = '';
       document.getElementById('toppingName').value = '';
       document.getElementById('toppingPrice').value = '';
+      const tAllowedTypes = document.getElementById('toppingAllowedTypes');
+      const tAllowedCats = document.getElementById('toppingAllowedCategories');
+      if (tAllowedTypes) tAllowedTypes.value = '';
+      if (tAllowedCats) tAllowedCats.value = '';
       if (addModal) addModal.style.display = 'flex';
     });
   }
@@ -406,6 +410,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('toppingId').value = id;
       document.getElementById('toppingName').value = row.children[1].textContent;
       document.getElementById('toppingPrice').value = parseFloat(row.children[2].textContent.replace('₱', '')) || 0;
+      // Note: allowed types/categories are not displayed in the list; if we need prefill, we'd fetch per-topping scope via an endpoint.
       if (addModal) addModal.style.display = 'flex';
       return;
     }
@@ -468,10 +473,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = document.getElementById('toppingId').value;
       const name = document.getElementById('toppingName').value.trim();
       const price = document.getElementById('toppingPrice').value;
+  const allowedTypes = (document.getElementById('toppingAllowedTypes')?.value || '').trim();
+  const allowedCats = (document.getElementById('toppingAllowedCategories')?.value || '').trim();
       if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
       const body = new URLSearchParams();
       body.append('name', name);
       body.append('price', price);
+  if (allowedTypes) body.append('allowed_types', allowedTypes);
+  if (allowedCats) body.append('allowed_categories', allowedCats);
       if (!id) {
         body.append('action', 'add');
       } else {

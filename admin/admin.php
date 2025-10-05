@@ -884,6 +884,22 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                         <label style="display:block;margin-bottom:6px;font-weight:600;">Price</label>
                                         <input type="number" step="0.01" id="toppingPrice" name="price" required style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;text-align:right;">
                                     </div>
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label style="display:block;margin-bottom:6px;font-weight:600;">Allowed Types (optional)</label>
+                                        <input type="text" id="toppingAllowedTypes" name="allowed_types" placeholder="Comma-separated e.g. premium,specialty" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;">
+                                        <small class="text-muted">Leave blank to allow for all data types.</small>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:12px;">
+                                        <label style="display:block;margin-bottom:6px;font-weight:600;">Allowed Categories (optional)</label>
+                                        <!-- Hidden/text input still used by API; picker below will write into it -->
+                                        <input type="text" id="toppingAllowedCategories" name="allowed_categories" placeholder="Comma-separated category IDs e.g. 5,6" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6f2ea;">
+                                        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                            <button type="button" id="toppingCategoriesPickerToggle" class="btn-secondary" style="padding:6px 10px;border-radius:8px;">Pick from list</button>
+                                            <small class="text-muted">Leave blank to allow for all categories.</small>
+                                        </div>
+                                        <div id="toppingCategoriesSelected" style="margin-top:6px;font-size:12px;color:#374151;"></div>
+                                        <div id="toppingCategoriesPicker" style="display:none;margin-top:8px;max-height:180px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fafafa;"></div>
+                                    </div>
                                     <div style="display:flex;gap:8px;justify-content:flex-end;">
                                         <button type="button" id="cancelToppingBtn" class="btn-secondary">Cancel</button>
                                         <button type="submit" id="saveToppingBtn" class="btn-primary">Save</button>
@@ -1548,6 +1564,85 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         }
                     });
             });
+
+            // --- Toppings: Allowed Categories Picker logic (inline for simplicity) ---
+            (function(){
+                const picker = document.getElementById('toppingCategoriesPicker');
+                const toggleBtn = document.getElementById('toppingCategoriesPickerToggle');
+                const displaySel = document.getElementById('toppingCategoriesSelected');
+                const hiddenInput = document.getElementById('toppingAllowedCategories');
+
+                if (!picker || !toggleBtn || !displaySel || !hiddenInput) return;
+
+                let allCategories = [];
+                let selectedIds = new Set();
+
+                function renderPicker() {
+                    const current = new Set(selectedIds);
+                    picker.innerHTML = allCategories.map(c => {
+                        const checked = current.has(String(c.category_id)) ? 'checked' : '';
+                        const name = String(c.name || '');
+                        return `<label style="display:block;margin-bottom:6px;">
+                            <input type="checkbox" class="tcat-cb" value="${c.category_id}" ${checked}> ${name}
+                        </label>`;
+                    }).join('');
+
+                    picker.querySelectorAll('.tcat-cb').forEach(cb => {
+                        cb.addEventListener('change', () => {
+                            const id = cb.value;
+                            if (cb.checked) selectedIds.add(String(id)); else selectedIds.delete(String(id));
+                            syncHidden();
+                        });
+                    });
+                }
+
+                function syncHidden() {
+                    const arr = Array.from(selectedIds);
+                    hiddenInput.value = arr.join(',');
+                    if (arr.length === 0) {
+                        displaySel.textContent = '';
+                    } else {
+                        const names = arr.map(id => {
+                            const c = allCategories.find(x => String(x.category_id) === String(id));
+                            return c ? c.name : id;
+                        });
+                        displaySel.textContent = 'Selected: ' + names.join(', ');
+                    }
+                }
+
+                async function loadAllCategories() {
+                    try {
+                        const res = await fetch('categories.php', { credentials: 'same-origin' });
+                        allCategories = await res.json();
+                        if (!Array.isArray(allCategories)) allCategories = [];
+                        renderPicker();
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Open/close picker
+                toggleBtn.addEventListener('click', async () => {
+                    if (picker.style.display === 'none') {
+                        // Initialize selection from current input
+                        selectedIds = new Set((hiddenInput.value || '').split(',').map(s => s.trim()).filter(Boolean));
+                        if (!allCategories.length) await loadAllCategories();
+                        renderPicker();
+                        picker.style.display = 'block';
+                    } else {
+                        picker.style.display = 'none';
+                    }
+                });
+
+                // When opening the Add/Edit Topping modal, reset the selection display based on the input value
+                document.addEventListener('click', (e) => {
+                    const open = e.target && (e.target.id === 'showAddToppingModalBtn' || e.target.classList?.contains('btn-edit-topping'));
+                    if (!open) return;
+                    setTimeout(() => {
+                        selectedIds = new Set((hiddenInput.value || '').split(',').map(s => s.trim()).filter(Boolean));
+                        syncHidden();
+                        if (picker.style.display !== 'none') renderPicker();
+                    }, 0);
+                });
+            })();
 
             // Ensure Add Product button shows the modal
             if (showAddProductModalBtn && addProductModal) {

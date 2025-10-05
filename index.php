@@ -709,7 +709,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-supreme="<?= htmlspecialchars(number_format((float)$supreme, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="5">
                                 View
                             </button>
                         </div>
@@ -949,7 +950,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-price="<?= htmlspecialchars(number_format($base, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="6">
                                 View
                             </button>
                         </div>
@@ -1000,7 +1002,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-price="<?= htmlspecialchars(number_format($base, 2, '.', ''), ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="2">
                                 View
                             </button>
                         </div>
@@ -1049,7 +1052,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="3">
                                 View
                             </button>
                         </div>
@@ -1098,7 +1102,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="4">
                                 View
                             </button>
                         </div>
@@ -1147,7 +1152,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 data-price="<?= htmlspecialchars(isset($product['price']) ? $product['price'] : 0, ENT_QUOTES) ?>"
                                 data-desc="<?= htmlspecialchars($product['description'], ENT_QUOTES) ?>"
                                 data-image="<?= htmlspecialchars($imgSrc, ENT_QUOTES) ?>"
-                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>">
+                                data-type="<?= ($dataType === 'hot') ? 'hot' : 'cold' ?>"
+                                data-category="1">
                                 View
                             </button>
                         </div>

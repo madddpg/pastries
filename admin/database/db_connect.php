@@ -20,9 +20,10 @@ class Database
         );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         // Ensure supporting tables/schemas exist or are updated
-        try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
-        try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
-        try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureToppingsScopeSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -221,6 +222,76 @@ class Database
         // Helpful index for admin listing/filtering
         try { $pdo->exec("ALTER TABLE users ADD INDEX idx_users_block (is_blocked, user_id)"); } catch (Throwable $_) {}
     }
+    
+        /** Ensure schema to scope toppings to data_types and/or categories. */
+        private function ensureToppingsScopeSchema(PDO $pdo): void
+        {
+            try {
+                // Main toppings table may already exist; just extend with status if missing
+                $pdo->exec(
+                    "CREATE TABLE IF NOT EXISTS toppings (
+                        topping_id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(120) NOT NULL UNIQUE,
+                        price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                        status ENUM('active','inactive') DEFAULT 'active',
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME NULL
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+
+                // Table linking toppings to allowed data_types (e.g., 'premium','specialty','pastries', etc.)
+                $pdo->exec(
+                    "CREATE TABLE IF NOT EXISTS topping_allowed_types (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        topping_id INT NOT NULL,
+                        data_type VARCHAR(50) NOT NULL,
+                        UNIQUE KEY uniq_topping_type (topping_id, data_type),
+                        INDEX (data_type),
+                        CONSTRAINT fk_tat_topping FOREIGN KEY (topping_id) REFERENCES toppings(topping_id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+
+                // Table linking toppings to allowed categories (by numeric category_id from categories table)
+                $pdo->exec(
+                    "CREATE TABLE IF NOT EXISTS topping_allowed_categories (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        topping_id INT NOT NULL,
+                        category_id INT NOT NULL,
+                        UNIQUE KEY uniq_topping_cat (topping_id, category_id),
+                        INDEX (category_id),
+                        CONSTRAINT fk_tac_topping FOREIGN KEY (topping_id) REFERENCES toppings(topping_id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+            } catch (Throwable $e) { /* ignore */ }
+        }
+
+        /** Return active toppings filtered by optional product context. */
+        public function fetch_active_toppings_filtered(?string $data_type = null, $category_id = null): array
+        {
+            $con = $this->opencon();
+            $sql = "SELECT t.topping_id, t.name, t.price FROM toppings t WHERE COALESCE(t.status,1) = 1";
+            $params = [];
+            $data_type = ($data_type !== null && $data_type !== '') ? strtolower(trim($data_type)) : null;
+            $category_id = ($category_id !== null && $category_id !== '') ? intval($category_id) : null;
+
+            // If data_type provided: allow topping if it explicitly allows this type OR it has no type restrictions
+            if ($data_type !== null) {
+                $sql .= " AND (EXISTS (SELECT 1 FROM topping_allowed_types tat WHERE tat.topping_id = t.topping_id AND tat.data_type = ?) 
+                               OR NOT EXISTS (SELECT 1 FROM topping_allowed_types tat0 WHERE tat0.topping_id = t.topping_id))";
+                $params[] = $data_type;
+            }
+            // If category provided: allow topping if it explicitly allows this category OR it has no category restrictions
+            if ($category_id !== null) {
+                $sql .= " AND (EXISTS (SELECT 1 FROM topping_allowed_categories tac WHERE tac.topping_id = t.topping_id AND tac.category_id = ?) 
+                               OR NOT EXISTS (SELECT 1 FROM topping_allowed_categories tac0 WHERE tac0.topping_id = t.topping_id))";
+                $params[] = $category_id;
+            }
+
+            $sql .= " ORDER BY t.topping_id ASC";
+            $st = $con->prepare($sql);
+            $st->execute($params);
+            return $st->fetchAll(PDO::FETCH_ASSOC);
+        }
 
     /** Check if a user is blocked from ordering. */
     public function isUserBlocked(int $user_id): bool
@@ -1418,6 +1489,52 @@ public function createPickupOrder(
         $st = ($status === 'active') ? 1 : 0;
         $stmt = $con->prepare("UPDATE toppings SET status = ?, updated_at = NOW() WHERE topping_id = ?");
         return $stmt->execute([$st, intval($id)]);
+    }
+
+    /** Replace allowed data_types for a topping (empty array means globally available). */
+    public function set_topping_allowed_types(int $topping_id, array $types): bool
+    {
+        $con = $this->opencon();
+        try {
+            $con->beginTransaction();
+            $con->prepare("DELETE FROM topping_allowed_types WHERE topping_id = ?")->execute([$topping_id]);
+            if (!empty($types)) {
+                $ins = $con->prepare("INSERT INTO topping_allowed_types (topping_id, data_type) VALUES (?, ?)");
+                foreach ($types as $t) {
+                    $t = strtolower(trim($t));
+                    if ($t === '') continue;
+                    $ins->execute([$topping_id, $t]);
+                }
+            }
+            $con->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($con->inTransaction()) $con->rollBack();
+            return false;
+        }
+    }
+
+    /** Replace allowed categories for a topping (empty array means globally available). */
+    public function set_topping_allowed_categories(int $topping_id, array $categoryIds): bool
+    {
+        $con = $this->opencon();
+        try {
+            $con->beginTransaction();
+            $con->prepare("DELETE FROM topping_allowed_categories WHERE topping_id = ?")->execute([$topping_id]);
+            if (!empty($categoryIds)) {
+                $ins = $con->prepare("INSERT INTO topping_allowed_categories (topping_id, category_id) VALUES (?, ?)");
+                foreach ($categoryIds as $cid) {
+                    $cid = (int)$cid;
+                    if ($cid <= 0) continue;
+                    $ins->execute([$topping_id, $cid]);
+                }
+            }
+            $con->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($con->inTransaction()) $con->rollBack();
+            return false;
+        }
     }
 
     // Update user information (firstname, lastname, email, password, profile image)

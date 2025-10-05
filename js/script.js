@@ -107,7 +107,7 @@ function recalcModalTotal() {
 
 // Centralized product view handler using DB-driven size prices.
 // Robust: supports both (event) and (id, name, price, description, image, dataType, variants, grande, supreme)
-function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn) {
+function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn, categoryId) {
   try {
     // If called as an event handler, extract dataset from the clicked .view-btn
     if (id && typeof id === 'object' && (id.type || id.target)) {
@@ -155,7 +155,8 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       grandePrice,
       supremePrice,
       variants: null,
-      sugar: window.selectedSugar || 'Less Sweet'
+      sugar: window.selectedSugar || 'Less Sweet',
+      category_id: categoryId || ''
     };
 
     if (dataType === 'pastries') {
@@ -1288,6 +1289,7 @@ document.addEventListener('click', function (e) {
   try {
     const id = btn.dataset.productId || btn.dataset.id;
     const name = btn.dataset.name;
+    const categoryId = btn.dataset.category || '';
     const sizeMap = (window.SIZE_PRICE_MAP && id && window.SIZE_PRICE_MAP[id]) ? window.SIZE_PRICE_MAP[id] : {};
     // prefer data-*; fallback to SIZE_PRICE_MAP; finally 0
     const grande = (btn.dataset.grande !== undefined && btn.dataset.grande !== '')
@@ -1312,7 +1314,7 @@ document.addEventListener('click', function (e) {
       }
     }
     // Call product view handler
-    handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme);
+    handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme, categoryId);
   } catch (err) {
     console.error('Error handling view button click:', err);
   }
@@ -2040,7 +2042,16 @@ window.addEventListener("scroll", () => {
 
 async function loadActiveToppings() {
   try {
-    const res = await fetch('admin/AJAX/get_toppings.php?action=active', { cache: 'no-store' });
+    // Include current product context when available to filter toppings
+    const dtype = (window.currentProduct && window.currentProduct.dataType) ? String(window.currentProduct.dataType).toLowerCase() : '';
+    const cat = (window.currentProduct && (window.currentProduct.category_id || window.currentProduct.category))
+      ? String(window.currentProduct.category_id || window.currentProduct.category)
+      : '';
+  const url = new URL('admin/AJAX/get_toppings.php', window.location.href);
+    url.searchParams.set('action', 'active');
+    if (dtype) url.searchParams.set('data_type', dtype);
+    if (cat) url.searchParams.set('category_id', cat);
+    const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const container = document.getElementById('toppingsList');

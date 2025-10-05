@@ -30,9 +30,17 @@ if (!($method === 'GET' && $action === 'active')) {
 }
 
 try {
-    // Public: active toppings
+    // Public: active toppings (optionally filtered by data_type/category)
     if ($method === 'GET' && $action === 'active') {
-        $toppings = $db->fetch_active_toppings();
+        $dtype = isset($_GET['data_type']) ? trim(strtolower($_GET['data_type'])) : null;
+        $cat   = isset($_GET['category_id']) ? trim($_GET['category_id']) : null;
+        if ($dtype === '') $dtype = null;
+        if ($cat === '') $cat = null;
+        if ($dtype !== null || $cat !== null) {
+            $toppings = $db->fetch_active_toppings_filtered($dtype, $cat);
+        } else {
+            $toppings = $db->fetch_active_toppings();
+        }
         send_json(['success' => true, 'toppings' => $toppings]);
     }
 
@@ -55,6 +63,11 @@ try {
         if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
 
         $topping_id = $db->add_topping($name, $price, $status);
+        // Optional scoping
+        $allowed_types = isset($_POST['allowed_types']) ? array_filter(array_map('trim', explode(',', $_POST['allowed_types']))) : [];
+        $allowed_cats = isset($_POST['allowed_categories']) ? array_filter(array_map('trim', explode(',', $_POST['allowed_categories']))) : [];
+        if (!empty($allowed_types)) { $db->set_topping_allowed_types((int)$topping_id, $allowed_types); }
+        if (!empty($allowed_cats)) { $db->set_topping_allowed_categories((int)$topping_id, $allowed_cats); }
         $stmt = $con->prepare("SELECT topping_id, name, price, status FROM toppings WHERE topping_id = ?");
         $stmt->execute([$topping_id]);
         $newTopping = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -69,6 +82,15 @@ try {
         if ($topping_id <= 0) send_json(['success' => false, 'message' => 'topping_id required'], 400);
         if ($name === '') send_json(['success' => false, 'message' => 'Name required'], 400);
         $ok = $db->update_topping($topping_id, $name, $price);
+        // Optional scoping
+        if (isset($_POST['allowed_types'])) {
+            $allowed_types = array_filter(array_map('trim', explode(',', $_POST['allowed_types'])));
+            $db->set_topping_allowed_types($topping_id, $allowed_types);
+        }
+        if (isset($_POST['allowed_categories'])) {
+            $allowed_cats = array_filter(array_map('trim', explode(',', $_POST['allowed_categories'])));
+            $db->set_topping_allowed_categories($topping_id, $allowed_cats);
+        }
         send_json(['success' => (bool)$ok]);
     }
 
