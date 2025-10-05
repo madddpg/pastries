@@ -23,6 +23,8 @@ if ($location !== '') {
     $clauses[] = 'p.pickup_location LIKE :location';
     $bind[':location'] = $location . '%';
 }
+// Only show today's orders so previous-day live orders expire at midnight
+$clauses[] = 'DATE(t.created_at) = CURDATE()';
 $where = 'WHERE ' . implode(' AND ', $clauses);
 
 try {

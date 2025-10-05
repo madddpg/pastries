@@ -421,10 +421,10 @@ class Database
         $con = $this->opencon();
         $allowed_statuses = ['pending', 'preparing', 'ready'];
         if ($status !== '' && in_array($status, $allowed_statuses)) {
-            $where = "WHERE t.status = ?";
+            $where = "WHERE t.status = ? AND DATE(t.created_at) = CURDATE()";
             $params = [$status];
         } else {
-            $where = "WHERE t.status IN ('pending','preparing','ready')";
+            $where = "WHERE t.status IN ('pending','preparing','ready') AND DATE(t.created_at) = CURDATE()";
             $params = [];
         }
 
