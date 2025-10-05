@@ -1088,29 +1088,7 @@ public function createPickupOrder(
             }
         }
 
-        // Validate aggregated stock before creating transaction
-        if (!empty($needed)) {
-            $in = implode(',', array_fill(0, count($needed), '?'));
-            $stq = $con->prepare("SELECT products_pk, quantity, product_id FROM products WHERE products_pk IN ($in)");
-            $stq->execute(array_keys($needed));
-            $issues = [];
-            while ($r = $stq->fetch(PDO::FETCH_ASSOC)) {
-                $pk = (int)$r['products_pk'];
-                $want = $needed[$pk] ?? 0;
-                $cur = $r['quantity'];
-                if ($cur !== null) { // null means unlimited
-                    $curInt = (int)$cur;
-                    if ($curInt <= 0) {
-                        $issues[] = $r['product_id'] . ' out of stock';
-                    } elseif ($want > $curInt) {
-                        $issues[] = $r['product_id'] . ' needs ' . $want . ' but only ' . $curInt . ' left';
-                    }
-                }
-            }
-            if (!empty($issues)) {
-                throw new Exception('Insufficient stock: ' . implode('; ', $issues));
-            }
-        }
+        // Stock validation disabled per request: no aggregate stock checks
 
         // Insert transaction
         $stmt = $con->prepare("
@@ -1138,18 +1116,7 @@ public function createPickupOrder(
 
     $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
     $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
-    // Prepared statement to decrement stock and auto-inactivate when quantity reaches 0
-    $decrementStock = $con->prepare("UPDATE products
-        SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
-            status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
-            updated_at = NOW()
-        WHERE products_pk = ?");
-    // Fallback decrement by product_id (if products_pk not resolved)
-    $decrementStockByPid = $con->prepare("UPDATE products
-        SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
-            status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
-            updated_at = NOW()
-        WHERE product_id = ?");
+    // Stock decrement disabled per request
 
         foreach ($cart_items as $item) {
             $product_id = $item['product_id'] ?? null;
@@ -1190,34 +1157,7 @@ public function createPickupOrder(
                 $products_pk_val = (int)$pkRow['products_pk'];
             }
 
-            // Per-item validation (in case stock changed between aggregate check and insert)
-            if ($products_pk_val) {
-                $chk = $con->prepare("SELECT quantity, product_id FROM products WHERE products_pk = ? LIMIT 1");
-                $chk->execute([$products_pk_val]);
-                $rw = $chk->fetch(PDO::FETCH_ASSOC);
-                if ($rw && $rw['quantity'] !== null) {
-                    $curQty = (int)$rw['quantity'];
-                    if ($curQty <= 0) {
-                        throw new Exception('Product ' . $rw['product_id'] . ' is out of stock');
-                    }
-                    if ($quantity > $curQty) {
-                        throw new Exception('Product ' . $rw['product_id'] . ' needs ' . $quantity . ' but only ' . $curQty . ' left');
-                    }
-                }
-            } else { // Fallback validation by product_id
-                $chk2 = $con->prepare("SELECT quantity, product_id FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
-                $chk2->execute([$product_id]);
-                $rw2 = $chk2->fetch(PDO::FETCH_ASSOC);
-                if ($rw2 && $rw2['quantity'] !== null) {
-                    $curQty = (int)$rw2['quantity'];
-                    if ($curQty <= 0) {
-                        throw new Exception('Product ' . $rw2['product_id'] . ' is out of stock');
-                    }
-                    if ($quantity > $curQty) {
-                        throw new Exception('Product ' . $rw2['product_id'] . ' needs ' . $quantity . ' but only ' . $curQty . ' left');
-                    }
-                }
-            }
+            // Per-item stock validation disabled per request
 
             // Save item with products_pk
             $insertItem->execute([
@@ -1254,25 +1194,7 @@ public function createPickupOrder(
                 }
             }
 
-            // Decrement stock if the product has a finite quantity
-            if ($products_pk_val) {
-                try {
-                    $decrementStock->execute([$quantity, $quantity, $products_pk_val]);
-                    if ($decrementStock->rowCount() === 0) {
-                        // fallback attempt
-                        $decrementStockByPid->execute([$quantity, $quantity, $product_id]);
-                    }
-                } catch (Exception $e) {
-                    // Log but do not abort the whole order if stock update fails
-                    error_log('Stock decrement failed for products_pk ' . $products_pk_val . ': ' . $e->getMessage());
-                }
-            } else {
-                try {
-                    $decrementStockByPid->execute([$quantity, $quantity, $product_id]);
-                } catch (Exception $e) {
-                    error_log('Stock decrement (by product_id) failed for ' . $product_id . ': ' . $e->getMessage());
-                }
-            }
+            // Stock decrement disabled per request
         }
 
         // Insert pickup_detail
@@ -1338,12 +1260,7 @@ public function createPickupOrder(
 
             // Insert items and their toppings (if any)
             $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
-            // Prepared statement to decrement stock and auto-inactivate when quantity reaches 0
-            $decrementStock = $con->prepare("UPDATE products
-                SET quantity = CASE WHEN quantity IS NULL THEN NULL ELSE GREATEST(quantity - ?, 0) END,
-                    status = CASE WHEN quantity IS NOT NULL AND (quantity - ?) <= 0 THEN 0 ELSE status END,
-                    updated_at = NOW()
-                WHERE products_pk = ?");
+            // Stock decrement disabled per request
             foreach ($items as $item) {
                 $size = '';
                 if (isset($item['size']) && $item['size']) {
@@ -1420,14 +1337,7 @@ public function createPickupOrder(
                     }
                 }
 
-                // Decrement stock if the product has a finite quantity
-                if ($products_pk_val) {
-                    try {
-                        $decrementStock->execute([$quantity, $quantity, $products_pk_val]);
-                    } catch (Exception $e) {
-                        error_log('Stock decrement failed for products_pk ' . $products_pk_val . ': ' . $e->getMessage());
-                    }
-                }
+                // Stock decrement disabled per request
             }
 
             // Insert pickup details if provided
