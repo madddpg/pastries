@@ -729,7 +729,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const pagEl = document.getElementById('live-orders-pagination');
     if (!pagEl) return;
     pagEl.innerHTML = '';
-    if (!totalPages || totalPages <= 1) return; // nothing to render
+    // Always render the pagination bar, even for a single page
+    const pages = Math.max(1, parseInt(totalPages || 0, 10));
+    currentPage = Math.max(1, parseInt(currentPage || 1, 10));
 
     const makeBtn = (label, page, disabled = false, active = false) => {
       const btn = document.createElement('button');
@@ -744,21 +746,21 @@ document.addEventListener("DOMContentLoaded", () => {
       return btn;
     };
 
-    // Prev
-    pagEl.appendChild(makeBtn('Prev', Math.max(1, currentPage - 1), currentPage <= 1, false));
+  // Prev
+  pagEl.appendChild(makeBtn('Prev', Math.max(1, currentPage - 1), currentPage <= 1, false));
 
     // Windowed numeric buttons (max 7)
     const windowSize = 7;
     const half = Math.floor(windowSize / 2);
     let start = Math.max(1, currentPage - half);
-    let end = Math.min(totalPages, start + windowSize - 1);
+  let end = Math.min(pages, start + windowSize - 1);
     start = Math.max(1, end - windowSize + 1);
     for (let p = start; p <= end; p++) {
       pagEl.appendChild(makeBtn(String(p), p, false, p === currentPage));
     }
 
-    // Next
-    pagEl.appendChild(makeBtn('Next', Math.min(totalPages, currentPage + 1), currentPage >= totalPages, false));
+  // Next
+  pagEl.appendChild(makeBtn('Next', Math.min(pages, currentPage + 1), currentPage >= pages, false));
 
     // Clicks
     pagEl.onclick = (e) => {
