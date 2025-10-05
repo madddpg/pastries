@@ -1903,24 +1903,27 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             var addAdminResult = document.getElementById('addAdminResult');
 
             if (addAdminForm) {
-                addAdminForm.addEventListener('submit', function(e) {
+                addAdminForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
-                    if (addAdminResult) addAdminResult.textContent = '';
+                    if (addAdminResult) { addAdminResult.textContent = ''; addAdminResult.style.color = '#dc2626'; }
                     const formData = new FormData(addAdminForm);
-                    fetch('add_admin.php', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(res => res.text())
-                        .then(text => {
-                            if (addAdminResult) addAdminResult.textContent = text;
-                            if (text.toLowerCase().includes('success')) {
-                                addAdminForm.reset();
-                            }
-                        })
-                        .catch(() => {
-                            if (addAdminResult) addAdminResult.textContent = 'Failed to add admin.';
-                        });
+                    try {
+                        const res = await fetch('add_admin.php', { method: 'POST', body: formData, credentials: 'same-origin' });
+                        let data;
+                        try { data = await res.json(); }
+                        catch { const txt = await res.text(); data = { success: /success/i.test(txt), message: txt }; }
+                        if (data && data.success) {
+                            if (typeof showNotification === 'function') showNotification('Admin added successfully');
+                            addAdminForm.reset();
+                            if (addAdminResult) addAdminResult.textContent = '';
+                        } else {
+                            const msg = (data && data.message) ? data.message : 'Failed to add admin.';
+                            if (addAdminResult) addAdminResult.textContent = msg;
+                            if (typeof showNotification === 'function') showNotification(msg);
+                        }
+                    } catch (err) {
+                        if (addAdminResult) addAdminResult.textContent = 'Failed to add admin.';
+                    }
                 });
             }
 
