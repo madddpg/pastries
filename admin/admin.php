@@ -509,13 +509,17 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     </div>
 
                     <div class="table-container">
+                        <div style="font-size:12px;color:#64748b;margin:6px 0 10px;">
+                            For pastries: columns show Per piece, Box of 4, Box of 6. For drinks: Grande and Supreme appear in the first two columns.
+                        </div>
                         <table class="products-table">
                             <thead>
                                 <tr>
                                     <th>Product</th>
                                     <th>Category</th>
-                                    <th>Grande</th>
-                                    <th>Supreme</th>
+                                    <th>Per piece</th>
+                                    <th>Box of 4</th>
+                                    <th>Box of 6</th>
                                     <th>Stock</th>
                                     <th>Status</th>
                                     <th>Sales</th>
@@ -528,6 +532,9 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                 // Map of size prices to prefill edit modal
                                 $sizePriceMap = [];
                                 try { $sizePriceMap = $db->get_all_size_prices_for_active(); } catch (Throwable $e) { $sizePriceMap = []; }
+                                // Map of pastry variants for active products: [product_id => [ ['label'=>..,'price'=>..], ... ]]
+                                $pastryVariantsAll = [];
+                                try { $pastryVariantsAll = $db->get_all_pastry_variants(); } catch (Throwable $e) { $pastryVariantsAll = []; }
                                 foreach ($products as $product): ?>
                                     <tr data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                         data-product-name="<?= htmlspecialchars($product['name']) ?>"
@@ -555,11 +562,31 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                         </td>
                                         <?php
                                             $pid = $product['product_id'];
-                                            $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;
-                                            $sPrice = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : 0.0;
+                                            $ptype = strtolower($product['data_type'] ?? '');
+                                            if ($ptype === 'pastries') {
+                                                $vmap = $pastryVariantsAll[$pid] ?? [];
+                                                $labels = ['per piece'=>null,'box of 4'=>null,'box of 6'=>null];
+                                                foreach ($vmap as $v) {
+                                                    $lbl = strtolower(trim($v['label'] ?? ''));
+                                                    // normalize common synonyms
+                                                    if (preg_match('/^(per\s*piece|piece|per\s*pc|pc|per\s*pcs|pcs)$/i', $lbl)) { $labels['per piece'] = (float)$v['price']; continue; }
+                                                    if (preg_match('/^(box\s*of\s*4|4\s*pcs|4pcs|box\s*\(?4\)?|pack\s*of\s*4)$/i', $lbl)) { $labels['box of 4'] = (float)$v['price']; continue; }
+                                                    if (preg_match('/^(box\s*of\s*6|6\s*pcs|6pcs|box\s*\(?6\)?|pack\s*of\s*6)$/i', $lbl)) { $labels['box of 6'] = (float)$v['price']; continue; }
+                                                }
+                                                $p1 = $labels['per piece'];
+                                                $p4 = $labels['box of 4'];
+                                                $p6 = $labels['box of 6'];
+                                                echo '<td>' . ($p1 !== null ? '₱' . number_format($p1,2) : '<span style="color:#64748b">—</span>') . '</td>';
+                                                echo '<td>' . ($p4 !== null ? '₱' . number_format($p4,2) : '<span style="color:#64748b">—</span>') . '</td>';
+                                                echo '<td>' . ($p6 !== null ? '₱' . number_format($p6,2) : '<span style="color:#64748b">—</span>') . '</td>';
+                                            } else {
+                                                $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;
+                                                $sPrice = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : 0.0;
+                                                echo '<td><div>₱' . number_format($gPrice,2) . '</div><div style="font-size:11px;color:#64748b;">Grande</div></td>';
+                                                echo '<td><div>₱' . number_format($sPrice,2) . '</div><div style="font-size:11px;color:#64748b;">Supreme</div></td>';
+                                                echo '<td><span style="color:#64748b">—</span></td>';
+                                            }
                                         ?>
-                                        <td>₱<?= number_format($gPrice, 2) ?></td>
-                                        <td>₱<?= number_format($sPrice, 2) ?></td>
                                         <td class="<?= $product['status'] === 'active' ? 'stock-good' : 'stock-out' ?>">
                                             <?= $product['status'] === 'active' ? 'In Stock' : 'Out of Stock' ?>
                                         </td>
