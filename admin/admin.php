@@ -808,8 +808,8 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     <thead>
                                         <tr>
                                             <th>Date</th>
-                                            <th class="text-right">Orders</th>
-                                            <th class="text-right">Items</th>
+                                            <th class="text-right">No. of Orders</th>
+                                            <th class="text-right">No. of Items Sold</th>
                                             <th class="text-right">Revenue (₱)</th>
                                         </tr>
                                     </thead>
