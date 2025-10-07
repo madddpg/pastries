@@ -280,6 +280,41 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Reports: Download CSV
+  (function reportsDownloadInit() {
+    const btn = document.getElementById('btn-download-report');
+    if (!btn) return;
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      // Collect filters
+      const monthEl = document.getElementById('report-month');
+      const locEl = document.getElementById('report-location');
+      const typeEl = document.getElementById('report-type');
+      const monthVal = monthEl ? (monthEl.value || '') : '';
+      let from = '', to = '';
+      if (monthVal) {
+        // monthVal = YYYY-MM, compute first and last day
+        const [y, m] = monthVal.split('-').map(x => parseInt(x, 10));
+        if (y && m) {
+          const first = new Date(y, m - 1, 1);
+          const last = new Date(y, m, 0); // day 0 of next month
+          const pad = n => String(n).padStart(2, '0');
+          from = `${first.getFullYear()}-${pad(first.getMonth() + 1)}-${pad(first.getDate())}`;
+          to = `${last.getFullYear()}-${pad(last.getMonth() + 1)}-${pad(last.getDate())}`;
+        }
+      }
+      const location = locEl ? (locEl.value || '') : '';
+      const type = typeEl ? (typeEl.value || '') : '';
+      const url = new URL('download_report.php', window.location.href);
+      if (from) url.searchParams.set('from', from);
+      if (to) url.searchParams.set('to', to);
+      if (location) url.searchParams.set('location', location);
+      if (type) url.searchParams.set('type', type);
+      // Open in same tab to trigger download
+      window.location.href = url.toString();
+    });
+  })();
+
 (function () {
   // Correct API path relative to admin.php
   const API = 'AJAX/get_toppings.php';

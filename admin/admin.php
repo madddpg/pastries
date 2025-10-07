@@ -794,6 +794,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         </div>
                         <div class="report-filter-actions">
                             <button id="btn-load-report" class="btn-primary report-load-btn">Load Report</button>
+                            <button id="btn-download-report" class="btn-secondary" style="margin-left:8px;">Download CSV</button>
                             <div id="report-loading" class="report-loading">Loading...</div>
                         </div>
                     </div>
