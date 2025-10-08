@@ -306,8 +306,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const location = locEl ? (locEl.value || '') : '';
       const type = typeEl ? (typeEl.value || '') : '';
       const url = new URL('download_report.php', window.location.href);
+      url.searchParams.set('view', 'both');
       if (from) url.searchParams.set('from', from);
       if (to) url.searchParams.set('to', to);
+      if (monthVal) url.searchParams.set('month', monthVal);
       if (location) url.searchParams.set('location', location);
       if (type) url.searchParams.set('type', type);
       // Open in same tab to trigger download
