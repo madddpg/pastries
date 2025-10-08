@@ -227,41 +227,8 @@ class Database
         private function ensureToppingsScopeSchema(PDO $pdo): void
         {
             try {
-                // Main toppings table may already exist; just extend with status if missing
-                $pdo->exec(
-                    "CREATE TABLE IF NOT EXISTS toppings (
-                        topping_id INT AUTO_INCREMENT PRIMARY KEY,
-                        name VARCHAR(120) NOT NULL UNIQUE,
-                        price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-                        status ENUM('active','inactive') DEFAULT 'active',
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME NULL
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                );
-
-                // Table linking toppings to allowed data_types (e.g., 'premium','specialty','pastries', etc.)
-                $pdo->exec(
-                    "CREATE TABLE IF NOT EXISTS topping_allowed_types (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        topping_id INT NOT NULL,
-                        data_type VARCHAR(50) NOT NULL,
-                        UNIQUE KEY uniq_topping_type (topping_id, data_type),
-                        INDEX (data_type),
-                        CONSTRAINT fk_tat_topping FOREIGN KEY (topping_id) REFERENCES toppings(topping_id) ON DELETE CASCADE
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                );
-
-                // Table linking toppings to allowed categories (by numeric category_id from categories table)
-                $pdo->exec(
-                    "CREATE TABLE IF NOT EXISTS topping_allowed_categories (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        topping_id INT NOT NULL,
-                        category_id INT NOT NULL,
-                        UNIQUE KEY uniq_topping_cat (topping_id, category_id),
-                        INDEX (category_id),
-                        CONSTRAINT fk_tac_topping FOREIGN KEY (topping_id) REFERENCES toppings(topping_id) ON DELETE CASCADE
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                );
+       
+                // Category-based scoping removed — no table creation for topping_allowed_categories
             } catch (Throwable $e) { /* ignore */ }
         }
 
@@ -1420,27 +1387,11 @@ public function createPickupOrder(
         }
     }
 
-    /** Replace allowed categories for a topping (empty array means globally available). */
+    /** Replace allowed categories for a topping: no-op (category scoping removed). */
     public function set_topping_allowed_categories(int $topping_id, array $categoryIds): bool
     {
-        $con = $this->opencon();
-        try {
-            $con->beginTransaction();
-            $con->prepare("DELETE FROM topping_allowed_categories WHERE topping_id = ?")->execute([$topping_id]);
-            if (!empty($categoryIds)) {
-                $ins = $con->prepare("INSERT INTO topping_allowed_categories (topping_id, category_id) VALUES (?, ?)");
-                foreach ($categoryIds as $cid) {
-                    $cid = (int)$cid;
-                    if ($cid <= 0) continue;
-                    $ins->execute([$topping_id, $cid]);
-                }
-            }
-            $con->commit();
-            return true;
-        } catch (Throwable $e) {
-            if ($con->inTransaction()) $con->rollBack();
-            return false;
-        }
+        // Intentionally do nothing to keep compatibility with callers
+        return true;
     }
 
     // Update user information (firstname, lastname, email, password, profile image)
