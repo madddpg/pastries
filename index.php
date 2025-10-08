@@ -1366,7 +1366,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 </div>
                 <div class="form-group">
                     <label for="specialInstructions">Special Instructions (Optional)</label>
-                    <textarea id="specialInstructions" rows="2" placeholder="Any special delivery instructions..."></textarea>
+                    <textarea id="specialInstructions" rows="2" placeholder="Any special instructions..."></textarea>
                 </div>
             </div>
 
