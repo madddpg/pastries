@@ -305,7 +305,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const location = locEl ? (locEl.value || '') : '';
       const type = typeEl ? (typeEl.value || '') : '';
-      const url = new URL('download_report.php', window.location.href);
+  const url = new URL('download_report.php', window.location.href);
+  url.searchParams.set('view', 'transactions');
       if (from) url.searchParams.set('from', from);
       if (to) url.searchParams.set('to', to);
       if (location) url.searchParams.set('location', location);
