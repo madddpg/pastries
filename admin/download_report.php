@@ -74,7 +74,7 @@ $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 $sql = "SELECT
             t.transac_id,
             COALESCE(t.reference_number, t.transac_id) AS reference_number,
-            DATE(t.created_at) AS created_at,
+            DAY(t.created_at) AS created_at,
             t.status,
             COALESCE(t.payment_method, 'cash') AS payment_method,
             u.user_FN,
