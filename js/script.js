@@ -2046,13 +2046,12 @@ async function loadActiveToppings() {
   try {
     // Include current product context when available to filter toppings
     const dtype = (window.currentProduct && window.currentProduct.dataType) ? String(window.currentProduct.dataType).toLowerCase() : '';
-    const cat = (window.currentProduct && (window.currentProduct.category_id || window.currentProduct.category))
-      ? String(window.currentProduct.category_id || window.currentProduct.category)
-      : '';
+    // Category scoping removed: ignore category_id when loading toppings
+    const cat = '';
   const url = new URL('admin/AJAX/get_toppings.php', window.location.href);
     url.searchParams.set('action', 'active');
     if (dtype) url.searchParams.set('data_type', dtype);
-    if (cat) url.searchParams.set('category_id', cat);
+  // Do not send category_id anymore
     const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();

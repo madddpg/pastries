@@ -272,7 +272,8 @@ class Database
             $sql = "SELECT t.topping_id, t.name, t.price FROM toppings t WHERE COALESCE(t.status,1) = 1";
             $params = [];
             $data_type = ($data_type !== null && $data_type !== '') ? strtolower(trim($data_type)) : null;
-            $category_id = ($category_id !== null && $category_id !== '') ? intval($category_id) : null;
+            // Ignore category-based scoping (requested to remove exclusive-by-category logic)
+            $category_id = null;
 
             // If data_type provided: allow topping if it explicitly allows this type OR it has no type restrictions
             if ($data_type !== null) {
@@ -280,12 +281,7 @@ class Database
                                OR NOT EXISTS (SELECT 1 FROM topping_allowed_types tat0 WHERE tat0.topping_id = t.topping_id))";
                 $params[] = $data_type;
             }
-            // If category provided: allow topping if it explicitly allows this category OR it has no category restrictions
-            if ($category_id !== null) {
-                $sql .= " AND (EXISTS (SELECT 1 FROM topping_allowed_categories tac WHERE tac.topping_id = t.topping_id AND tac.category_id = ?) 
-                               OR NOT EXISTS (SELECT 1 FROM topping_allowed_categories tac0 WHERE tac0.topping_id = t.topping_id))";
-                $params[] = $category_id;
-            }
+            // Category scoping removed: do not filter toppings by category
 
             $sql .= " ORDER BY t.topping_id ASC";
             $st = $con->prepare($sql);
