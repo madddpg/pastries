@@ -101,7 +101,7 @@ $stmt = $con->prepare($sql);
 $stmt->execute($params);
 
 // Prepare HTTP headers
-$filename = 'orders_report_' . date('Y/m/d_His') . '.csv';
+$filename = 'orders_report_' . date('Y/m/d') . '.csv';
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename=' . $filename);
 header('Pragma: no-cache');
