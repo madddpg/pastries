@@ -947,7 +947,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     </div>
 
                     <div class="card section-card">
-                        <div id="promos-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
+                        <div id="promos-grid" class="promos-grid">
                             <?php
                             $stmt = $con->prepare("SELECT promo_id, title, image, created_at FROM promos ORDER BY created_at DESC");
                             $stmt->execute();
@@ -962,16 +962,15 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     // Fallback path (for very old records) relative to web root
                                     $fallback = $rawImg ? '../' . ltrim($rawImg, '/') : '';
                                     $dateLabel = htmlspecialchars(date('Y-m-d', strtotime($pr['created_at'])));
-                                    $imgTag = "<div style='width:100%;height:120px;position:relative;margin-bottom:8px;'>".
-                                              "<img src='serve_promo.php?promo_id={$pid}' alt='".$title."' data-fallback='".htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8')."' " .
-                                              "onerror=\"if(!this.dataset.tried && this.dataset.fallback){this.dataset.tried=1;this.src=this.dataset.fallback;}\" " .
-                                              "style='width:100%;height:100%;object-fit:cover;border-radius:6px;background:#f3f4f6;' loading='lazy'>".
+                                    $imgTag = "<div class='promo-thumb'>".
+                                              "<img class='promo-thumb-img' src='serve_promo.php?promo_id={$pid}' alt='".$title."' data-fallback='".htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8')."' " .
+                                              "onerror=\"if(!this.dataset.tried && this.dataset.fallback){this.dataset.tried=1;this.src=this.dataset.fallback;}\" loading='lazy'>".
                                               "</div>";
 
-                                    echo "<div style='width:200px;border:1px solid #eefaf0;padding:8px;border-radius:10px;background:#fff;display:flex;flex-direction:column;'>\n".
+                                    echo "<div class='promo-card'>\n".
                                          $imgTag .
-                                         "<div style='font-size:0.8rem;font-weight:600;margin-bottom:4px;word-break:break-word;'>$title</div>\n".
-                                         "<div style='font-size:0.65rem;color:#64748b;'>$dateLabel</div>\n".
+                                         "<div class='promo-title'>$title</div>\n".
+                                         "<div class='promo-date'>$dateLabel</div>\n".
                                          "</div>";
                                 }
                             }
