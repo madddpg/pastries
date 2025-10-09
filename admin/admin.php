@@ -223,12 +223,12 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             <!-- Page Content -->
             <!-- Locations Management (restored original style) -->
             <div id="active-location-section" class="content-section locations-mgmt-section">
-                <h1 class="section-title" style="margin-bottom:10px;font-family:'Inter',sans-serif;color:var(--primary-purple);">Locations Management</h1>
+                <h1 class="section-title" style="margin-bottom:12px;">Locations Management</h1>
                 <div class="locations-mgmt-header">
                     <button id="showAddLocationModalBtn" class="btn-primary locations-add-btn">+ Add Location</button>
                 </div>
                 <div class="locations-mgmt-card">
-                    <table class="products-table locations-table" id="locationsTable">
+                    <table class="products-table" id="locationsTable">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -247,7 +247,6 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                             if (empty($locRows)) {
                                 echo '<tr><td colspan="5" style="text-align:center;padding:18px;">No locations yet.</td></tr>';
                             } else {
-                                $rowIdx = 0;
                                 foreach ($locRows as $lr) {
                                     $lid = (int)$lr['location_id'];
                                     $lname = htmlspecialchars($lr['name']);
@@ -259,15 +258,13 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                         $rel = htmlspecialchars($lr['image']);
                                         $imgTag = "<img src='../{$rel}' alt='{$lname}' class='location-img' onerror=\"this.style.display='none'\">";
                                     }
-                                    $rowBg = $rowIdx % 2 === 0 ? 'locations-row-even' : 'locations-row-odd';
-                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}' class='{$rowBg}'>".
+                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
                                          "<td>{$lid}</td>".
                                          "<td>{$lname}</td>".
                                          "<td>".($imgTag ?: '<span class=\'no-img\'>No Image</span>')."</td>".
-                                         "<td><span class='status-badge {$badgeClass} locations-status-badge'>".ucfirst($lstatus)."</span></td>".
+                                         "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
                                          "<td><button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button></td>".
                                          "</tr>";
-                                    $rowIdx++;
                                 }
                             }
                         } catch (Throwable $e) {
@@ -293,28 +290,10 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                 .locations-mgmt-card {
                     padding:24px 18px 18px 18px;overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 2px 16px rgba(22,56,41,0.08);
                 }
-                .locations-table {
-                    min-width:700px;font-size:1.05rem;width:100%;border-collapse:separate;border-spacing:0;
-                }
-                .locations-table th, .locations-table td {
-                    padding:14px 10px;text-align:left;
-                }
-                .locations-table th {
-                    background:var(--emerald-50);color:var(--primary-purple);font-weight:700;font-size:1.01rem;border-bottom:2px solid var(--emerald-100);
-                }
-                .locations-row-even { background: #fcfdfc; transition:background 0.2s; }
-                .locations-row-odd { background: #f7fafc; transition:background 0.2s; }
-                .locations-table tbody tr:hover { background: #e9e3c3 !important; }
                 .location-img {
                     width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;
                 }
                 .no-img { font-size:12px;color:#64748b; }
-                .locations-status-badge.active {
-                    background:var(--emerald-100);color:var(--emerald-700);border:1px solid var(--emerald-200);
-                }
-                .locations-status-badge.inactive {
-                    background:var(--amber-100);color:var(--red-500);border:1px solid var(--amber-50);
-                }
                 .locations-toggle-btn {
                     padding:8px 18px;border-radius:8px;font-size:1rem;font-weight:500;box-shadow:0 1px 4px rgba(22,56,41,0.07);transition:background 0.2s;border:1px solid var(--primary-purple);background:#fff;color:var(--primary-purple);
                 }
@@ -1147,7 +1126,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
 
                     // Warn admin when deactivating a product
                     if (newStatus === 'inactive') {
-                        var confirmMsg = 'Setting this product to inactive will remove it from the menu until reactivated. Continue?';
+                        var confirmMsg = 'This product will be inactive and removed from the menu until reactivated. Continue?';
                         if (!confirm(confirmMsg)) return;
                     }
 
@@ -1275,7 +1254,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
 
                     // Warn admin when closing a location
                     if (newStatus === 'closed') {
-                        var confirmMsg = 'Closing this location will remove it from the pickup options until reopened. Continue?';
+                        var confirmMsg = 'This location will be removed from the pickup options until reopened. Continue?';
                         if (!confirm(confirmMsg)) return;
                     }
 
