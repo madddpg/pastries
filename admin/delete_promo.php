@@ -46,6 +46,7 @@ try {
     $del->execute([$id]);
 
     if ($del->rowCount() > 0) {
+        $msg = 'Promo deleted';
         // remove file if exists (safe)
         if (!empty($row['image'])) {
             $imgPath = parse_url($row['image'], PHP_URL_PATH) ?: $row['image'];

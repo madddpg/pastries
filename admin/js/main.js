@@ -1025,29 +1025,36 @@ document.addEventListener("DOMContentLoaded", () => {
         // Append new card to promos grid
         const grid = document.getElementById('promos-grid');
         if (grid) {
-          const imgSrc = '/' + (data.image || '');
-          const safeTitle = (data.title || '').toString();
-          const wrapper = document.createElement('div');
-          wrapper.style.width = '200px';
-          wrapper.style.border = '1px solid #eefaf0';
-          wrapper.style.padding = '8px';
-          wrapper.style.borderRadius = '8px';
-          wrapper.style.background = '#fff';
-          wrapper.innerHTML = ""
-            + `<img src="${imgSrc}" style="width:100%;height:120px;object-fit:cover;border-radius:6px;margin-bottom:8px;">`
-            + `<div style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">${escapeHtml(safeTitle)}</div>`
-            + `<div style="display:flex;gap:6px;">`
-            + `  <form method="post" action="delete_promo.php" style="margin:0;">`
-            + `    <input type="hidden" name="id" value="${data.promo_id}">`
-            + `    <button class="btn-secondary" type="submit" style="padding:6px 8px;">Delete</button>`
-            + `  </form>`
-            + `  <form method="post" action="update_promos.php" style="margin:0;">`
-            + `    <input type="hidden" name="id" value="${data.promo_id}">`
-            + `    <input type="hidden" name="active" value="0">`
-            + `    <button class="btn-primary" type="submit" style="padding:6px 8px;">Set Inactive</button>`
-            + `  </form>`
-            + `</div>`;
-          grid.prepend(wrapper);
+          const pid = data.promo_id;
+          const safeTitle = escapeHtml((data.title || '').toString());
+          const card = document.createElement('div');
+          card.className = 'promo-card';
+          const today = new Date();
+          const y = today.getFullYear();
+          const m = String(today.getMonth()+1).padStart(2,'0');
+          const d = String(today.getDate()).padStart(2,'0');
+          const dateLabel = `${y}-${m}-${d}`;
+          card.innerHTML =
+            `<div class="promo-thumb">
+               <img class="promo-thumb-img" src="serve_promo.php?promo_id=${pid}" alt="${safeTitle}" loading="lazy">
+             </div>
+             <div class="promo-title">${safeTitle}</div>
+             <div class="promo-date">${dateLabel}</div>
+             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
+               <span class="status-badge active">Active</span>
+               <div style="display:flex;gap:6px;">
+                 <form method="post" action="update_promos.php" onsubmit="return confirm('This promo will be inactive and hidden from customers. Continue?');" style="margin:0;">
+                   <input type="hidden" name="promo_id" value="${pid}">
+                   <input type="hidden" name="active" value="0">
+                   <button type="submit" class="btn-primary" style="padding:6px 10px;">Set Inactive</button>
+                 </form>
+                 <form method="post" action="delete_promo.php" onsubmit="return confirm('This promo image will be permanently deleted. Continue?');" style="margin:0;">
+                   <input type="hidden" name="id" value="${pid}">
+                   <button type="submit" class="btn-secondary" style="padding:6px 10px;">Delete</button>
+                 </form>
+               </div>
+             </div>`;
+          grid.prepend(card);
         }
         // Reset form after successful upload
         promoUploadForm.reset();

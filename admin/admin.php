@@ -949,7 +949,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     <div class="card section-card">
                         <div id="promos-grid" class="promos-grid">
                             <?php
-                            $stmt = $con->prepare("SELECT promo_id, title, image, created_at FROM promos ORDER BY created_at DESC");
+                            $stmt = $con->prepare("SELECT promo_id, title, image, active, created_at FROM promos ORDER BY created_at DESC");
                             $stmt->execute();
                             $promos = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             if (empty($promos)) {
@@ -959,6 +959,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     $pid = (int)$pr['promo_id'];
                                     $rawImg = $pr['image'];
                                     $title = htmlspecialchars($pr['title'] ?: '');
+                                    $isActive = isset($pr['active']) ? (intval($pr['active']) === 1) : true;
                                     // Fallback path (for very old records) relative to web root
                                     $fallback = $rawImg ? '../' . ltrim($rawImg, '/') : '';
                                     $dateLabel = htmlspecialchars(date('Y-m-d', strtotime($pr['created_at'])));
@@ -971,6 +972,20 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                          $imgTag .
                                          "<div class='promo-title'>$title</div>\n".
                                          "<div class='promo-date'>$dateLabel</div>\n".
+                                         "<div style='display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;'>".
+                                            "<span class='status-badge ".($isActive ? 'active' : 'inactive')."'>".($isActive ? 'Active' : 'Inactive')."</span>".
+                                            "<div style='display:flex;gap:6px;'>".
+                                                "<form method='post' action='update_promos.php' onsubmit=\"return confirm('".($isActive ? "This promo will be inactive and hidden from customers. Continue?" : "This promo will be visible to customers. Continue?")."');\" style='margin:0;'>".
+                                                    "<input type='hidden' name='promo_id' value='{$pid}'>".
+                                                    "<input type='hidden' name='active' value='".($isActive ? 0 : 1)."'>".
+                                                    "<button type='submit' class='btn-primary' style='padding:6px 10px;'>".($isActive ? 'Set Inactive' : 'Set Active')."</button>".
+                                                "</form>".
+                                                "<form method='post' action='delete_promo.php' onsubmit=\"return confirm('This promo image will be permanently deleted. Continue?');\" style='margin:0;'>".
+                                                    "<input type='hidden' name='id' value='{$pid}'>".
+                                                    "<button type='submit' class='btn-secondary' style='padding:6px 10px;'>Delete</button>".
+                                                "</form>".
+                                            "</div>".
+                                         "</div>".
                                          "</div>";
                                 }
                             }
