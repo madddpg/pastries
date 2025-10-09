@@ -464,6 +464,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = target.getAttribute('data-topping-id');
       const current = target.getAttribute('data-status') === 'active' ? 1 : 0;
       const next = current === 1 ? 0 : 1;
+      // Warn admin when deactivating a topping
+      if (next === 0) {
+        const name = (document.querySelector(`#toppingsTable tr[data-topping-id="${id}"] td:nth-child(2)`)?.textContent || '').trim() || `ID ${id}`;
+        const confirmMsg = `Setting topping "${name}" to inactive will remove it from customers' menu options until reactivated. Continue?`;
+        if (!confirm(confirmMsg)) return;
+      }
       const body = new URLSearchParams();
       body.append('action', 'toggle_status');
       body.append('topping_id', id);

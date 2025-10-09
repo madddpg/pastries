@@ -1145,6 +1145,12 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
                     if (!id) return;
 
+                    // Warn admin when deactivating a product
+                    if (newStatus === 'inactive') {
+                        var confirmMsg = 'Setting this product to inactive will remove it from the menu until reactivated. Continue?';
+                        if (!confirm(confirmMsg)) return;
+                    }
+
                     fetch('update_product_status.php', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1266,6 +1272,12 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     var currentStatus = (row.getAttribute('data-location-status') || '').toLowerCase();
                     var newStatus = currentStatus === 'open' ? 'closed' : 'open';
                     if (!id) return;
+
+                    // Warn admin when closing a location
+                    if (newStatus === 'closed') {
+                        var confirmMsg = 'Closing this location will remove it from the pickup options until reopened. Continue?';
+                        if (!confirm(confirmMsg)) return;
+                    }
 
                     fetch('locations.php', {
                             method: 'POST',
@@ -1865,6 +1877,12 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     var currentStatus = (row.getAttribute('data-location-status') || '').toLowerCase();
                     var newStatus = currentStatus === 'open' ? 'closed' : 'open';
                     if (!id) return;
+
+                    // Warn admin when closing a location
+                    if (newStatus === 'closed') {
+                        var confirmMsg = 'Closing this location will remove it from the pickup options until reopened. Continue?';
+                        if (!confirm(confirmMsg)) return;
+                    }
 
                     fetch('locations.php', {
                             method: 'POST',

@@ -1499,7 +1499,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     const closeMins = 20 * 60 + 30; // 8:30 PM
 
                     if (totalMins < openMins || totalMins > closeMins) {
-                        note.textContent = "❌ Please select a time between 3:00 p.m. and 8:30 p.m.";
+                        note.textContent = "Please select a time between 3:00 p.m. and 8:30 p.m.";
                         note.style.color = "#dc2626";
                         this.setCustomValidity("Invalid time selected.");
                     } else {
