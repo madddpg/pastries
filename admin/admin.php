@@ -289,6 +289,61 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                     .no-img { font-size:12px;color:#64748b; }
                     /* keep default .btn-primary / .btn-secondary from main.css for actions */
                     </style>
+                
+                    <!-- Add Location Modal (moved here for proper section grouping) -->
+                    <div id="addLocationModal" class="modal" style="display:none;">
+                        <div class="modal-content" style="background:#f9fafb;padding:36px 32px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+                            <button id="closeAddLocationModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#6b7280;">&times;</button>
+                            <h2 style="margin-bottom:24px;font-size:1.4rem;color:#111827;">Add New Location</h2>
+                            <form id="addLocationForm" method="post" action="locations.php" enctype="multipart/form-data">
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Location Name</label>
+                                    <input type="text" name="name" required class="form-control" placeholder="Location Name" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Image</label>
+                                    <input type="file" name="image" accept="image/*" class="form-control" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:20px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Status</label>
+                                    <select name="status" class="form-control" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+                                        <option value="open" selected>Open</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn-primary" style="width:100%;padding:12px;background-color:#059669;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;">Add Location</button>
+                            </form>
+                            <div id="addLocationResult" style="margin-top:14px;color:#10b981;font-weight:600;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Edit Location Modal (moved here for proper section grouping) -->
+                    <div id="editLocationModal" class="modal" style="display:none;">
+                        <div class="modal-content" style="background:#f9fafb;padding:36px 32px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+                            <button id="closeEditLocationModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#6b7280;">&times;</button>
+                            <h2 style="margin-bottom:24px;font-size:1.4rem;color:#111827;">Edit Location</h2>
+                            <form id="editLocationForm" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="id" id="editLocationId">
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Location Name</label>
+                                    <input type="text" name="name" id="editLocationName" required class="form-control" placeholder="Location Name" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:16px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Image (leave blank to keep current)</label>
+                                    <input type="file" name="image" accept="image/*" class="form-control" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;">
+                                </div>
+                                <div class="form-group" style="margin-bottom:20px;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Status</label>
+                                    <select name="status" id="editLocationStatus" class="form-control" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
+                                        <option value="open">Open</option>
+                                        <option value="closed">Closed</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn-primary" style="width:100%;padding:12px;background-color:#059669;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;">Save Changes</button>
+                            </form>
+                            <div id="editLocationResult" style="margin-top:14px;color:#10b981;font-weight:600;"></div>
+                        </div>
+                    </div>
                 </div>
                 <!-- Dashboard Overview Section -->
                 <div id="dashboard-overview-section" class="content-section active">
@@ -891,7 +946,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         </form>
                     </div>
 
-                    <div class="card" style="padding:18px;">
+                    <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
                         <div id="promos-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
                             $stmt = $con->prepare("SELECT promo_id, title, image, created_at FROM promos ORDER BY created_at DESC");
@@ -924,60 +979,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         </div>
                     </div>
 
-                    <!-- Add Location Modal -->
-                    <div id="addLocationModal" class="modal" style="display:none;">
-                        <div class="modal-content" style="background:#f9fafb;padding:36px 32px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
-                            <button id="closeAddLocationModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#6b7280;">&times;</button>
-                            <h2 style="margin-bottom:24px;font-size:1.4rem;color:#111827;">Add New Location</h2>
-                            <form id="addLocationForm" method="post" action="locations.php" enctype="multipart/form-data">
-                                <div class="form-group" style="margin-bottom:16px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Location Name</label>
-                                    <input type="text" name="name" required class="form-control" placeholder="Location Name" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:16px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Image</label>
-                                    <input type="file" name="image" accept="image/*" class="form-control" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:20px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Status</label>
-                                    <select name="status" class="form-control" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                                        <option value="open" selected>Open</option>
-                                        <option value="closed">Closed</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn-primary" style="width:100%;padding:12px;background-color:#059669;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;">Add Location</button>
-                            </form>
-                            <div id="addLocationResult" style="margin-top:14px;color:#10b981;font-weight:600;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Edit Location Modal -->
-                    <div id="editLocationModal" class="modal" style="display:none;">
-                        <div class="modal-content" style="background:#f9fafb;padding:36px 32px;border-radius:20px;max-width:460px;width:100%;position:relative;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
-                            <button id="closeEditLocationModal" type="button" style="position:absolute;top:16px;right:16px;font-size:1.5rem;background:none;border:none;cursor:pointer;color:#6b7280;">&times;</button>
-                            <h2 style="margin-bottom:24px;font-size:1.4rem;color:#111827;">Edit Location</h2>
-                            <form id="editLocationForm" method="post" enctype="multipart/form-data">
-                                <input type="hidden" name="id" id="editLocationId">
-                                <div class="form-group" style="margin-bottom:16px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Location Name</label>
-                                    <input type="text" name="name" id="editLocationName" required class="form-control" placeholder="Location Name" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:16px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Image (leave blank to keep current)</label>
-                                    <input type="file" name="image" accept="image/*" class="form-control" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;">
-                                </div>
-                                <div class="form-group" style="margin-bottom:20px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#374151;">Status</label>
-                                    <select name="status" id="editLocationStatus" class="form-control" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;">
-                                        <option value="open">Open</option>
-                                        <option value="closed">Closed</option>
-                                    </select>
-                                </div>
-                                <button type="submit" class="btn-primary" style="width:100%;padding:12px;background-color:#059669;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;">Save Changes</button>
-                            </form>
-                            <div id="editLocationResult" style="margin-top:14px;color:#10b981;font-weight:600;"></div>
-                        </div>
-                    </div>
+                    
                 </div>
 
                 <!-- Add Admin Section -->
