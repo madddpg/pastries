@@ -268,6 +268,13 @@
   * { transition: none !important; animation: none !important; }
 }
 
+/* Typography: enforce single font across admin */
+html, body, button, input, select, textarea, table,
+.tabs, .nav-item, .products-table, .card, .content-section,
+h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
+  font-family: 'Inter', sans-serif !important;
+}
+
 .products-table {
   width: 100%;
   border-collapse: collapse;
