@@ -221,75 +221,75 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
         <main class="main-content">
             <header class="header"></header>
             <!-- Page Content -->
-            <!-- Locations Management (restored original style) -->
-            <div id="active-location-section" class="content-section locations-mgmt-section">
-                <h1 style="margin-bottom:12px;">Locations Management</h1>
-
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                    <div class="tabs">
-                        <a href="#" class="tab active">All Locations</a>
-                    </div>
-                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Location</button>
-                </div>
-
-                <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
-                    <div class="table-container" style="margin-top:4px;">
-                    <table class="products-table" id="locationsTable" style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Name</th>
-                                <th>Image</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php
-                        try {
-                            $locStmt = $con->prepare("SELECT location_id, name, status, image, admin_id FROM locations ORDER BY location_id DESC");
-                            $locStmt->execute();
-                            $locRows = $locStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
-                            if (empty($locRows)) {
-                                echo '<tr><td colspan="5" style="text-align:center;padding:18px;">No locations yet.</td></tr>';
-                            } else {
-                                foreach ($locRows as $lr) {
-                                    $lid = (int)$lr['location_id'];
-                                    $lname = htmlspecialchars($lr['name']);
-                                    $lstatus = strtolower($lr['status']) === 'open' ? 'open' : 'closed';
-                                    $badgeClass = $lstatus === 'open' ? 'active' : 'inactive';
-                                    $nextLabel = $lstatus === 'open' ? 'Set Closed' : 'Set Open';
-                                    $imgTag = '';
-                                    if (!empty($lr['image'])) {
-                                        $rel = htmlspecialchars($lr['image']);
-                                        $imgTag = "<img src='../{$rel}' alt='{$lname}' class='location-img' onerror=\"this.style.display='none'\">";
-                                    }
-                                    echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
-                                         "<td>{$lid}</td>".
-                                         "<td>{$lname}</td>".
-                                         "<td>".($imgTag ?: '<span class=\'no-img\'>No Image</span>')."</td>".
-                                         "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
-                                         "<td><button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button></td>".
-                                         "</tr>";
-                                }
-                            }
-                        } catch (Throwable $e) {
-                            echo '<tr><td colspan="5" style="text-align:center;padding:18px;color:#dc2626;">Error loading locations</td></tr>';
-                        }
-                        ?>
-                        </tbody>
-                    </table>
-                    </div>
-                </div>
-                <style>
-                .location-img {
-                    width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;
-                }
-                .no-img { font-size:12px;color:#64748b; }
-                /* keep default .btn-primary / .btn-secondary from main.css for actions */
-                </style>
-            </div>
             <div class="page-content">
+                <!-- Locations Management -->
+                <div id="active-location-section" class="content-section locations-mgmt-section">
+                    <h1 style="margin-bottom:12px;">Locations Management</h1>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                        <div class="tabs">
+                            <a href="#" class="tab active">All Locations</a>
+                        </div>
+                        <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Location</button>
+                    </div>
+
+                    <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
+                        <div class="table-container" style="margin-top:4px;">
+                        <table class="products-table" id="locationsTable" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Image</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            try {
+                                $locStmt = $con->prepare("SELECT location_id, name, status, image, admin_id FROM locations ORDER BY location_id DESC");
+                                $locStmt->execute();
+                                $locRows = $locStmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                                if (empty($locRows)) {
+                                    echo '<tr><td colspan="5" style="text-align:center;padding:18px;">No locations yet.</td></tr>';
+                                } else {
+                                    foreach ($locRows as $lr) {
+                                        $lid = (int)$lr['location_id'];
+                                        $lname = htmlspecialchars($lr['name']);
+                                        $lstatus = strtolower($lr['status']) === 'open' ? 'open' : 'closed';
+                                        $badgeClass = $lstatus === 'open' ? 'active' : 'inactive';
+                                        $nextLabel = $lstatus === 'open' ? 'Set Closed' : 'Set Open';
+                                        $imgTag = '';
+                                        if (!empty($lr['image'])) {
+                                            $rel = htmlspecialchars($lr['image']);
+                                            $imgTag = "<img src='../{$rel}' alt='{$lname}' class='location-img' onerror=\"this.style.display='none'\">";
+                                        }
+                                        echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
+                                             "<td>{$lid}</td>".
+                                             "<td>{$lname}</td>".
+                                             "<td>".($imgTag ?: '<span class=\'no-img\'>No Image</span>')."</td>".
+                                             "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
+                                             "<td><button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button></td>".
+                                             "</tr>";
+                                    }
+                                }
+                            } catch (Throwable $e) {
+                                echo '<tr><td colspan="5" style="text-align:center;padding:18px;color:#dc2626;">Error loading locations</td></tr>';
+                            }
+                            ?>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                    <style>
+                    .location-img {
+                        width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;
+                    }
+                    .no-img { font-size:12px;color:#64748b; }
+                    /* keep default .btn-primary / .btn-secondary from main.css for actions */
+                    </style>
+                </div>
                 <!-- Dashboard Overview Section -->
                 <div id="dashboard-overview-section" class="content-section active">
                     <div class="dashboard-overview">
