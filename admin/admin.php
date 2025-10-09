@@ -223,12 +223,18 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             <!-- Page Content -->
             <!-- Locations Management (restored original style) -->
             <div id="active-location-section" class="content-section locations-mgmt-section">
-                <h1 class="section-title" style="margin-bottom:12px;">Locations Management</h1>
-                <div class="locations-mgmt-header">
-                    <button id="showAddLocationModalBtn" class="btn-primary locations-add-btn">+ Add Location</button>
+                <h1 style="margin-bottom:12px;">Locations Management</h1>
+
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                    <div class="tabs">
+                        <a href="#" class="tab active">All Locations</a>
+                    </div>
+                    <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Location</button>
                 </div>
-                <div class="locations-mgmt-card">
-                    <table class="products-table" id="locationsTable">
+
+                <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
+                    <div class="table-container" style="margin-top:4px;">
+                    <table class="products-table" id="locationsTable" style="width:100%;">
                         <thead>
                             <tr>
                                 <th>ID</th>
@@ -273,33 +279,14 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         ?>
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 <style>
-                .locations-mgmt-section {
-                    font-family: 'Inter',sans-serif;
-                }
-                .locations-mgmt-header {
-                    display:flex;align-items:center;justify-content:flex-end;margin-bottom:18px;gap:12px;
-                }
-                .locations-add-btn {
-                    padding:10px 22px;border-radius:10px;font-size:1rem;font-weight:600;background:var(--primary-purple);color:#fff;box-shadow:0 2px 8px rgba(22,56,41,0.08);border:none;transition:background 0.2s;letter-spacing:0.5px;
-                }
-                .locations-add-btn:hover {
-                    background:var(--secondary-purple);
-                }
-                .locations-mgmt-card {
-                    padding:24px 18px 18px 18px;overflow-x:auto;background:#fff;border-radius:18px;box-shadow:0 2px 16px rgba(22,56,41,0.08);
-                }
                 .location-img {
                     width:70px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;box-shadow:0 1px 4px rgba(0,0,0,0.04);background:#f3f4f6;
                 }
                 .no-img { font-size:12px;color:#64748b; }
-                .locations-toggle-btn {
-                    padding:8px 18px;border-radius:8px;font-size:1rem;font-weight:500;box-shadow:0 1px 4px rgba(22,56,41,0.07);transition:background 0.2s;border:1px solid var(--primary-purple);background:#fff;color:var(--primary-purple);
-                }
-                .locations-toggle-btn:hover {
-                    background:var(--primary-purple);color:#fff;
-                }
+                /* keep default .btn-primary / .btn-secondary from main.css for actions */
                 </style>
             </div>
             <div class="page-content">
