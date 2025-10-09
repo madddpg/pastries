@@ -233,7 +233,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         <button id="showAddLocationModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Location</button>
                     </div>
 
-                    <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
+                    <div class="card section-card">
                         <div class="table-container" style="margin-top:4px;">
                         <table class="products-table" id="locationsTable" style="width:100%;">
                             <thead>
@@ -946,7 +946,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         </form>
                     </div>
 
-                    <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">
+                    <div class="card section-card">
                         <div id="promos-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
                             <?php
                             $stmt = $con->prepare("SELECT promo_id, title, image, created_at FROM promos ORDER BY created_at DESC");
