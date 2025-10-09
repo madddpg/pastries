@@ -1029,6 +1029,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const safeTitle = escapeHtml((data.title || '').toString());
           const card = document.createElement('div');
           card.className = 'promo-card';
+          card.dataset.promoId = String(pid);
+          card.dataset.active = '1';
           const today = new Date();
           const y = today.getFullYear();
           const m = String(today.getMonth()+1).padStart(2,'0');
@@ -1041,16 +1043,16 @@ document.addEventListener("DOMContentLoaded", () => {
              <div class="promo-title">${safeTitle}</div>
              <div class="promo-date">${dateLabel}</div>
              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;">
-               <span class="status-badge active">Active</span>
+               <span class="status-badge active promo-status-badge">Active</span>
                <div style="display:flex;gap:6px;">
-                 <form method="post" action="update_promos.php" onsubmit="return confirm('This promo will be inactive and hidden from customers. Continue?');" style="margin:0;">
+                 <form class="promo-toggle-form" method="post" action="update_promos.php" style="margin:0;">
                    <input type="hidden" name="promo_id" value="${pid}">
                    <input type="hidden" name="active" value="0">
-                   <button type="submit" class="btn-primary" style="padding:6px 10px;">Set Inactive</button>
+                   <button type="submit" class="btn-primary promo-toggle-btn" style="padding:6px 10px;">Set Inactive</button>
                  </form>
-                 <form method="post" action="delete_promo.php" onsubmit="return confirm('This promo image will be permanently deleted. Continue?');" style="margin:0;">
+                 <form class="promo-delete-form" method="post" action="delete_promo.php" style="margin:0;">
                    <input type="hidden" name="id" value="${pid}">
-                   <button type="submit" class="btn-secondary" style="padding:6px 10px;">Delete</button>
+                   <button type="submit" class="btn-secondary promo-delete-btn" style="padding:6px 10px;">Delete</button>
                  </form>
                </div>
              </div>`;
@@ -1065,6 +1067,88 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Promos: toggle active/inactive and delete without reload (AJAX)
+  (function promosInit() {
+    const grid = document.getElementById('promos-grid');
+    if (!grid) return;
+
+    grid.addEventListener('submit', async (e) => {
+      const form = e.target.closest('.promo-toggle-form, .promo-delete-form');
+      if (!form) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const card = form.closest('.promo-card');
+      if (!card) return;
+      const promoId = card.dataset.promoId || form.querySelector('input[name="promo_id"], input[name="id"]').value;
+      if (!promoId) return;
+
+      // Toggle status
+      if (form.classList.contains('promo-toggle-form')) {
+        const currentlyActive = (card.dataset.active === '1');
+        const next = currentlyActive ? 0 : 1;
+        const confirmMsg = next === 0
+          ? 'This promo will be inactive and hidden from customers. Continue?'
+          : 'This promo will be visible to customers. Continue?';
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+          const fd = new FormData();
+          fd.append('promo_id', String(promoId));
+          fd.append('active', String(next));
+          const res = await fetch('update_promos.php', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            body: fd
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+
+          // Update UI state
+          card.dataset.active = String(next);
+          const badge = card.querySelector('.promo-status-badge');
+          if (badge) {
+            badge.textContent = next ? 'Active' : 'Inactive';
+            badge.classList.toggle('active', !!next);
+            badge.classList.toggle('inactive', !next);
+          }
+          const toggleBtn = form.querySelector('.promo-toggle-btn');
+          if (toggleBtn) toggleBtn.textContent = next ? 'Set Inactive' : 'Set Active';
+          const hidden = form.querySelector('input[name="active"]');
+          if (hidden) hidden.value = next ? '0' : '1'; // next click will invert
+          showNotification(data.message || (next ? 'Promo activated' : 'Promo deactivated'));
+        } catch (err) {
+          console.error('[admin] promo toggle error', err);
+          alert('Failed to update promo status.');
+        }
+        return;
+      }
+
+      // Delete promo
+      if (form.classList.contains('promo-delete-form')) {
+        if (!window.confirm('This promo image will be permanently deleted. Continue?')) return;
+        try {
+          const fd = new FormData();
+          fd.append('id', String(promoId));
+          const res = await fetch('delete_promo.php', {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            body: fd
+          });
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+          // Remove card from DOM
+          card.remove();
+          showNotification(data.message || 'Promo deleted');
+        } catch (err) {
+          console.error('[admin] promo delete error', err);
+          alert('Failed to delete promo.');
+        }
+        return;
+      }
+    });
+  })();
 
   // util to escape HTML when injecting strings
   function escapeHtml(s) {

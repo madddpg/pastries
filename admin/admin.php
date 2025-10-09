@@ -968,21 +968,21 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                               "onerror=\"if(!this.dataset.tried && this.dataset.fallback){this.dataset.tried=1;this.src=this.dataset.fallback;}\" loading='lazy'>".
                                               "</div>";
 
-                                    echo "<div class='promo-card'>\n".
+                                    echo "<div class='promo-card' data-promo-id='{$pid}' data-active='".($isActive?1:0)."'>\n".
                                          $imgTag .
                                          "<div class='promo-title'>$title</div>\n".
                                          "<div class='promo-date'>$dateLabel</div>\n".
                                          "<div style='display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;'>".
-                                            "<span class='status-badge ".($isActive ? 'active' : 'inactive')."'>".($isActive ? 'Active' : 'Inactive')."</span>".
+                                            "<span class='status-badge ".($isActive ? 'active' : 'inactive')." promo-status-badge'>".($isActive ? 'Active' : 'Inactive')."</span>".
                                             "<div style='display:flex;gap:6px;'>".
-                                                "<form method='post' action='update_promos.php' onsubmit=\"return confirm('".($isActive ? "This promo will be inactive and hidden from customers. Continue?" : "This promo will be visible to customers. Continue?")."');\" style='margin:0;'>".
+                                                "<form class='promo-toggle-form' method='post' action='update_promos.php' style='margin:0;'>".
                                                     "<input type='hidden' name='promo_id' value='{$pid}'>".
                                                     "<input type='hidden' name='active' value='".($isActive ? 0 : 1)."'>".
-                                                    "<button type='submit' class='btn-primary' style='padding:6px 10px;'>".($isActive ? 'Set Inactive' : 'Set Active')."</button>".
+                                                    "<button type='submit' class='btn-primary promo-toggle-btn' style='padding:6px 10px;'>".($isActive ? 'Set Inactive' : 'Set Active')."</button>".
                                                 "</form>".
-                                                "<form method='post' action='delete_promo.php' onsubmit=\"return confirm('This promo image will be permanently deleted. Continue?');\" style='margin:0;'>".
+                                                "<form class='promo-delete-form' method='post' action='delete_promo.php' style='margin:0;'>".
                                                     "<input type='hidden' name='id' value='{$pid}'>".
-                                                    "<button type='submit' class='btn-secondary' style='padding:6px 10px;'>Delete</button>".
+                                                    "<button type='submit' class='btn-secondary promo-delete-btn' style='padding:6px 10px;'>Delete</button>".
                                                 "</form>".
                                             "</div>".
                                          "</div>".
