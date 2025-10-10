@@ -26,6 +26,24 @@ if ($pickup_name === '' || $pickup_location === '' || $pickup_time === '' || emp
     exit;
 }
 
+// For GCash payments, require an image file to be uploaded
+if ($payment_method === 'gcash') {
+    $uploadErr = isset($_FILES['gcash_receipt']['error']) ? (int)$_FILES['gcash_receipt']['error'] : UPLOAD_ERR_NO_FILE;
+    if ($uploadErr !== UPLOAD_ERR_OK) {
+        $msg = 'Please attach a clear screenshot of your GCash payment receipt.';
+        if ($uploadErr === UPLOAD_ERR_INI_SIZE || $uploadErr === UPLOAD_ERR_FORM_SIZE) {
+            $msg = 'The uploaded file is too large. Please upload a smaller image (try under 5MB).';
+        }
+        echo json_encode([
+            'success' => false,
+            'message' => $msg,
+            'received_payment_method' => $payment_method,
+            'upload_error' => $uploadErr
+        ]);
+        exit;
+    }
+}
+
 $user_id = isset($_SESSION['user']['user_id']) ? intval($_SESSION['user']['user_id']) : 0;
 $db = new Database();
 

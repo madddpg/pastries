@@ -770,7 +770,17 @@ function submitPickupForm(payload) {
     fd.append('special_instructions', payload.special_instructions || '');
     fd.append('payment_method', 'gcash');
     fd.append('cart_items', cart_items);
-    if (payload.gcash_file) fd.append('gcash_receipt', payload.gcash_file);
+    // Always try to include receipt file if available
+    if (payload.gcash_file) {
+      fd.append('gcash_receipt', payload.gcash_file);
+    } else {
+      try {
+        const input = document.getElementById('gcashReceiptInput');
+        if (input && input.files && input.files[0]) {
+          fd.append('gcash_receipt', input.files[0]);
+        }
+      } catch (_) {}
+    }
     fetchOpts = { method: 'POST', body: fd, credentials: 'same-origin' };
     try { showNotification('Submitting GCash payment...', 'success'); } catch (_) {}
   } else { /* no cash path */ }
