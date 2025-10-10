@@ -33,9 +33,23 @@ foreach ($orders as $order):
       ? (string)$order['gcash_receipt_path']
       : (isset($order['gcash_reciept_path']) ? (string)$order['gcash_reciept_path'] : '');
   $receipt = trim($receiptRaw);
-  // Compute a URL that works under /admin/ as well as at site root
-  $scriptBase = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/'); // e.g., /cupscuddles/admin
-  $receiptHref = $receipt !== '' ? ($scriptBase . '/../' . ltrim($receipt, '/')) : '';
+  // Fallback: if DB path missing but gcash, attempt to infer by reference number in img/uploads/gcash
+  if ($receipt === '' && $method === 'gcash' && $ref !== '') {
+    $tryExts = ['jpg','jpeg','png','webp'];
+    $baseFs = realpath(__DIR__ . '/../../img/uploads/gcash');
+    if ($baseFs) {
+      foreach ($tryExts as $ex) {
+        $candidate = $baseFs . DIRECTORY_SEPARATOR . $ref . '.' . $ex;
+        if (@file_exists($candidate)) { $receipt = 'img/uploads/gcash/' . $ref . '.' . $ex; break; }
+      }
+    }
+  }
+  // Compute an absolute URL from the site root so it works under /admin or /admin/AJAX
+  $script = $_SERVER['SCRIPT_NAME'] ?? '';
+  // Remove trailing /admin/... from the current script path to get the site base (e.g., /cupscuddles)
+  $siteBase = rtrim(preg_replace('#/admin(?:/AJAX)?/.*$#', '', $script), '/');
+  $receiptPath = ltrim($receipt, '/');
+  $receiptHref = $receipt !== '' ? ($siteBase . '/' . $receiptPath) : '';
 ?>
 <div class="order-card <?= esc($status) ?>" data-transac-id="<?= $id ?>" data-id="<?= $id ?>">
   <div class="order-header">
@@ -52,7 +66,7 @@ foreach ($orders as $order):
         <?php if ($method === 'gcash'): ?>
           <?php if ($receipt !== ''): ?>
             <span style="margin-left:8px;color:#059669;font-weight:600;">Receipt: Attached</span>
-            <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="margin-left:6px;color:#0ea5e9;">Open</a>
+            <a href="<?= esc($receiptHref) ?>" target="_blank" rel="noopener" style="margin-left:6px;color:#0ea5e9;">Open</a>
           <?php else: ?>
             <span style="margin-left:8px;color:#9ca3af;">Receipt: None</span>
           <?php endif; ?>
