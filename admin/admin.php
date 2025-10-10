@@ -430,9 +430,6 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
                                         <div id="bar-month" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
                                     </div>
-                                    <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
-                                        <div id="bar-year" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

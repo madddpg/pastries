@@ -21,7 +21,7 @@ $recentStmt = $con->prepare("SELECT u.user_FN, u.user_LN, MAX(t.created_at) as l
     JOIN transaction t ON t.user_id = u.user_id
     GROUP BY u.user_id
     ORDER BY last_transaction DESC
-    LIMIT 5");
+    LIMIT 10");
 $recentStmt->execute();
 $recentCustomers = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 
