@@ -390,12 +390,45 @@ class Database
         } catch (Throwable $_) { /* ignore */ }
     }
 
-    /** Ensure transaction table has a gcash_receipt_path column for uploaded proof. */
+    /** Ensure transaction table has a gcash_receipt_path column for uploaded proof.
+     *  Also handle legacy misspelling gcash_reciept_path by renaming or copying values.
+     */
     private function ensureTransactionReceiptSchema(PDO $pdo): void
     {
         try {
-            $pdo->exec("ALTER TABLE `transaction` ADD COLUMN gcash_receipt_path VARCHAR(255) NULL AFTER payment_method");
-        } catch (Throwable $_) { /* likely exists */ }
+            // Inspect existing columns
+            $cols = [];
+            try {
+                $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transaction'");
+                $all = $q->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                foreach ($all as $r) { $cols[] = strtolower((string)$r['COLUMN_NAME']); }
+            } catch (Throwable $ie) { /* ignore */ }
+
+            $hasCorrect    = in_array('gcash_receipt_path', $cols, true);
+            $hasMisspelled = in_array('gcash_reciept_path', $cols, true);
+
+            // If only misspelled exists, try to rename it to the correct spelling
+            if (!$hasCorrect && $hasMisspelled) {
+                try {
+                    $pdo->exec("ALTER TABLE `transaction` CHANGE `gcash_reciept_path` `gcash_receipt_path` VARCHAR(255) NULL");
+                    $hasCorrect = true;
+                    $hasMisspelled = false;
+                } catch (Throwable $_) { /* rename may fail on some engines/permissions */ }
+            }
+
+            // Ensure correct column exists
+            if (!$hasCorrect) {
+                try { $pdo->exec("ALTER TABLE `transaction` ADD COLUMN `gcash_receipt_path` VARCHAR(255) NULL AFTER payment_method"); }
+                catch (Throwable $_) { /* likely exists now */ }
+            }
+
+            // If both exist, attempt to backfill correct from misspelled where empty
+            if ($hasMisspelled) {
+                try {
+                    $pdo->exec("UPDATE `transaction` SET `gcash_receipt_path` = COALESCE(`gcash_receipt_path`, `gcash_reciept_path`) WHERE `gcash_receipt_path` IS NULL AND `gcash_reciept_path` IS NOT NULL AND `gcash_reciept_path` <> ''");
+                } catch (Throwable $_) { /* ignore */ }
+            }
+        } catch (Throwable $_) { /* ignore outer */ }
     }
 
     // Fetch all picked up orders 

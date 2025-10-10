@@ -42,7 +42,8 @@ if ($result['success'] && !empty($result['reference_number'])) {
             error_log("Updated payment_method for ref {$result['reference_number']}: $payment_method");
 
             // If gcash, persist the uploaded receipt image
-            if ($payment_method === 'gcash' && isset($_FILES['gcash_receipt']) && is_array($_FILES['gcash_receipt']) && ($_FILES['gcash_receipt']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+            $uploadErr = isset($_FILES['gcash_receipt']['error']) ? (int)$_FILES['gcash_receipt']['error'] : null;
+            if ($payment_method === 'gcash' && isset($_FILES['gcash_receipt']) && is_array($_FILES['gcash_receipt']) && ($uploadErr ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
                 $tmp = $_FILES['gcash_receipt']['tmp_name'];
                 $orig = $_FILES['gcash_receipt']['name'] ?? 'receipt';
                 $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
@@ -68,9 +69,18 @@ if ($result['success'] && !empty($result['reference_number'])) {
                     $up->execute([$relPath, $result['reference_number']]);
                 } catch (Exception $e) {
                     error_log('Failed to update gcash_receipt_path: ' . $e->getMessage());
+                    // Fallback: try legacy misspelled column if present
+                    try {
+                        $pdo->exec("UPDATE `transaction` SET gcash_reciept_path = '" . addslashes($relPath) . "' WHERE reference_number = '" . addslashes($result['reference_number']) . "'");
+                    } catch (Throwable $e2) { /* ignore */ }
                 }
 
                 error_log("Saved GCash receipt for {$result['reference_number']} at /" . $relPath);
+            } else {
+                // Log non-OK upload error codes for diagnosis
+                if ($payment_method === 'gcash') {
+                    error_log('GCash upload missing or errored. $_FILES present: ' . (isset($_FILES['gcash_receipt']) ? 'yes' : 'no') . ', error=' . var_export($uploadErr, true));
+                }
             }
         }
     } catch (Exception $e) {

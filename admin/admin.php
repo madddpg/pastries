@@ -72,7 +72,7 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
         u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
            a.admin_id AS approved_by_admin_id, a.username AS approved_by,
            COALESCE(t.payment_method, 'gcash') AS payment_method,
-           t.gcash_receipt_path
+           COALESCE(t.gcash_receipt_path, t.gcash_reciept_path) AS gcash_receipt_path
         FROM transaction t
         LEFT JOIN users u ON t.user_id = u.user_id
         LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id

@@ -47,15 +47,15 @@ try {
         // Full dataset with pagination (safe aliases and backticks)
         $limit = (int)$perPage;
         $offset = (int)(($page - 1) * $perPage);
-                $sql = "SELECT
+                                $sql = "SELECT
                   t.transac_id,
                   t.transac_id AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
                   t.created_at,
-                                    COALESCE(t.payment_method,'gcash') AS payment_method,
-                                    t.gcash_receipt_path,
+                                                                        COALESCE(t.payment_method,'gcash') AS payment_method,
+                                                                        COALESCE(t.gcash_receipt_path, t.gcash_reciept_path) AS gcash_receipt_path,
                   u.user_FN AS customer_name,
                                     p.pickup_location,
                   p.pickup_time,
