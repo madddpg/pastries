@@ -1233,7 +1233,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             <!-- GCash QR + receipt upload (hidden until selected) -->
             <div id="gcashPreview" style="display:none;margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
                 <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                    <img src="img/qr_code.jpeg" alt="GCash QR Code" style="width:160px;height:160px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;background:#fff;" />
+                    <img src="img/qr_code.jpg" alt="GCash QR Code" style="width:160px;height:160px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;background:#fff;" />
                     <div style="flex:1;min-width:240px;">
                         <div style="font-weight:700;color:#1f2937;margin-bottom:6px;">Scan to pay with GCash</div>
                         <ol style="margin:0 0 10px 18px;color:#374151;">
