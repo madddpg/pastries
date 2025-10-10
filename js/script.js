@@ -10,6 +10,8 @@ window.toggleProfileDropdown = function (event) {
 let __pendingRegistration = null;
 let __otpVerified = false;
 let __registrationCompleted = false;
+// Prevent duplicate pickup submissions
+window.__pickupSubmitting = window.__pickupSubmitting || false;
 
 function showSection(sectionName) {
   try {
@@ -734,7 +736,9 @@ function handlePaymentChoice(method) {
   }
 }
 
-function submitGcashCheckout() {
+function submitGcashCheckout(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (window.__pickupSubmitting) { try { console.warn('Pickup submission already in progress'); } catch(_) {} return; }
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
   // require proof image
@@ -760,6 +764,9 @@ function submitPickupForm(payload) {
   payload = payload || {};
   const isGcash = true; // only gcash supported
   const cart_items = JSON.stringify(cart || []);
+
+  if (window.__pickupSubmitting) { try { console.warn('Pickup submission already in progress'); } catch(_) {} return; }
+  window.__pickupSubmitting = true;
 
   let fetchOpts;
   if (isGcash) {
@@ -802,7 +809,8 @@ function submitPickupForm(payload) {
     .catch(err => {
       console.error("pickup submit error", err);
       showNotification("Network error. Please try again.", "error");
-    });
+    })
+    .finally(() => { window.__pickupSubmitting = false; });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -861,12 +869,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Also wire GCash Done button if it exists (modal flow)
   const gcashDone = document.getElementById("gcashDoneBtn");
-  if (gcashDone) {
-    gcashDone.removeEventListener("click", submitGcashCheckout);
-    gcashDone.addEventListener("click", function (e) {
-      e.preventDefault && e.preventDefault();
-      submitGcashCheckout();
-    });
+  if (gcashDone && !gcashDone._bound) {
+    gcashDone._bound = true;
+    gcashDone.addEventListener("click", submitGcashCheckout);
   }
 
   // Close payment modal when clicking outside content
@@ -2295,18 +2300,22 @@ function handlePaymentChoice(method) {
 }
 
 
-function submitGcashCheckout() {
-  const paymentModal = document.getElementById("paymentMethodModal");
-  if (!paymentModal) return;
-  const payload = {
-    pickup_name: paymentModal.dataset.pickupName || '',
-    pickup_location: paymentModal.dataset.pickupLocation || '',
-    pickup_time: paymentModal.dataset.pickupTime || '',
-    special_instructions: paymentModal.dataset.specialInstructions || '',
-    payment_method: "gcash"
-  };
-  closePaymentModal();
-  submitPickupForm(payload);
+// Avoid redefining submitGcashCheckout if an earlier canonical version exists
+if (typeof window.submitGcashCheckout !== 'function') {
+  function submitGcashCheckout(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const paymentModal = document.getElementById("paymentMethodModal");
+    if (!paymentModal) return;
+    const payload = {
+      pickup_name: paymentModal.dataset.pickupName || '',
+      pickup_location: paymentModal.dataset.pickupLocation || '',
+      pickup_time: paymentModal.dataset.pickupTime || '',
+      special_instructions: paymentModal.dataset.specialInstructions || '',
+      payment_method: "gcash"
+    };
+    closePaymentModal();
+    submitPickupForm(payload);
+  }
 }
 
 // wire modal close actions on DOMContentLoaded
@@ -2324,12 +2333,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // wire GCash Done inside dialog (if exists)
   const gcashDone = document.getElementById("gcashDoneBtn");
-  if (gcashDone) {
-    gcashDone.removeEventListener("click", submitGcashCheckout);
-    gcashDone.addEventListener("click", function (e) {
-      e.preventDefault && e.preventDefault();
-      submitGcashCheckout();
-    });
+  if (gcashDone && !gcashDone._bound) {
+    gcashDone._bound = true;
+    gcashDone.addEventListener("click", submitGcashCheckout);
   }
 });
 

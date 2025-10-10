@@ -44,6 +44,32 @@ if ($payment_method === 'gcash') {
     }
 }
 
+// Idempotency guard: prevent duplicate submissions within a short window (10s)
+$sigPayload = [
+    'uid' => (int)$user_id,
+    'items' => $cart_items,
+    'name' => $pickup_name,
+    'loc' => $pickup_location,
+    'time' => $pickup_time,
+    'pm' => $payment_method
+];
+$orderSig = sha1(json_encode($sigPayload));
+$nowTs = time();
+if (!empty($_SESSION['__last_order']) && is_array($_SESSION['__last_order'])) {
+    $last = $_SESSION['__last_order'];
+    $lastSig = isset($last['sig']) ? $last['sig'] : '';
+    $lastTs  = isset($last['ts']) ? (int)$last['ts'] : 0;
+    if ($lastSig === $orderSig && ($nowTs - $lastTs) < 10) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Duplicate submission detected. Please wait a moment before trying again.',
+            'received_payment_method' => $payment_method
+        ]);
+        exit;
+    }
+}
+$_SESSION['__last_order'] = ['sig' => $orderSig, 'ts' => $nowTs];
+
 $user_id = isset($_SESSION['user']['user_id']) ? intval($_SESSION['user']['user_id']) : 0;
 $db = new Database();
 
