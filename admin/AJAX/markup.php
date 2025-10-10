@@ -42,8 +42,14 @@ foreach ($orders as $order):
       <p>₱<?= $total ?></p>
       <p>Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span></p>
       <?php if ($method === 'gcash' && $receipt !== ''): ?>
-        <div style="margin-top:6px;">
-          <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:600;">View GCash receipt</a>
+        <div style="margin-top:8px;display:flex;align-items:flex-start;gap:10px;">
+          <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" title="Open receipt in new tab">
+            <img src="<?= esc('../' . ltrim($receipt, '/')) ?>" alt="GCash Receipt" style="max-width:120px;max-height:120px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;object-fit:contain;display:block;" />
+          </a>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:600;">View GCash receipt</a>
+            <small style="color:#6b7280;">Click the thumbnail to enlarge</small>
+          </div>
         </div>
       <?php endif; ?>
     </div>
