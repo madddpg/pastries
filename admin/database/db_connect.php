@@ -24,6 +24,7 @@ class Database
     try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureToppingsScopeSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -53,6 +54,7 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -346,6 +348,44 @@ class Database
             'perPage' => $perPage,
             'totalPages' => $totalPages,
         ];
+    }
+
+    /** Ensure promos table exists and has active/admin_id columns. */
+    private function ensurePromosSchema(PDO $pdo): void
+    {
+        // Create table if not exists with common columns
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS promos (
+                    promo_id INT NOT NULL AUTO_INCREMENT,
+                    title VARCHAR(255) NULL,
+                    image VARCHAR(512) NULL,
+                    image_mime VARCHAR(64) NULL,
+                    image_blob LONGBLOB NULL,
+                    active TINYINT(1) NOT NULL DEFAULT 1,
+                    admin_id INT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (promo_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $_) { /* ignore */ }
+
+        // Ensure columns exist
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'promos'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (!in_array('active', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE promos ADD COLUMN active TINYINT(1) NOT NULL DEFAULT 1 AFTER image_blob"); } catch (Throwable $_) {}
+                try { $pdo->exec("UPDATE promos SET active = 1 WHERE active IS NULL"); } catch (Throwable $_) {}
+            }
+            if (!in_array('admin_id', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE promos ADD COLUMN admin_id INT NULL AFTER active"); } catch (Throwable $_) {}
+            }
+            // Optional FK to admin_users if present
+            try { $pdo->exec("ALTER TABLE promos ADD CONSTRAINT fk_promos_admin FOREIGN KEY (admin_id) REFERENCES admin_users(admin_id) ON DELETE SET NULL ON UPDATE CASCADE"); }
+            catch (Throwable $_) { /* ignore if already exists */ }
+        } catch (Throwable $_) { /* ignore */ }
     }
 
     // Fetch all picked up orders 

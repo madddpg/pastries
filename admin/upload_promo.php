@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $title = trim($_POST['title'] ?? '');
+$adminId = isset($_SESSION['admin_id']) ? (int)$_SESSION['admin_id'] : null;
 if (!isset($_FILES['promoImage']) || $_FILES['promoImage']['error'] !== UPLOAD_ERR_OK) {
     if ($ajax) {
         header('Content-Type: application/json', true, 400);
@@ -106,14 +107,33 @@ $imagePath = 'img/promos/' . $basename;
 $title_db = !empty($title) ? $title : null;
 
 try {
-    // store blob + mime so front-end can serve directly from DB
-    $stmt = $con->prepare("INSERT INTO promos (title, image, image_mime, image_blob, active, created_at) VALUES (?, ?, ?, ?, 1, NOW())");
-    // bind LOB for safety
-    $stmt->bindParam(1, $title_db);
-    $stmt->bindParam(2, $imagePath);
-    $stmt->bindParam(3, $image_mime);
-    $stmt->bindParam(4, $blob, PDO::PARAM_LOB);
-    $stmt->execute();
+    // Prefer inserting with image blob/mime and admin_id if columns exist
+    try {
+        if ($adminId !== null) {
+            $stmt = $con->prepare("INSERT INTO promos (title, image, image_mime, image_blob, active, admin_id, created_at) VALUES (?, ?, ?, ?, 1, ?, NOW())");
+            $stmt->bindParam(1, $title_db);
+            $stmt->bindParam(2, $imagePath);
+            $stmt->bindParam(3, $image_mime);
+            $stmt->bindParam(4, $blob, PDO::PARAM_LOB);
+            $stmt->bindParam(5, $adminId, PDO::PARAM_INT);
+        } else {
+            $stmt = $con->prepare("INSERT INTO promos (title, image, image_mime, image_blob, active, created_at) VALUES (?, ?, ?, ?, 1, NOW())");
+            $stmt->bindParam(1, $title_db);
+            $stmt->bindParam(2, $imagePath);
+            $stmt->bindParam(3, $image_mime);
+            $stmt->bindParam(4, $blob, PDO::PARAM_LOB);
+        }
+        $stmt->execute();
+    } catch (PDOException $e) {
+        // Fallback to legacy columns without blob/mime/admin_id if needed
+        if ($adminId !== null) {
+            $stmt = $con->prepare("INSERT INTO promos (title, image, active, admin_id, created_at) VALUES (?, ?, 1, ?, NOW())");
+            $stmt->execute([$title_db, $imagePath, $adminId]);
+        } else {
+            $stmt = $con->prepare("INSERT INTO promos (title, image, active, created_at) VALUES (?, ?, 1, NOW())");
+            $stmt->execute([$title_db, $imagePath]);
+        }
+    }
     $promo_id = $con->lastInsertId();
 
     if ($ajax) {
@@ -135,31 +155,5 @@ try {
     exit;
 }
 
-// store DB path relative to webroot
-$imagePath = 'img/promos/' . $basename;
-$title_db = !empty($title) ? $title : null;
-
-try {
-    $stmt = $con->prepare("INSERT INTO promos (title, image, active, created_at) VALUES (?, ?, 1, NOW())");
-    $stmt->execute([$title_db, $imagePath]);
-    $promo_id = $con->lastInsertId();
-
-    if ($ajax) {
-        header('Content-Type: application/json', true, 201);
-        echo json_encode(['success' => true, 'promo_id' => $promo_id, 'image' => $imagePath, 'title' => $title_db]);
-    } else {
-        header('Location: admin.php?promo_success=1');
-    }
-    exit;
-} catch (PDOException $e) {
-    // cleanup file on error
-    if (file_exists($targetPath)) @unlink($targetPath);
-    if ($ajax) {
-        header('Content-Type: application/json', true, 500);
-        echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
-    } else {
-        header('Location: admin.php?promo_error=DBError');
-    }
-    exit;
-}
+// legacy duplicate block removed because we handled fallback already
 ?>
