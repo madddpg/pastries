@@ -28,7 +28,14 @@ foreach ($orders as $order):
   }
   $note   = trim((string)($order['special_instructions'] ?? ''));
   $method = strtolower(trim((string)($order['payment_method'] ?? 'gcash')));
-  $receipt = trim((string)($order['gcash_receipt_path'] ?? ''));
+  // Be tolerant of either column name in case upstream aliasing changes
+  $receiptRaw = isset($order['gcash_receipt_path']) && $order['gcash_receipt_path'] !== ''
+      ? (string)$order['gcash_receipt_path']
+      : (isset($order['gcash_reciept_path']) ? (string)$order['gcash_reciept_path'] : '');
+  $receipt = trim($receiptRaw);
+  // Compute a URL that works under /admin/ as well as at site root
+  $scriptBase = rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/'); // e.g., /cupscuddles/admin
+  $receiptHref = $receipt !== '' ? ($scriptBase . '/../' . ltrim($receipt, '/')) : '';
 ?>
 <div class="order-card <?= esc($status) ?>" data-transac-id="<?= $id ?>" data-id="<?= $id ?>">
   <div class="order-header">
@@ -40,14 +47,24 @@ foreach ($orders as $order):
     <div>
       <h4><?= $name ?></h4>
       <p>₱<?= $total ?></p>
-      <p>Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span></p>
+      <p>
+        Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span>
+        <?php if ($method === 'gcash'): ?>
+          <?php if ($receipt !== ''): ?>
+            <span style="margin-left:8px;color:#059669;font-weight:600;">Receipt: Attached</span>
+            <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="margin-left:6px;color:#0ea5e9;">Open</a>
+          <?php else: ?>
+            <span style="margin-left:8px;color:#9ca3af;">Receipt: None</span>
+          <?php endif; ?>
+        <?php endif; ?>
+      </p>
       <?php if ($method === 'gcash' && $receipt !== ''): ?>
         <div style="margin-top:8px;display:flex;align-items:flex-start;gap:10px;">
-          <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" title="Open receipt in new tab">
-            <img src="<?= esc('../' . ltrim($receipt, '/')) ?>" alt="GCash Receipt" style="max-width:120px;max-height:120px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;object-fit:contain;display:block;" />
+          <a href="<?= esc($receiptHref) ?>" target="_blank" rel="noopener" title="Open receipt in new tab">
+            <img src="<?= esc($receiptHref) ?>" alt="GCash Receipt" style="max-width:120px;max-height:120px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;object-fit:contain;display:block;" />
           </a>
           <div style="display:flex;flex-direction:column;gap:4px;">
-            <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:600;">View GCash receipt</a>
+            <a href="<?= esc($receiptHref) ?>" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:600;">View GCash receipt</a>
             <small style="color:#6b7280;">Click the thumbnail to enlarge</small>
           </div>
         </div>
@@ -74,7 +91,7 @@ foreach ($orders as $order):
 
   <div class="order-actions">
     <?php
-      $receiptUrl = $receipt !== '' ? ('../' . ltrim($receipt, '/')) : '';
+      $receiptUrl = $receipt !== '' ? $receiptHref : '';
       $btnStyle = 'margin-bottom:8px;width:100%;border:none;border-radius:6px;padding:8px 10px;';
       $hasReceipt = $receiptUrl !== '';
       $bg = $hasReceipt ? '#0ea5e9' : '#9ca3af';
