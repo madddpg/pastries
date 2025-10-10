@@ -712,9 +712,14 @@ function completePickupCheckout() {
     paymentModal.dataset.specialInstructions = special_instructions;
     paymentModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+    // Auto-show GCash preview since GCash is the only method
+    try {
+      const preview = document.getElementById('gcashPreview');
+      if (preview) preview.style.display = 'block';
+    } catch(_) {}
   } else {
-    // fallback: submit directly
-    submitPickupForm({ pickup_name, pickup_location, pickup_time, special_instructions, payment_method: 'cash' });
+    // fallback: submit directly as gcash
+    submitPickupForm({ pickup_name, pickup_location, pickup_time, special_instructions, payment_method: 'gcash' });
   }
 }
 
@@ -722,19 +727,6 @@ function completePickupCheckout() {
 function handlePaymentChoice(method) {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
-  if (method === 'cash') {
-    // close payment modal and proceed to placing pickup details
-    paymentModal.style.display = 'none';
-    document.body.style.overflow = 'auto';
-    const pickup = {
-      pickup_name: paymentModal.dataset.pickupName || '',
-      pickup_location: paymentModal.dataset.pickupLocation || '',
-      pickup_time: paymentModal.dataset.pickupTime || '',
-      special_instructions: paymentModal.dataset.specialInstructions || ''
-    };
-    submitPickupForm({ ...pickup, payment_method: 'cash' });
-    return;
-  }
   if (method === 'gcash') {
     // show gcash preview inside modal
     const preview = document.getElementById('gcashPreview');
@@ -766,7 +758,7 @@ function submitGcashCheckout() {
 
 function submitPickupForm(payload) {
   payload = payload || {};
-  const isGcash = (payload.payment_method || '').toLowerCase() === 'gcash';
+  const isGcash = true; // only gcash supported
   const cart_items = JSON.stringify(cart || []);
 
   let fetchOpts;
@@ -781,17 +773,7 @@ function submitPickupForm(payload) {
     if (payload.gcash_file) fd.append('gcash_receipt', payload.gcash_file);
     fetchOpts = { method: 'POST', body: fd, credentials: 'same-origin' };
     try { showNotification('Submitting GCash payment...', 'success'); } catch (_) {}
-  } else {
-    const body = new URLSearchParams();
-    body.append('pickup_name', payload.pickup_name || '');
-    body.append('pickup_location', payload.pickup_location || '');
-    body.append('pickup_time', payload.pickup_time || '');
-    body.append('special_instructions', payload.special_instructions || '');
-    body.append('payment_method', 'cash');
-    body.append('cart_items', cart_items);
-    fetchOpts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString(), credentials: 'same-origin' };
-    try { showNotification('Placing order (cash)...', 'success'); } catch (_) {}
-  }
+  } else { /* no cash path */ }
 
   fetch('pickup_checkout.php', fetchOpts)
     .then(r => r.json())

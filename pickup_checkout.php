@@ -9,7 +9,7 @@ $pickup_location = isset($_POST['pickup_location']) ? trim($_POST['pickup_locati
 $pickup_time = isset($_POST['pickup_time']) ? trim($_POST['pickup_time']) : '';
 $special_instructions = isset($_POST['special_instructions']) ? trim($_POST['special_instructions']) : '';
 $cart_items = isset($_POST['cart_items']) ? json_decode($_POST['cart_items'], true) : [];
-$payment_method = isset($_POST['payment_method']) ? strtolower(trim($_POST['payment_method'])) : 'cash';
+$payment_method = isset($_POST['payment_method']) ? strtolower(trim($_POST['payment_method'])) : 'gcash';
 
 
 // Debug logging
@@ -28,7 +28,7 @@ $user_id = isset($_SESSION['user']['user_id']) ? intval($_SESSION['user']['user_
 $db = new Database();
 
 // Pass payment_method to createPickupOrder
-$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, in_array($payment_method, ['cash','gcash']) ? $payment_method : 'cash');
+$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, in_array($payment_method, ['gcash']) ? $payment_method : 'gcash');
 
 if ($result['success'] && !empty($result['reference_number'])) {
     try {

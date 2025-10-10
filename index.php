@@ -1226,8 +1226,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
             <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Confirm payment</h3>
             <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;">
-                <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;"
-                    onclick="handlePaymentChoice('cash')">Place Order (Cash)</button>
                 <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;background:#0ea5e9;"
                     onclick="handlePaymentChoice('gcash')">Pay via GCash</button>
             </div>
