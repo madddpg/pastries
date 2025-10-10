@@ -113,22 +113,26 @@ foreach ($orders as $order):
     <?php endif; ?>
   </div>
 
-  <div class="order-actions">
+  <div class="order-actions" style="display:flex;flex-direction:column;gap:8px;">
     <?php
       $receiptUrl = $receipt !== '' ? $receiptHref : '';
-      $btnStyle = 'margin-bottom:8px;width:100%;border:none;border-radius:6px;padding:8px 10px;';
       $hasReceipt = $receiptUrl !== '';
       $bg = $hasReceipt ? '#0ea5e9' : '#9ca3af';
       $title = $hasReceipt ? 'Open receipt' : 'No receipt attached';
     ?>
-    <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc($receiptUrl) ?>" title="<?= esc($title) ?>" style="<?= esc($btnStyle) ?>background:<?= esc($bg) ?>;color:#fff;">See receipt</button>
+    <!-- See receipt on top -->
+    <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc($receiptUrl) ?>" title="<?= esc($title) ?>" style="width:100%;border:none;border-radius:6px;padding:10px;background:<?= esc($bg) ?>;color:#fff;">See receipt</button>
+
+    <!-- Action choices below -->
     <?php if ($status === 'pending'): ?>
-      <button type="button" class="btn-accept" data-id="<?= $id ?>">Accept</button>
-      <button type="button" class="btn-reject" data-id="<?= $id ?>">Reject</button>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn-accept" data-id="<?= $id ?>" style="flex:1;">Accept</button>
+        <button type="button" class="btn-reject" data-id="<?= $id ?>" style="flex:1;">Cancel</button>
+      </div>
     <?php elseif ($status === 'preparing'): ?>
-      <button type="button" class="btn-ready" data-id="<?= $id ?>">Mark as Ready</button>
+      <button type="button" class="btn-ready" data-id="<?= $id ?>" style="width:100%;">Mark as Ready</button>
     <?php elseif ($status === 'ready'): ?>
-      <button type="button" class="btn-complete" data-id="<?= $id ?>">Mark as Picked Up</button>
+      <button type="button" class="btn-complete" data-id="<?= $id ?>" style="width:100%;">Mark as Picked Up</button>
     <?php endif; ?>
   </div>
 </div>
