@@ -430,10 +430,6 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                     <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
                                         <div id="bar-month" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
                                     </div>
-                                    <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Inter',sans-serif;">
-                                        <span>This Year</span>
-                                        <span id="revenue-year" style="font-weight:700;color:#22a06b;">₱0.00</span>
-                                    </div>
                                     <div style="background:#d6f5c9;height:7px;border-radius:6px;width:100%;margin-bottom:2px;">
                                         <div id="bar-year" style="background:#22a06b;height:100%;border-radius:6px;width:0%;transition:width 0.4s;"></div>
                                     </div>
@@ -533,14 +529,14 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         <div style="font-size:12px;color:#64748b;margin:6px 0 10px;">
                             For pastries: columns show Per piece, Box of 4, Box of 6. For drinks: Grande and Supreme appear in the first two columns.
                         </div>
-                        <table class="products-table">
+                        <table id="products-table" class="products-table">
                             <thead>
                                 <tr>
                                     <th>Product</th>
                                     <th>Category</th>
-                                    <th>Per piece</th>
-                                    <th>Box of 4</th>
-                                    <th>Box of 6</th>
+                                    <th id="col-price-a">Per piece</th>
+                                    <th id="col-price-b">Box of 4</th>
+                                    <th id="col-price-c">Box of 6</th>
                                     <th>Stock</th>
                                     <th>Status</th>
                                     <th>Sales</th>
@@ -603,8 +599,8 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                             } else {
                                                 $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;
                                                 $sPrice = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : 0.0;
-                                                echo '<td><div>₱' . number_format($gPrice,2) . '</div><div style="font-size:11px;color:#64748b;">Grande</div></td>';
-                                                echo '<td><div>₱' . number_format($sPrice,2) . '</div><div style="font-size:11px;color:#64748b;">Supreme</div></td>';
+                                                echo '<td><div>₱' . number_format($gPrice,2) . '</div><span class="price-sub">Grande</span></td>';
+                                                echo '<td><div>₱' . number_format($sPrice,2) . '</div><span class="price-sub">Supreme</span></td>';
                                                 echo '<td><span style="color:#64748b">—</span></td>';
                                             }
                                         ?>
