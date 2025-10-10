@@ -38,6 +38,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   // Sidebar Navigation
+  // Delegated handler for See receipt buttons
+  document.addEventListener('click', function(ev){
+    const btn = ev.target.closest('.btn-see-receipt');
+    if (!btn) return;
+    ev.preventDefault();
+    const url = btn.getAttribute('data-receipt-url') || '';
+    if (url) {
+      if (typeof window.__openReceipt === 'function') window.__openReceipt(url);
+      else window.open(url, '_blank', 'noopener');
+    }
+  }, true);
   document.querySelectorAll(".nav-item").forEach((item) => {
     item.addEventListener("click", function (e) {
       e.preventDefault();

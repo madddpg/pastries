@@ -174,6 +174,19 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                 <span>Cups&Cuddles</span>
             </div>
 
+            <!-- Receipt Viewer Modal -->
+            <div id="receiptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:5000;align-items:center;justify-content:center;">
+                <div style="background:#111827;padding:10px;border-radius:10px;max-width:92vw;max-height:92vh;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;color:#e5e7eb;">
+                        <strong>GCash Receipt</strong>
+                        <button id="receiptCloseBtn" style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;">Close</button>
+                    </div>
+                    <div style="overflow:auto;max-width:90vw;max-height:80vh;background:#000;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <img id="receiptImg" src="" alt="Receipt" style="max-width:100%;max-height:100%;object-fit:contain;background:#000;" />
+                    </div>
+                </div>
+                <div data-close="backdrop" style="position:absolute;inset:0;"></div>
+            </div>
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" data-section="dashboard-overview">
                     <span class="nav-icon"><i class="bi bi-grid-fill"></i></span>
@@ -2185,6 +2198,19 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
         });
     </script>
     <script src="js/main.js"></script>
+        <script>
+            // Minimal receipt modal wiring (kept separate to avoid coupling to main.js build)
+            (function(){
+                const modal = document.getElementById('receiptModal');
+                const img = document.getElementById('receiptImg');
+                const closeBtn = document.getElementById('receiptCloseBtn');
+                function open(url){ if (!modal||!img) return; img.src = url; modal.style.display='flex'; }
+                function close(){ if (!modal||!img) return; img.src=''; modal.style.display='none'; }
+                window.__openReceipt = open; window.__closeReceipt = close;
+                if (closeBtn) closeBtn.addEventListener('click', close);
+                if (modal) modal.addEventListener('click', function(e){ if (e.target && e.target.getAttribute('data-close')==='backdrop') close(); });
+            })();
+        </script>
     <script>
         // expose super-admin flag to admin UI JS (used to show force-delete)
         window.IS_SUPER_ADMIN = <?php echo Database::isSuperAdmin() ? 'true' : 'false'; ?>;

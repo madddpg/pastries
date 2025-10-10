@@ -73,6 +73,9 @@ foreach ($orders as $order):
   </div>
 
   <div class="order-actions">
+    <?php if ($method === 'gcash' && $receipt !== ''): ?>
+      <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc('../' . ltrim($receipt, '/')) ?>" style="margin-bottom:8px;width:100%;background:#0ea5e9;color:#fff;border:none;border-radius:6px;padding:8px 10px;">See receipt</button>
+    <?php endif; ?>
     <?php if ($status === 'pending'): ?>
       <button type="button" class="btn-accept" data-id="<?= $id ?>">Accept</button>
       <button type="button" class="btn-reject" data-id="<?= $id ?>">Reject</button>
