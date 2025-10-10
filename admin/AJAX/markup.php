@@ -73,9 +73,14 @@ foreach ($orders as $order):
   </div>
 
   <div class="order-actions">
-    <?php if ($method === 'gcash' && $receipt !== ''): ?>
-      <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc('../' . ltrim($receipt, '/')) ?>" style="margin-bottom:8px;width:100%;background:#0ea5e9;color:#fff;border:none;border-radius:6px;padding:8px 10px;">See receipt</button>
-    <?php endif; ?>
+    <?php
+      $receiptUrl = $receipt !== '' ? ('../' . ltrim($receipt, '/')) : '';
+      $btnStyle = 'margin-bottom:8px;width:100%;border:none;border-radius:6px;padding:8px 10px;';
+      $hasReceipt = $receiptUrl !== '';
+      $bg = $hasReceipt ? '#0ea5e9' : '#9ca3af';
+      $title = $hasReceipt ? 'Open receipt' : 'No receipt attached';
+    ?>
+    <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc($receiptUrl) ?>" title="<?= esc($title) ?>" style="<?= esc($btnStyle) ?>background:<?= esc($bg) ?>;color:#fff;">See receipt</button>
     <?php if ($status === 'pending'): ?>
       <button type="button" class="btn-accept" data-id="<?= $id ?>">Accept</button>
       <button type="button" class="btn-reject" data-id="<?= $id ?>">Reject</button>

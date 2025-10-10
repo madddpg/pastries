@@ -47,6 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (url) {
       if (typeof window.__openReceipt === 'function') window.__openReceipt(url);
       else window.open(url, '_blank', 'noopener');
+    } else {
+      alert('No receipt image was attached for this order.');
     }
   }, true);
   document.querySelectorAll(".nav-item").forEach((item) => {
