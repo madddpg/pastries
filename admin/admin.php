@@ -860,13 +860,13 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
 
                     <!-- Toppings Section (admin) -->
                     <div id="toppings-section" class="content-section">
-                        <h1 style="margin-bottom:12px;">Toppings Management</h1>
+                        <h1 style="margin-bottom:12px;">Add-ons Management</h1>
 
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
                             <div class="tabs">
-                                <a href="#" class="tab active">All Toppings</a>
+                                <a href="#" class="tab active">All Add-ons</a>
                             </div>
-                            <button id="showAddToppingModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Topping</button>
+                            <button id="showAddToppingModalBtn" class="btn-primary" style="padding:10px 14px;border-radius:8px;">+ Add Add-on</button>
                         </div>
 
                         <div class="card" style="background:#f6fff5;border-radius:12px;padding:18px;box-shadow:0 6px 18px rgba(16,185,129,0.05);">

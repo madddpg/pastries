@@ -1275,12 +1275,12 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
                     <!-- Toppings choices -->
                     <div class="product-modal-toppings" style="margin-top:12px;">
-                        <h3>Add-ons / Toppings</h3>
+                        <h3>Add-ons</h3>
 
                         <?php if (!empty($_SESSION['user']['is_admin'])): ?>
                             <div style="margin:8px 0;">
                                 <button id="showAddToppingModalBtn" class="btn" style="background:#059669;color:#fff;padding:6px 10px;border-radius:8px;font-weight:600;">
-                                    + Add Topping
+                                    + Add-ons
                                 </button>
                             </div>
                         <?php endif; ?>
