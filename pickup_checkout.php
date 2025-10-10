@@ -1,5 +1,10 @@
 <?php
 header('Content-Type: application/json');
+// Ensure errors are logged, not printed into JSON responses
+@ini_set('display_errors', '0');
+@error_reporting(E_ALL);
+// Buffer output to strip any accidental echoes/warnings before JSON
+if (!headers_sent()) { @ob_start(); }
 session_start();
 require_once __DIR__ . '/admin/database/db_connect.php';
 
@@ -18,6 +23,7 @@ if ($payment_method !== 'gcash') { $payment_method = 'gcash'; }
 error_log("Payment method received: " . $payment_method);
 
 if ($pickup_name === '' || $pickup_location === '' || $pickup_time === '' || empty($cart_items)) {
+    if (ob_get_level()) { @ob_end_clean(); }
     echo json_encode([
         'success' => false,
         'message' => 'Please fill out all required pickup details and have at least one item in your cart.',
@@ -34,6 +40,7 @@ if ($payment_method === 'gcash') {
         if ($uploadErr === UPLOAD_ERR_INI_SIZE || $uploadErr === UPLOAD_ERR_FORM_SIZE) {
             $msg = 'The uploaded file is too large. Please upload a smaller image (try under 5MB).';
         }
+        if (ob_get_level()) { @ob_end_clean(); }
         echo json_encode([
             'success' => false,
             'message' => $msg,
@@ -60,6 +67,7 @@ if (!empty($_SESSION['__last_order']) && is_array($_SESSION['__last_order'])) {
     $lastSig = isset($last['sig']) ? $last['sig'] : '';
     $lastTs  = isset($last['ts']) ? (int)$last['ts'] : 0;
     if ($lastSig === $orderSig && ($nowTs - $lastTs) < 10) {
+        if (ob_get_level()) { @ob_end_clean(); }
         echo json_encode([
             'success' => false,
             'message' => 'Duplicate submission detected. Please wait a moment before trying again.',
@@ -123,6 +131,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
         error_log("pickup_checkout: failed to update payment_method: " . $e->getMessage());
     }
 
+   if (ob_get_level()) { @ob_end_clean(); }
    echo json_encode([
     'success' => true,
     'message' => 'Pickup order placed successfully.',
@@ -132,6 +141,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
     exit;
 }
 
+if (ob_get_level()) { @ob_end_clean(); }
 echo json_encode([
     'success' => false,
     'message' => $result['message'] ?? 'Failed to create order.',
