@@ -538,8 +538,8 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
   grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-bottom: 2rem;
-  /* Match the stat-card background so the gaps visually blend */
-  background: #f3fff376;
+  /* Make the gaps between cards white */
+  background: #ffffff;
 }
 
 #dashboard-overview-section .stat-card {
