@@ -9,7 +9,9 @@ $pickup_location = isset($_POST['pickup_location']) ? trim($_POST['pickup_locati
 $pickup_time = isset($_POST['pickup_time']) ? trim($_POST['pickup_time']) : '';
 $special_instructions = isset($_POST['special_instructions']) ? trim($_POST['special_instructions']) : '';
 $cart_items = isset($_POST['cart_items']) ? json_decode($_POST['cart_items'], true) : [];
+// Force/accept only gcash; default to gcash when missing
 $payment_method = isset($_POST['payment_method']) ? strtolower(trim($_POST['payment_method'])) : 'gcash';
+if ($payment_method !== 'gcash') { $payment_method = 'gcash'; }
 
 
 // Debug logging
@@ -28,7 +30,7 @@ $user_id = isset($_SESSION['user']['user_id']) ? intval($_SESSION['user']['user_
 $db = new Database();
 
 // Pass payment_method to createPickupOrder
-$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, in_array($payment_method, ['gcash']) ? $payment_method : 'gcash');
+$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, $payment_method);
 
 if ($result['success'] && !empty($result['reference_number'])) {
     try {
@@ -40,7 +42,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
             
             // Debug log the update
             error_log("Updated payment_method for ref {$result['reference_number']}: $payment_method");
-
+            
             // If gcash, persist the uploaded receipt image
             $uploadErr = isset($_FILES['gcash_receipt']['error']) ? (int)$_FILES['gcash_receipt']['error'] : null;
             if ($payment_method === 'gcash' && isset($_FILES['gcash_receipt']) && is_array($_FILES['gcash_receipt']) && ($uploadErr ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
@@ -50,37 +52,27 @@ if ($result['success'] && !empty($result['reference_number'])) {
                 if (!in_array($ext, ['jpg','jpeg','png','webp'])) { $ext = 'jpg'; }
 
                 $uploadsDir = __DIR__ . '/uploads/gcash';
-                if (!is_dir($uploadsDir)) {
-                    @mkdir($uploadsDir, 0775, true);
-                }
+                if (!is_dir($uploadsDir)) { @mkdir($uploadsDir, 0775, true); }
                 $safeRef = preg_replace('/[^A-Za-z0-9\-_.]/', '_', $result['reference_number']);
                 $fileName = $safeRef . '.' . $ext;
                 $dest = $uploadsDir . '/' . $fileName;
 
-                if (!@move_uploaded_file($tmp, $dest)) {
-                    // Fallback to copy if move fails (e.g., across partitions)
-                    @copy($tmp, $dest);
-                }
+                if (!@move_uploaded_file($tmp, $dest)) { @copy($tmp, $dest); }
 
-                // Store relative web path in DB so admin can view it
-                $relPath = 'uploads/gcash/' . $fileName; // relative to webroot
+                $relPath = 'uploads/gcash/' . $fileName; // web path relative to site root
                 try {
                     $up = $pdo->prepare("UPDATE `transaction` SET gcash_receipt_path = ? WHERE reference_number = ?");
                     $up->execute([$relPath, $result['reference_number']]);
                 } catch (Exception $e) {
                     error_log('Failed to update gcash_receipt_path: ' . $e->getMessage());
-                    // Fallback: try legacy misspelled column if present
-                    try {
-                        $pdo->exec("UPDATE `transaction` SET gcash_reciept_path = '" . addslashes($relPath) . "' WHERE reference_number = '" . addslashes($result['reference_number']) . "'");
-                    } catch (Throwable $e2) { /* ignore */ }
+                    // Fallback to legacy misspelling if present
+                    try { $pdo->exec("UPDATE `transaction` SET gcash_reciept_path = '" . addslashes($relPath) . "' WHERE reference_number = '" . addslashes($result['reference_number']) . "'"); }
+                    catch (Throwable $_) { /* ignore */ }
                 }
-
                 error_log("Saved GCash receipt for {$result['reference_number']} at /" . $relPath);
-            } else {
+            } else if ($payment_method === 'gcash') {
                 // Log non-OK upload error codes for diagnosis
-                if ($payment_method === 'gcash') {
-                    error_log('GCash upload missing or errored. $_FILES present: ' . (isset($_FILES['gcash_receipt']) ? 'yes' : 'no') . ', error=' . var_export($uploadErr, true));
-                }
+                error_log('GCash upload missing or errored. $_FILES present: ' . (isset($_FILES['gcash_receipt']) ? 'yes' : 'no') . ', error=' . var_export($uploadErr, true));
             }
         }
     } catch (Exception $e) {
