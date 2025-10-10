@@ -539,7 +539,7 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
   gap: 1.5rem;
   margin-bottom: 2rem;
   /* Make the gaps between cards white */
-  background: #ffffff;
+  background: #ffffff !important;
 }
 
 #dashboard-overview-section .stat-card {
