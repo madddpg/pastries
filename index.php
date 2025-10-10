@@ -1225,11 +1225,35 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         <div class="payment-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
             <button class="payment-modal-close" type="button" aria-label="Close">&times;</button>
             <h3 id="paymentModalTitle" style="margin-top:0;color:#2d4a3a;">Confirm payment</h3>
-            <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;">
+            <div class="payment-modal-actions" style="display:flex;gap:12px;margin-top:14px;flex-wrap:wrap;">
                 <button id="payCashBtn" class="auth-btn" style="flex:1;padding:12px 18px;"
                     onclick="handlePaymentChoice('cash')">Place Order (Cash)</button>
+                <button id="payGcashBtn" class="auth-btn" style="flex:1;padding:12px 18px;background:#0ea5e9;"
+                    onclick="handlePaymentChoice('gcash')">Pay via GCash</button>
             </div>
-            <!-- Removed GCash button / QR preview -->
+
+            <!-- GCash QR + receipt upload (hidden until selected) -->
+            <div id="gcashPreview" style="display:none;margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <img src="img/qr_code.jpeg" alt="GCash QR Code" style="width:160px;height:160px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;background:#fff;" />
+                    <div style="flex:1;min-width:240px;">
+                        <div style="font-weight:700;color:#1f2937;margin-bottom:6px;">Scan to pay with GCash</div>
+                        <ol style="margin:0 0 10px 18px;color:#374151;">
+                            <li>Open your GCash app and scan the QR.</li>
+                            <li>Enter the total amount and complete the payment.</li>
+                            <li>Upload a screenshot of your receipt below.</li>
+                        </ol>
+                        <div>
+                            <input type="file" id="gcashReceiptInput" accept="image/*" style="display:block;margin:8px 0;" />
+                            <small style="color:#6b7280;">Accepted formats: JPG, PNG, JPEG, WEBP. Max ~5MB.</small>
+                        </div>
+                        <div style="margin-top:10px;display:flex;gap:10px;">
+                            <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#059669;color:#fff;border:none;border-radius:8px;">I've paid — Submit</button>
+                            <button type="button" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#e5e7eb;color:#111827;border:none;border-radius:8px;" onclick="document.getElementById('gcashPreview').style.display='none'">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

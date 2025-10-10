@@ -745,6 +745,13 @@ function handlePaymentChoice(method) {
 function submitGcashCheckout() {
   const paymentModal = document.getElementById('paymentMethodModal');
   if (!paymentModal) return;
+  // require proof image
+  const fileInput = document.getElementById('gcashReceiptInput');
+  const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+  if (!file) {
+    try { showNotification('Please upload a screenshot/receipt to proceed.', 'error'); } catch(_) { alert('Please upload a screenshot/receipt to proceed.'); }
+    return;
+  }
   const pickup = {
     pickup_name: paymentModal.dataset.pickupName || '',
     pickup_location: paymentModal.dataset.pickupLocation || '',
@@ -754,32 +761,39 @@ function submitGcashCheckout() {
   // submit with payment_method=gcash
   paymentModal.style.display = 'none';
   document.body.style.overflow = 'auto';
-  submitPickupForm({ ...pickup, payment_method: 'gcash' });
+  submitPickupForm({ ...pickup, payment_method: 'gcash', gcash_file: file });
 }
 
-// Ensure submitPickupForm always sends cash regardless of payload
 function submitPickupForm(payload) {
   payload = payload || {};
-  payload.payment_method = 'cash';
-
-  try { console.debug("submitPickupForm payload (cash-only):", payload); } catch (e) { }
-
+  const isGcash = (payload.payment_method || '').toLowerCase() === 'gcash';
   const cart_items = JSON.stringify(cart || []);
-  const body = new URLSearchParams();
-  body.append("pickup_name", payload.pickup_name || "");
-  body.append("pickup_location", payload.pickup_location || "");
-  body.append("pickup_time", payload.pickup_time || "");
-  body.append("special_instructions", payload.special_instructions || "");
-  body.append("payment_method", "cash");
-  body.append("cart_items", cart_items);
 
-  showNotification("Placing order (cash)...", "success");
-  fetch("pickup_checkout.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
-    credentials: "same-origin"
-  })
+  let fetchOpts;
+  if (isGcash) {
+    const fd = new FormData();
+    fd.append('pickup_name', payload.pickup_name || '');
+    fd.append('pickup_location', payload.pickup_location || '');
+    fd.append('pickup_time', payload.pickup_time || '');
+    fd.append('special_instructions', payload.special_instructions || '');
+    fd.append('payment_method', 'gcash');
+    fd.append('cart_items', cart_items);
+    if (payload.gcash_file) fd.append('gcash_receipt', payload.gcash_file);
+    fetchOpts = { method: 'POST', body: fd, credentials: 'same-origin' };
+    try { showNotification('Submitting GCash payment...', 'success'); } catch (_) {}
+  } else {
+    const body = new URLSearchParams();
+    body.append('pickup_name', payload.pickup_name || '');
+    body.append('pickup_location', payload.pickup_location || '');
+    body.append('pickup_time', payload.pickup_time || '');
+    body.append('special_instructions', payload.special_instructions || '');
+    body.append('payment_method', 'cash');
+    body.append('cart_items', cart_items);
+    fetchOpts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString(), credentials: 'same-origin' };
+    try { showNotification('Placing order (cash)...', 'success'); } catch (_) {}
+  }
+
+  fetch('pickup_checkout.php', fetchOpts)
     .then(r => r.json())
     .then(data => {
       if (data && data.success) {
@@ -872,6 +886,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.body.style.overflow = "auto";
       }
     });
+    const closeBtn = paymentModal.querySelector('.payment-modal-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        paymentModal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        const gcashPrev = document.getElementById('gcashPreview');
+        if (gcashPrev) gcashPrev.style.display = 'none';
+      });
+    }
   }
 });
 

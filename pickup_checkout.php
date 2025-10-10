@@ -9,7 +9,7 @@ $pickup_location = isset($_POST['pickup_location']) ? trim($_POST['pickup_locati
 $pickup_time = isset($_POST['pickup_time']) ? trim($_POST['pickup_time']) : '';
 $special_instructions = isset($_POST['special_instructions']) ? trim($_POST['special_instructions']) : '';
 $cart_items = isset($_POST['cart_items']) ? json_decode($_POST['cart_items'], true) : [];
-$payment_method = 'cash';
+$payment_method = isset($_POST['payment_method']) ? strtolower(trim($_POST['payment_method'])) : 'cash';
 
 
 // Debug logging
@@ -28,7 +28,7 @@ $user_id = isset($_SESSION['user']['user_id']) ? intval($_SESSION['user']['user_
 $db = new Database();
 
 // Pass payment_method to createPickupOrder
-$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, $payment_method);
+$result = $db->createPickupOrder($user_id, $cart_items, $pickup_name, $pickup_location, $pickup_time, $special_instructions, in_array($payment_method, ['cash','gcash']) ? $payment_method : 'cash');
 
 if ($result['success'] && !empty($result['reference_number'])) {
     try {
@@ -40,6 +40,30 @@ if ($result['success'] && !empty($result['reference_number'])) {
             
             // Debug log the update
             error_log("Updated payment_method for ref {$result['reference_number']}: $payment_method");
+
+            // If gcash, persist the uploaded receipt image
+            if ($payment_method === 'gcash' && isset($_FILES['gcash_receipt']) && is_array($_FILES['gcash_receipt']) && ($_FILES['gcash_receipt']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
+                $tmp = $_FILES['gcash_receipt']['tmp_name'];
+                $orig = $_FILES['gcash_receipt']['name'] ?? 'receipt';
+                $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg','jpeg','png','webp'])) { $ext = 'jpg'; }
+
+                $uploadsDir = __DIR__ . '/uploads/gcash';
+                if (!is_dir($uploadsDir)) {
+                    @mkdir($uploadsDir, 0775, true);
+                }
+                $safeRef = preg_replace('/[^A-Za-z0-9\-_.]/', '_', $result['reference_number']);
+                $dest = $uploadsDir . '/' . $safeRef . '.' . $ext;
+
+                if (!@move_uploaded_file($tmp, $dest)) {
+                    // Fallback to copy if move fails (e.g., across partitions)
+                    @copy($tmp, $dest);
+                }
+
+                // Optionally store relative path in DB if you add a column later
+                // For now, just log path
+                error_log("Saved GCash receipt for {$result['reference_number']} at " . str_replace(__DIR__, '', $dest));
+            }
         }
     } catch (Exception $e) {
         error_log("pickup_checkout: failed to update payment_method: " . $e->getMessage());
@@ -49,7 +73,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
     'success' => true,
     'message' => 'Pickup order placed successfully.',
     'reference_number' => $result['reference_number'],
-    'received_payment_method' => 'cash'
+    'received_payment_method' => $payment_method
 ]);
     exit;
 }
@@ -57,7 +81,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
 echo json_encode([
     'success' => false,
     'message' => $result['message'] ?? 'Failed to create order.',
-    'received_payment_method' => 'cash'
+    'received_payment_method' => $payment_method
 ]);
 
 ?>
