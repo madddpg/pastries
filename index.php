@@ -1248,7 +1248,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </ol>
                         <div>
                             <input type="file" id="gcashReceiptInput" accept="image/*" style="display:block;margin:8px 0;" />
-                            <small style="color:#6b7280;">Accepted formats: JPG, PNG, JPEG, WEBP. Max ~5MB.</small>
+                            <small style="color:#6b7280;">Accepted formats: JPG, PNG, JPEG. Max ~5MB.</small>
                         </div>
                         <div style="margin-top:10px;display:flex;gap:10px;">
                             <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#059669;color:#fff;border:none;border-radius:8px;">I've paid — Submit</button>

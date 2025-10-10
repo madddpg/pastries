@@ -53,16 +53,24 @@ if ($result['success'] && !empty($result['reference_number'])) {
                     @mkdir($uploadsDir, 0775, true);
                 }
                 $safeRef = preg_replace('/[^A-Za-z0-9\-_.]/', '_', $result['reference_number']);
-                $dest = $uploadsDir . '/' . $safeRef . '.' . $ext;
+                $fileName = $safeRef . '.' . $ext;
+                $dest = $uploadsDir . '/' . $fileName;
 
                 if (!@move_uploaded_file($tmp, $dest)) {
                     // Fallback to copy if move fails (e.g., across partitions)
                     @copy($tmp, $dest);
                 }
 
-                // Optionally store relative path in DB if you add a column later
-                // For now, just log path
-                error_log("Saved GCash receipt for {$result['reference_number']} at " . str_replace(__DIR__, '', $dest));
+                // Store relative web path in DB so admin can view it
+                $relPath = 'uploads/gcash/' . $fileName; // relative to webroot
+                try {
+                    $up = $pdo->prepare("UPDATE `transaction` SET gcash_receipt_path = ? WHERE reference_number = ?");
+                    $up->execute([$relPath, $result['reference_number']]);
+                } catch (Exception $e) {
+                    error_log('Failed to update gcash_receipt_path: ' . $e->getMessage());
+                }
+
+                error_log("Saved GCash receipt for {$result['reference_number']} at /" . $relPath);
             }
         }
     } catch (Exception $e) {

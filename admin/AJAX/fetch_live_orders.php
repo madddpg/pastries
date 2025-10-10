@@ -47,14 +47,15 @@ try {
         // Full dataset with pagination (safe aliases and backticks)
         $limit = (int)$perPage;
         $offset = (int)(($page - 1) * $perPage);
-        $sql = "SELECT
+                $sql = "SELECT
                   t.transac_id,
                   t.transac_id AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
                   t.created_at,
-                  t.payment_method,
+                                    COALESCE(t.payment_method,'gcash') AS payment_method,
+                                    t.gcash_receipt_path,
                   u.user_FN AS customer_name,
                                     p.pickup_location,
                   p.pickup_time,
@@ -116,7 +117,7 @@ try {
     if ($orders) {
         try {
             $itemStmt = $con->prepare(
-                "SELECT ti.transaction_id, ti.quantity, ti.size, ti.price, p.name
+                "SELECT ti.transaction_id, ti.quantity, ti.size, ti.price, ti.sugar_level, p.name
                  FROM transaction_items ti
                  JOIN products p ON ti.product_id = p.product_id
                  WHERE ti.transaction_id = ?"

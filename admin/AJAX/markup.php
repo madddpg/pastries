@@ -27,7 +27,8 @@ foreach ($orders as $order):
     }
   }
   $note   = trim((string)($order['special_instructions'] ?? ''));
-  $method = strtolower(trim((string)($order['payment_method'] ?? 'cash')));
+  $method = strtolower(trim((string)($order['payment_method'] ?? 'gcash')));
+  $receipt = trim((string)($order['gcash_receipt_path'] ?? ''));
 ?>
 <div class="order-card <?= esc($status) ?>" data-transac-id="<?= $id ?>" data-id="<?= $id ?>">
   <div class="order-header">
@@ -40,6 +41,11 @@ foreach ($orders as $order):
       <h4><?= $name ?></h4>
       <p>₱<?= $total ?></p>
       <p>Payment: <span class="payment-badge <?= esc($method) ?>"><?= esc(ucfirst($method)) ?></span></p>
+      <?php if ($method === 'gcash' && $receipt !== ''): ?>
+        <div style="margin-top:6px;">
+          <a href="<?= esc('../' . ltrim($receipt, '/')) ?>" target="_blank" rel="noopener" style="color:#0ea5e9;font-weight:600;">View GCash receipt</a>
+        </div>
+      <?php endif; ?>
     </div>
     <div class="pickup-info" style="margin: 10px 0;">
       <?php if ($pickupLoc !== ''): ?><div>Pickup Location: <?= esc($pickupLoc) ?></div><?php endif; ?>
@@ -53,6 +59,7 @@ foreach ($orders as $order):
       <?php foreach ($order['items'] as $it): ?>
         <div class="item">• <?= esc($it['name'] ?? '') ?>
           <?php if (!empty($it['size'])): ?>(<?= esc($it['size']) ?>)<?php endif; ?>
+          <?php if (!empty($it['sugar_level'])): ?> — <span style="color:#64748b;">Sugar: <?= esc($it['sugar_level']) ?></span><?php endif; ?>
           × <?= (int)($it['quantity'] ?? 0) ?> - ₱<?= number_format((float)($it['price'] ?? 0), 2) ?>
         </div>
       <?php endforeach; ?>

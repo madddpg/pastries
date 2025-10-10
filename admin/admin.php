@@ -70,7 +70,9 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
     }
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
         u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
-           a.admin_id AS approved_by_admin_id, a.username AS approved_by
+           a.admin_id AS approved_by_admin_id, a.username AS approved_by,
+           COALESCE(t.payment_method, 'gcash') AS payment_method,
+           t.gcash_receipt_path
         FROM transaction t
         LEFT JOIN users u ON t.user_id = u.user_id
         LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
@@ -81,7 +83,7 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
     $stmt->execute($params);
     $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($orders as &$order) {
-        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, p.name 
+        $itemStmt = $con->prepare("SELECT ti.quantity, ti.size, ti.price, ti.sugar_level, p.name 
             FROM transaction_items ti 
             JOIN products p ON ti.product_id = p.product_id 
             WHERE ti.transaction_id = ?");

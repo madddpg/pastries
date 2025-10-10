@@ -25,6 +25,7 @@ class Database
     try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureToppingsScopeSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -55,6 +56,7 @@ class Database
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -386,6 +388,14 @@ class Database
             try { $pdo->exec("ALTER TABLE promos ADD CONSTRAINT fk_promos_admin FOREIGN KEY (admin_id) REFERENCES admin_users(admin_id) ON DELETE SET NULL ON UPDATE CASCADE"); }
             catch (Throwable $_) { /* ignore if already exists */ }
         } catch (Throwable $_) { /* ignore */ }
+    }
+
+    /** Ensure transaction table has a gcash_receipt_path column for uploaded proof. */
+    private function ensureTransactionReceiptSchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec("ALTER TABLE `transaction` ADD COLUMN gcash_receipt_path VARCHAR(255) NULL AFTER payment_method");
+        } catch (Throwable $_) { /* likely exists */ }
     }
 
     // Fetch all picked up orders 
