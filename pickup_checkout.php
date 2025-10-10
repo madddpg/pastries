@@ -103,7 +103,8 @@ if ($result['success'] && !empty($result['reference_number'])) {
                 $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
                 if (!in_array($ext, ['jpg','jpeg','png','webp'])) { $ext = 'jpg'; }
 
-                $uploadsDir = __DIR__ . '/uploads/gcash';
+                // Save under img/uploads/gcash (served as a static asset)
+                $uploadsDir = __DIR__ . '/img/uploads/gcash';
                 if (!is_dir($uploadsDir)) { @mkdir($uploadsDir, 0775, true); }
                 $safeRef = preg_replace('/[^A-Za-z0-9\-_.]/', '_', $result['reference_number']);
                 $fileName = $safeRef . '.' . $ext;
@@ -111,7 +112,7 @@ if ($result['success'] && !empty($result['reference_number'])) {
 
                 if (!@move_uploaded_file($tmp, $dest)) { @copy($tmp, $dest); }
 
-                $relPath = 'uploads/gcash/' . $fileName; // web path relative to site root
+                $relPath = 'img/uploads/gcash/' . $fileName; // web path relative to site root
                 try {
                     $up = $pdo->prepare("UPDATE `transaction` SET gcash_receipt_path = ? WHERE reference_number = ?");
                     $up->execute([$relPath, $result['reference_number']]);
