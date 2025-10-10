@@ -225,10 +225,10 @@
 .report-stat-icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:26px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.12)); }
 .report-stat-label { font-size:0.65rem; letter-spacing:0.6px; font-weight:700; text-transform:uppercase; color:#5b6d66; }
 .report-stat-value { font-size:1.15rem; font-weight:700; color:#123b27; line-height:1.15; }
-/* Align label and value in one row; right-align the number like Total Revenue */
-.report-stat-meta { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
-.report-stat-label { flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.report-stat-value { flex:0 0 auto; text-align:right; font-variant-numeric: tabular-nums; }
+/* Stack value below label inside the stat card */
+.report-stat-meta { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+.report-stat-label { display:block; white-space:normal; overflow:visible; text-overflow:unset; }
+.report-stat-value { display:block; margin-top:2px; text-align:left; font-variant-numeric: tabular-nums; }
 .report-tables-grid { display:grid; grid-template-columns:1fr; gap:34px; }
 .report-card-block { background:#ffffff; border:1px solid #e6f2ea; border-radius:20px; padding:20px 22px 24px; box-shadow:0 6px 18px rgba(16,185,129,0.05); position:relative; overflow:hidden; }
 .report-card-block:after { content:""; position:absolute; width:140px; height:140px; border-radius:50%; background:radial-gradient(circle at center, rgba(5,150,105,0.12), transparent 70%); top:-40px; right:-40px; }
