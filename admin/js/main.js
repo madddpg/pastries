@@ -199,20 +199,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const hA = document.getElementById('col-price-a');
       const hB = document.getElementById('col-price-b');
       const hC = document.getElementById('col-price-c');
+      const table = document.getElementById('products-table');
       if (hA && hB && hC) {
         if (filter === 'pastries') {
           hA.textContent = 'Per piece';
           hB.textContent = 'Box of 4';
           hC.textContent = 'Box of 6';
+          table?.classList.remove('mode-drinks');
         } else if (filter === 'hot' || filter === 'cold') {
           hA.textContent = 'Grande';
           hB.textContent = 'Supreme';
-          hC.textContent = '—';
+          hC.textContent = '';
+          table?.classList.add('mode-drinks');
         } else {
           // All: default to generic labels
           hA.textContent = 'Per piece / Grande';
           hB.textContent = 'Box of 4 / Supreme';
           hC.textContent = 'Box of 6 / —';
+          table?.classList.remove('mode-drinks');
         }
       }
     } catch (_) {}
