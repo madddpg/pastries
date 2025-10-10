@@ -68,11 +68,23 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
         $where .= " AND p.pickup_location LIKE ?";
         $params[] = $location . '%';
     }
+    // Dynamically select the available receipt column (avoid referencing a non-existent column)
+    $receiptCol = 'NULL AS gcash_receipt_path';
+    try {
+        $q = $con->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transaction'");
+        $cols = array_map(function($r){ return strtolower((string)$r['COLUMN_NAME']); }, $q->fetchAll(PDO::FETCH_ASSOC) ?: []);
+        if (in_array('gcash_receipt_path', $cols, true)) {
+            $receiptCol = 't.gcash_receipt_path AS gcash_receipt_path';
+        } elseif (in_array('gcash_reciept_path', $cols, true)) {
+            $receiptCol = 't.gcash_reciept_path AS gcash_receipt_path';
+        }
+    } catch (Throwable $_) { /* ignore */ }
+
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
         u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
            a.admin_id AS approved_by_admin_id, a.username AS approved_by,
            COALESCE(t.payment_method, 'gcash') AS payment_method,
-           COALESCE(t.gcash_receipt_path, t.gcash_reciept_path) AS gcash_receipt_path
+           {$receiptCol}
         FROM transaction t
         LEFT JOIN users u ON t.user_id = u.user_id
         LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
