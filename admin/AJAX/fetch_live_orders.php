@@ -49,7 +49,7 @@ try {
         $offset = (int)(($page - 1) * $perPage);
                                 $sql = "SELECT
                   t.transac_id,
-                  t.transac_id AS reference_number,
+                  COALESCE(t.reference_number, t.transac_id) AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
@@ -97,7 +97,7 @@ try {
         $offset = (int)(($page - 1) * $perPage);
         $sql = "SELECT
                                     t.transac_id,
-                                    t.transac_id AS reference_number,
+                                    COALESCE(t.reference_number, t.transac_id) AS reference_number,
                                     t.user_id,
                                     t.total_amount,
                                     t.status,

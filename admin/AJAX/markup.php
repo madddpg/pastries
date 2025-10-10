@@ -34,13 +34,23 @@ foreach ($orders as $order):
       : (isset($order['gcash_reciept_path']) ? (string)$order['gcash_reciept_path'] : '');
   $receipt = trim($receiptRaw);
   // Fallback: if DB path missing but gcash, attempt to infer by reference number in img/uploads/gcash
-  if ($receipt === '' && $method === 'gcash' && $ref !== '') {
+  if ($receipt === '' && $method === 'gcash') {
     $tryExts = ['jpg','jpeg','png','webp'];
     $baseFs = realpath(__DIR__ . '/../../img/uploads/gcash');
     if ($baseFs) {
-      foreach ($tryExts as $ex) {
-        $candidate = $baseFs . DIRECTORY_SEPARATOR . $ref . '.' . $ex;
-        if (@file_exists($candidate)) { $receipt = 'img/uploads/gcash/' . $ref . '.' . $ex; break; }
+      // First try by human reference (e.g., CNC-YYYYMMDD-0001)
+      if ($ref !== '') {
+        foreach ($tryExts as $ex) {
+          $candidate = $baseFs . DIRECTORY_SEPARATOR . $ref . '.' . $ex;
+          if (@file_exists($candidate)) { $receipt = 'img/uploads/gcash/' . $ref . '.' . $ex; break; }
+        }
+      }
+      // If not found, try by numeric id
+      if ($receipt === '' && $id) {
+        foreach ($tryExts as $ex) {
+          $candidate = $baseFs . DIRECTORY_SEPARATOR . $id . '.' . $ex;
+          if (@file_exists($candidate)) { $receipt = 'img/uploads/gcash/' . $id . '.' . $ex; break; }
+        }
       }
     }
   }
