@@ -1087,6 +1087,7 @@ public function createPickupOrder(
         // Calculate total (pastries use variant price; drinks use size-based price)
         $total_amount = 0.0;
         $dtypeCache = [];
+        $toppingPriceCache = [];
         // Pre-collect desired quantities for stock validation
         $productPkCache = [];
         $needed = [];
@@ -1112,9 +1113,31 @@ public function createPickupOrder(
             $tSum = 0.0;
             if (!empty($item['toppings']) && is_array($item['toppings'])) {
                 foreach ($item['toppings'] as $t) {
-                    $t_price = (float)($t['price'] ?? 0);
+                    $unit = 0.0;
+                    $cacheKey = null;
+                    if (isset($t['topping_id']) && ctype_digit((string)$t['topping_id'])) {
+                        $tid = (int)$t['topping_id'];
+                        $cacheKey = 'id:' . $tid;
+                        if (!array_key_exists($cacheKey, $toppingPriceCache)) {
+                            $st = $con->prepare("SELECT price FROM toppings WHERE COALESCE(status,1)=1 AND topping_id = ? LIMIT 1");
+                            $st->execute([$tid]);
+                            $p = $st->fetchColumn();
+                            $toppingPriceCache[$cacheKey] = $p !== false ? (float)$p : null;
+                        }
+                        $unit = $toppingPriceCache[$cacheKey] ?? 0.0;
+                    } elseif (!empty($t['name'])) {
+                        $name = trim((string)$t['name']);
+                        $cacheKey = 'name:' . mb_strtolower($name);
+                        if (!array_key_exists($cacheKey, $toppingPriceCache)) {
+                            $st = $con->prepare("SELECT price FROM toppings WHERE COALESCE(status,1)=1 AND LOWER(name) = LOWER(?) LIMIT 1");
+                            $st->execute([$name]);
+                            $p = $st->fetchColumn();
+                            $toppingPriceCache[$cacheKey] = $p !== false ? (float)$p : null;
+                        }
+                        $unit = $toppingPriceCache[$cacheKey] ?? 0.0;
+                    }
                     $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $tSum += $t_price * $t_qty;
+                    $tSum += $unit * $t_qty;
                 }
             }
             $total_amount += ($base + $tSum) * $qty;
@@ -1159,8 +1182,8 @@ public function createPickupOrder(
             INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level)
             VALUES (?, ?, ?, ?, ?)
         ");
-
-    $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE topping_id = ? LIMIT 1");
+        // Fetch topping info (authoritative pricing)
+    $findTopping = $con->prepare("SELECT topping_id, price, COALESCE(status,1) AS status FROM toppings WHERE topping_id = ? LIMIT 1");
     $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
     // Stock decrement disabled per request
 
@@ -1225,14 +1248,15 @@ public function createPickupOrder(
                         continue;
                     }
                     $findTopping->execute([$topping_id]);
-                    if (!$findTopping->fetch(PDO::FETCH_ASSOC)) {
-                        continue;
+                    $trow = $findTopping->fetch(PDO::FETCH_ASSOC);
+                    if (!$trow || (int)($trow['status'] ?? 1) !== 1) {
+                        continue; // skip missing/inactive topping
                     }
                     $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $t_price = (float)($t['price'] ?? 0);
+                    $t_price = (float)($trow['price'] ?? 0); // authoritative unit price
                     $insertTopping->execute([
                         $transaction_item_id,
-                        $topping_id,
+                        (int)$topping_id,
                         $t_qty,
                         $t_price,
                         $item_sugar
@@ -1300,9 +1324,10 @@ public function createPickupOrder(
             // transaction_toppings no longer stores product_id or transaction_id
             $toppingInsert = $con->prepare("INSERT INTO transaction_toppings (transaction_item_id, topping_id, quantity, unit_price, sugar_level) VALUES (?, ?, ?, ?, ?)");
 
-            // helper: find topping by name (if not numeric id), and insert if missing
-            $findTopping = $con->prepare("SELECT topping_id FROM toppings WHERE name = ? LIMIT 1");
-            $insertTopping = $con->prepare("INSERT INTO toppings (name, price, created_at) VALUES (?, ?, NOW())");
+            // helper: find topping by name for legacy carts (do not auto-create new toppings here)
+            $findToppingByName = $con->prepare("SELECT topping_id, price, COALESCE(status,1) AS status FROM toppings WHERE LOWER(name) = LOWER(?) LIMIT 1");
+            $findToppingById = $con->prepare("SELECT topping_id, price, COALESCE(status,1) AS status FROM toppings WHERE topping_id = ? LIMIT 1");
+            $toppingPriceCache = [];
 
             // Insert items and their toppings (if any)
             $findActiveProductPk = $con->prepare("SELECT products_pk FROM products WHERE product_id = ? ORDER BY created_at DESC LIMIT 1");
@@ -1319,12 +1344,31 @@ public function createPickupOrder(
                 $quantity = isset($item['quantity']) ? intval($item['quantity']) : 1;
 
                 // compute price to store (base + toppings)
-                $computed_toppings_sum = 0;
+                $computed_toppings_sum = 0.0;
                 if (!empty($item['toppings']) && is_array($item['toppings'])) {
                     foreach ($item['toppings'] as $t) {
                         $t_qty = isset($t['quantity']) ? intval($t['quantity']) : (isset($t['qty']) ? intval($t['qty']) : 1);
-                        $t_price = floatval(isset($t['price']) ? $t['price'] : 0);
-                        $computed_toppings_sum += ($t_price * $t_qty);
+                        $unit = 0.0;
+                        if (isset($t['topping_id']) && ctype_digit((string)$t['topping_id'])) {
+                            $tid = (int)$t['topping_id'];
+                            $ck = 'id:' . $tid;
+                            if (!array_key_exists($ck, $toppingPriceCache)) {
+                                $findToppingById->execute([$tid]);
+                                $row = $findToppingById->fetch(PDO::FETCH_ASSOC);
+                                $toppingPriceCache[$ck] = ($row && (int)$row['status'] === 1) ? (float)$row['price'] : null;
+                            }
+                            $unit = $toppingPriceCache[$ck] ?? 0.0;
+                        } elseif (!empty($t['name'])) {
+                            $name = trim((string)$t['name']);
+                            $ck = 'name:' . mb_strtolower($name);
+                            if (!array_key_exists($ck, $toppingPriceCache)) {
+                                $findToppingByName->execute([$name]);
+                                $row = $findToppingByName->fetch(PDO::FETCH_ASSOC);
+                                $toppingPriceCache[$ck] = ($row && (int)$row['status'] === 1) ? (float)$row['price'] : null;
+                            }
+                            $unit = $toppingPriceCache[$ck] ?? 0.0;
+                        }
+                        $computed_toppings_sum += ($unit * max(1, $t_qty));
                     }
                 }
                 // Authoritative base price from DB for the given size/label
@@ -1352,34 +1396,33 @@ public function createPickupOrder(
                 $itemInsert->execute([$transaction_id, $product_id, $products_pk_val, $quantity, $size, $price_to_store]);
                 $transaction_item_id = $con->lastInsertId();
 
-                // Handle toppings (create/find topping and insert into transaction_toppings with sugar_level)
+                // Handle toppings (authoritative unit price and insert into transaction_toppings with sugar_level)
                 if (!empty($item['toppings']) && is_array($item['toppings'])) {
                     // sugar selected for this cart item (null if not provided)
                     $item_sugar = isset($item['sugar']) ? $item['sugar'] : null;
 
                     foreach ($item['toppings'] as $topping) {
-                        $topping_id = null;
-                        $t_name = isset($topping['name']) ? trim($topping['name']) : '';
-                        $t_price = floatval(isset($topping['price']) ? $topping['price'] : 0);
                         $t_qty = isset($topping['quantity']) ? intval($topping['quantity']) : (isset($topping['qty']) ? intval($topping['qty']) : 1);
-
-                        if (isset($topping['topping_id']) && is_numeric($topping['topping_id']) && intval($topping['topping_id']) > 0) {
-                            $topping_id = intval($topping['topping_id']);
-                        } elseif ($t_name !== '') {
-                            $findTopping->execute([$t_name]);
-                            $found = $findTopping->fetch(PDO::FETCH_ASSOC);
-                            if ($found && isset($found['topping_id'])) {
-                                $topping_id = intval($found['topping_id']);
-                            } else {
-                                $insertTopping->execute([$t_name, $t_price]);
-                                $topping_id = $con->lastInsertId();
-                            }
+                        $tid = null;
+                        $unit = 0.0;
+                        if (isset($topping['topping_id']) && ctype_digit((string)$topping['topping_id'])) {
+                            $tid = (int)$topping['topping_id'];
+                            $findToppingById->execute([$tid]);
+                            $row = $findToppingById->fetch(PDO::FETCH_ASSOC);
+                            if (!$row || (int)$row['status'] !== 1) continue;
+                            $unit = (float)$row['price'];
+                        } elseif (!empty($topping['name'])) {
+                            $name = trim((string)$topping['name']);
+                            $findToppingByName->execute([$name]);
+                            $row = $findToppingByName->fetch(PDO::FETCH_ASSOC);
+                            if (!$row || (int)$row['status'] !== 1) continue;
+                            $tid = (int)$row['topping_id'];
+                            $unit = (float)$row['price'];
                         } else {
-                            throw new Exception("Invalid topping data for product_id {$product_id}");
+                            continue; // insufficient data to resolve topping
                         }
-
-                        // insert topping record including sugar_level
-                        $toppingInsert->execute([$transaction_item_id, $topping_id, $t_qty, $t_price, $item_sugar]);
+                        // insert with authoritative unit price
+                        $toppingInsert->execute([$transaction_item_id, $tid, max(1, $t_qty), $unit, $item_sugar]);
                     }
                 }
 
