@@ -2202,7 +2202,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
             }
         });
     </script>
-    <script src="js/main.js"></script>
+    <script src="js/main.js?v=20251012"></script>
         <script>
             // Minimal receipt modal wiring (kept separate to avoid coupling to main.js build)
             (function(){

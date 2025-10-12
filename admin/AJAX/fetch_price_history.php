@@ -41,9 +41,9 @@ try {
 
     // Drink sizes history
     $sql = "SELECT size AS size_label, price, effective_from, effective_to
-            FROM `{$tbl}`
-            WHERE products_pk = ?
-            ORDER BY size ASC, effective_from DESC, id DESC";
+        FROM `{$tbl}`
+        WHERE products_pk = ?
+        ORDER BY size ASC, effective_from DESC, product_size_id DESC";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$productsPk]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
