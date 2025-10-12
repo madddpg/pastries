@@ -47,7 +47,7 @@ try {
         // Full dataset with pagination (safe aliases and backticks)
         $limit = (int)$perPage;
         $offset = (int)(($page - 1) * $perPage);
-                                $sql = "SELECT
+                                                                $sql = "SELECT
                   t.transac_id,
                   COALESCE(t.reference_number, t.transac_id) AS reference_number,
                   t.user_id,
@@ -56,7 +56,9 @@ try {
                   t.created_at,
                                                                         COALESCE(t.payment_method,'gcash') AS payment_method,
                                                                         COALESCE(t.gcash_receipt_path, t.gcash_reciept_path) AS gcash_receipt_path,
-                  u.user_FN AS customer_name,
+                                    u.user_FN AS user_FN,
+                                    u.user_LN AS user_LN,
+                                    u.user_FN AS customer_name,
                                     p.pickup_location,
                   p.pickup_time,
                   p.special_instructions
@@ -101,8 +103,11 @@ try {
                                     t.user_id,
                                     t.total_amount,
                                     t.status,
-                                    t.created_at
+                                    t.created_at,
+                                    u.user_FN AS user_FN,
+                                    u.user_LN AS user_LN
                                 FROM `transaction` t
+                                LEFT JOIN users u ON t.user_id = u.user_id
                                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
                 $where
                 ORDER BY t.created_at DESC

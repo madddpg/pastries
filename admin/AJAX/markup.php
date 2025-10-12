@@ -12,7 +12,10 @@ foreach ($orders as $order):
   $ref    = esc($refVal);
   $status = strtolower((string)($order['status'] ?? ''));
   $time   = esc($order['created_at'] ?? '');
-  $name   = esc($order['customer_name'] ?? 'Guest');
+  $first  = trim((string)($order['user_FN'] ?? ''));
+  $last   = trim((string)($order['user_LN'] ?? ''));
+  $fullName = trim($first . ' ' . $last);
+  $name   = esc($fullName !== '' ? $fullName : ($order['customer_name'] ?? 'Guest'));
   $total  = number_format((float)($order['total_amount'] ?? 0), 2);
   $pickupRaw = trim((string)($order['pickup_time'] ?? ''));
   $pickupLoc = trim((string)($order['pickup_location'] ?? ''));

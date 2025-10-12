@@ -1197,6 +1197,51 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
+  // --- Price History modal wiring ---
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-price-history');
+    if (!btn) return;
+    e.preventDefault();
+    // Find product id from the row
+    const row = btn.closest('tr[data-product-id]');
+    const productId = row ? (row.getAttribute('data-product-id') || '').trim() : '';
+    if (!productId) { alert('Missing product id.'); return; }
+    try {
+      const url = new URL('AJAX/fetch_price_history.php', window.location.href);
+      url.searchParams.set('product_id', productId);
+      const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+      const list = Array.isArray(data.data) ? data.data : [];
+      if (list.length === 0) {
+        window.__openPriceHistory('<div style="padding:12px;color:#64748b;">No price history found.</div>');
+        return;
+      }
+      const headers = ['Size / Label','Price (₱)','Effective From','Effective To'];
+      const th = headers.map(h => `<th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb;">${escapeHtml(h)}</th>`).join('');
+      const rows = list.map(r => {
+        const sz = r.size_label || '';
+        const price = Number(r.price || 0).toFixed(2);
+        const from = r.effective_from || '';
+        const to = r.effective_to || '';
+        return `<tr>`+
+          `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">${escapeHtml(sz)}</td>`+
+          `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">₱${escapeHtml(price)}</td>`+
+          `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">${escapeHtml(from)}</td>`+
+          `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">${escapeHtml(to || '—')}</td>`+
+        `</tr>`;
+      }).join('');
+      const html = `<table style="width:100%;border-collapse:collapse;font-size:14px;">`+
+        `<thead><tr>${th}</tr></thead>`+
+        `<tbody>${rows}</tbody>`+
+      `</table>`;
+      window.__openPriceHistory(html);
+    } catch (err) {
+      console.error('[admin] price history error', err);
+      window.__openPriceHistory('<div style="padding:12px;color:#dc2626;">Failed to load history.</div>');
+    }
+  }, true);
+
   // --- Customers (block/unblock) ---
   (function customersInit() {
     const tbody = document.getElementById('customers-tbody');

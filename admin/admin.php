@@ -652,6 +652,11 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                                         Edit
                                                     </button>
 
+                                                    <button type="button" class="menu-item btn-price-history"
+                                                        style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #059669; cursor: pointer; white-space: nowrap;">
+                                                        Price history
+                                                    </button>
+
                                                     <button
                                                         type="button"
                                                         class="btn-toggle-product"
@@ -2209,6 +2214,32 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                 window.__openReceipt = open; window.__closeReceipt = close;
                 if (closeBtn) closeBtn.addEventListener('click', close);
                 if (modal) modal.addEventListener('click', function(e){ if (e.target && e.target.getAttribute('data-close')==='backdrop') close(); });
+            })();
+        </script>
+        <!-- Price History Modal -->
+        <div id="priceHistoryModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:6000;align-items:center;justify-content:center;">
+            <div style="background:#fff;padding:16px;border-radius:12px;max-width:800px;width:92vw;max-height:85vh;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <strong>Price history</strong>
+                    <button id="phCloseBtn" style="background:#111827;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;">Close</button>
+                </div>
+                <div id="phBody" style="overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">
+                    <div style="padding:12px;color:#6b7280;">Loading…</div>
+                </div>
+            </div>
+            <div data-close="ph-backdrop" style="position:absolute;inset:0;"></div>
+        </div>
+        <script>
+            (function(){
+                const modal = document.getElementById('priceHistoryModal');
+                const body = document.getElementById('phBody');
+                const closeBtn = document.getElementById('phCloseBtn');
+                function open(){ if (!modal) return; modal.style.display='flex'; }
+                function close(){ if (!modal) return; modal.style.display='none'; if (body) body.innerHTML=''; }
+                window.__openPriceHistory = function(html){ if (body) { body.innerHTML = html; } open(); };
+                window.__closePriceHistory = close;
+                if (closeBtn) closeBtn.addEventListener('click', close);
+                if (modal) modal.addEventListener('click', function(e){ if (e.target && e.target.getAttribute('data-close')==='ph-backdrop') close(); });
             })();
         </script>
     <script>
