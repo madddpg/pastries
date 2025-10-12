@@ -3710,6 +3710,10 @@ label[for="acceptTerms"] { white-space: nowrap; }
 .order-history-page {
   padding-top: 32px; /* smaller top spacing now that header is removed */
 }
+.oh-title {
+  font-size: 2rem;
+  margin: 0 0 18px 0;
+}
 .oh-card {
   background: #fff;
   border: 1px solid #e5e7eb;

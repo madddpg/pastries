@@ -30,13 +30,13 @@ if (count($orders) > 0) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=20251012">
     <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
 <body>
 <main class="order-history-page">
 <div class="container mb-5">
-    <h2 class="mb-4 section-title" style="font-size:2rem;margin-top:0;">Order History</h2>
+    <h2 class="mb-4 section-title oh-title">Order History</h2>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">
             Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
