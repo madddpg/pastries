@@ -477,10 +477,8 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     <div class="table-container">
                         <div style="display:flex;justify-content:flex-end;margin-bottom:8px;gap:8px;">
                             <select id="pickedup-sort" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;">
-                                <option value="id_desc" selected>Newest ID</option>
-                                <option value="id_asc">Oldest ID</option>
-                                <option value="created_desc">Newest Date</option>
-                                <option value="created_asc">Oldest Date</option>
+                                <option value="created_desc" selected>Newest order</option>
+                                <option value="created_asc">Oldest order</option>
                             </select>
                         </div>
                         <table id="pickedup-orders-table" class="orders-table" style="width:100%;border-collapse:collapse;">
@@ -2447,7 +2445,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
             function load(page = 1) {
                 pickedUpPage = page;
-                const sort = sortSelect ? sortSelect.value : 'id_desc';
+                const sort = sortSelect ? sortSelect.value : 'created_desc';
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">Loading…</td></tr>';
                 fetch(`AJAX/fetch_pickedup_orders_page.php?page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}`, {
                         cache: 'no-store'
