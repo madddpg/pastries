@@ -3706,6 +3706,46 @@ label[for="acceptTerms"] { white-space: nowrap; }
   background: #f3f4f6;
 }
 
+/* Order History page styles */
+.order-history-page {
+  padding-top: 120px; /* clear fixed header */
+}
+.oh-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+}
+.oh-table thead th {
+  background: #f9fafb;
+  color: #111827;
+  font-weight: 600;
+}
+.oh-table tbody tr:hover {
+  background: #f9fafb;
+}
+.oh-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+.oh-badge.status-ready { background: #10b981; color: #fff; }
+.oh-badge.status-pending { background: #f59e0b; color: #111827; }
+.oh-badge.status-preparing { background: #60a5fa; color: #111827; }
+.oh-badge.status-pickedup { background: #9ca3af; color: #111827; }
+.oh-badge.status-cancelled { background: #ef4444; color: #fff; }
+.oh-pagination .page-item.active .page-link {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+}
+.oh-pagination .page-link {
+  color: #374151;
+}
+
 
 #pickupLocation, select[name="pickupLocation"] {
     width: 100%;

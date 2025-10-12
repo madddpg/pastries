@@ -79,9 +79,9 @@ if (count($orders) > 0) {
         </div>
     </header>
 
-<main style="padding-top:120px;">
+<main class="order-history-page">
 <div class="container mb-5">
-    <h2 class="mb-4">Order History</h2>
+    <h2 class="mb-4 section-title" style="font-size:2rem;">Order History</h2>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">
             Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
@@ -90,8 +90,8 @@ if (count($orders) > 0) {
     <?php if (count($orders) === 0): ?>
         <div class="alert alert-info">No orders found.</div>
     <?php else: ?>
-        <div class="table-responsive">
-        <table class="table align-middle" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+        <div class="oh-card table-responsive">
+        <table class="table align-middle oh-table">
             <thead class="table-light">
                 <tr>
                     <th>Reference Number</th>
@@ -111,15 +111,15 @@ if (count($orders) > 0) {
                         <?php
                         $status = strtolower($order['status']);
                         if ($status === 'ready') {
-                            echo '<span class="badge" style="background:#10b981;color:#fff;">Ready</span>';
+                            echo '<span class="oh-badge status-ready">Ready</span>';
                         } elseif ($status === 'pending') {
-                            echo '<span class="badge" style="background:#f59e0b;color:#111827;">Pending</span>';
+                            echo '<span class="oh-badge status-pending">Pending</span>';
                         } elseif ($status === 'preparing') {
-                            echo '<span class="badge" style="background:#60a5fa;color:#111827;">Preparing</span>';
+                            echo '<span class="oh-badge status-preparing">Preparing</span>';
                         } elseif ($status === 'picked up') {
-                            echo '<span class="badge" style="background:#9ca3af;color:#111827;">Picked Up</span>';
+                            echo '<span class="oh-badge status-pickedup">Picked Up</span>';
                         } elseif ($status === 'cancelled') {
-                            echo '<span class="badge" style="background:#ef4444;color:#fff;">Cancelled</span>';
+                            echo '<span class="oh-badge status-cancelled">Cancelled</span>';
                         } else {
                             echo htmlspecialchars(ucfirst($order['status']));
                         }
@@ -147,7 +147,7 @@ if (count($orders) > 0) {
         </div>
         <?php if ($totalPages > 1): ?>
         <nav aria-label="Order history pagination" class="mt-3">
-            <ul class="pagination">
+            <ul class="pagination oh-pagination">
                 <?php
                 $cur = $page;
                 $base = 'order_history.php';
@@ -173,7 +173,7 @@ if (count($orders) > 0) {
         </nav>
         <?php endif; ?>
     <?php endif; ?>
-        <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
+            <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
 </div>
 </main>
 
@@ -183,23 +183,28 @@ if (count($orders) > 0) {
         const btn = document.getElementById('profileDropdownBtn');
         const menu = document.getElementById('profileDropdownMenu');
         if (!btn || !menu) return;
-        btn.addEventListener('click', function(e){
-            e.stopPropagation();
-            menu.classList.toggle('open');
-            // simple style toggle to mimic site's dropdown
-            if (menu.classList.contains('open')) {
-                menu.style.display = 'block';
-            } else {
-                menu.style.display = 'none';
-            }
-        });
+            btn.addEventListener('click', function(e){
+                e.stopPropagation();
+                menu.classList.toggle('show');
+            });
         document.addEventListener('click', function(){
-            if (menu.classList.contains('open')) {
-                menu.classList.remove('open');
-                menu.style.display = 'none';
-            }
+                menu.classList.remove('show');
         });
     })();
+
+        // Mobile nav toggle
+        (function(){
+            const burger = document.querySelector('.hamburger-menu');
+            const nav = document.querySelector('.nav-menu');
+            if (!burger || !nav) return;
+            burger.addEventListener('click', function(e){
+                e.stopPropagation();
+                nav.classList.toggle('mobile-open');
+            });
+            document.addEventListener('click', function(){
+                nav.classList.remove('mobile-open');
+            });
+        })();
 </script>
 </body>
 </html>
