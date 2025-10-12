@@ -3708,7 +3708,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 /* Order History page styles */
 .order-history-page {
-  padding-top: 160px; /* clear fixed header comfortably */
+  padding-top: 32px; /* smaller top spacing now that header is removed */
 }
 .oh-card {
   background: #fff;
