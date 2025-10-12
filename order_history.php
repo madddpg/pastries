@@ -28,11 +28,59 @@ if (count($orders) > 0) {
     <meta charset="UTF-8">
     <title>Order History - Cups & Cuddles</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../css/style.css">
-      <link rel="shortcut icon" href="img/logo.png" type="image/png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
 <body>
-<div class="container my-5">
+    <!-- Site Header (consistent with homepage) -->
+    <?php
+        $isLoggedIn = isset($_SESSION['user']);
+        $userFirstName = $isLoggedIn ? ($_SESSION['user']['user_FN'] ?? '') : '';
+    ?>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">C&C</div>
+            <button class="hamburger-menu" aria-label="Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <nav class="nav-menu">
+                <a href="index.php" class="nav-item">Home</a>
+                <a href="index.php#about" class="nav-item">About</a>
+                <a href="index.php#products" class="nav-item">Shop</a>
+                <a href="index.php#locations" class="nav-item">Locations</a>
+                <div class="profile-dropdown">
+                    <button class="profile-btn" id="profileDropdownBtn" type="button">
+                        <span class="profile-initials">
+                            <?php if ($isLoggedIn): ?>
+                                <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); ?>
+                            <?php else: ?>
+                                <i class="fas fa-user"></i>
+                            <?php endif; ?>
+                        </span>
+                        <i class="fas fa-caret-down ms-1"></i>
+                    </button>
+                    <div class="profile-dropdown-menu" id="profileDropdownMenu">
+                        <?php if ($isLoggedIn): ?>
+                            <a href="order_history.php" class="dropdown-item">Order History</a>
+                            <a href="logout.php" class="dropdown-item">Logout</a>
+                        <?php else: ?>
+                            <a href="login.php" class="dropdown-item">Sign In</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if ($isLoggedIn): ?>
+                    <span class="navbar-username" style="margin-left:10px;font-weight:600;">
+                        <?php echo htmlspecialchars($userFirstName); ?>
+                    </span>
+                <?php endif; ?>
+            </nav>
+        </div>
+    </header>
+
+<main style="padding-top:120px;">
+<div class="container mb-5">
     <h2 class="mb-4">Order History</h2>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">
@@ -43,7 +91,7 @@ if (count($orders) > 0) {
         <div class="alert alert-info">No orders found.</div>
     <?php else: ?>
         <div class="table-responsive">
-        <table class="table table-bordered align-middle">
+        <table class="table align-middle" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
             <thead class="table-light">
                 <tr>
                     <th>Reference Number</th>
@@ -63,15 +111,15 @@ if (count($orders) > 0) {
                         <?php
                         $status = strtolower($order['status']);
                         if ($status === 'ready') {
-                            echo '<span class="badge bg-success">Ready</span>';
+                            echo '<span class="badge" style="background:#10b981;color:#fff;">Ready</span>';
                         } elseif ($status === 'pending') {
-                            echo '<span class="badge bg-warning text-dark">Pending</span>';
+                            echo '<span class="badge" style="background:#f59e0b;color:#111827;">Pending</span>';
                         } elseif ($status === 'preparing') {
-                            echo '<span class="badge bg-info text-dark">Preparing</span>';
+                            echo '<span class="badge" style="background:#60a5fa;color:#111827;">Preparing</span>';
                         } elseif ($status === 'picked up') {
-                            echo '<span class="badge bg-secondary">Picked Up</span>';
+                            echo '<span class="badge" style="background:#9ca3af;color:#111827;">Picked Up</span>';
                         } elseif ($status === 'cancelled') {
-                            echo '<span class="badge bg-danger">Cancelled</span>';
+                            echo '<span class="badge" style="background:#ef4444;color:#fff;">Cancelled</span>';
                         } else {
                             echo htmlspecialchars(ucfirst($order['status']));
                         }
@@ -125,8 +173,34 @@ if (count($orders) > 0) {
         </nav>
         <?php endif; ?>
     <?php endif; ?>
-    <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
+        <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
 </div>
+</main>
+
+<script>
+    // Minimal dropdown toggle to match site behavior
+    (function(){
+        const btn = document.getElementById('profileDropdownBtn');
+        const menu = document.getElementById('profileDropdownMenu');
+        if (!btn || !menu) return;
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            menu.classList.toggle('open');
+            // simple style toggle to mimic site's dropdown
+            if (menu.classList.contains('open')) {
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        });
+        document.addEventListener('click', function(){
+            if (menu.classList.contains('open')) {
+                menu.classList.remove('open');
+                menu.style.display = 'none';
+            }
+        });
+    })();
+</script>
 </body>
 </html>
 
