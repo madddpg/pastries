@@ -24,6 +24,7 @@ class Database
     try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureToppingsScopeSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
@@ -55,9 +56,95 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
+    }
+
+    /** Create toppings_price_history table to log add-on price changes over time. */
+    private function ensureToppingsPriceHistorySchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS toppings_price_history (
+                    topping_price_id INT NOT NULL AUTO_INCREMENT,
+                    topping_id INT NOT NULL,
+                    price DECIMAL(10,2) NOT NULL,
+                    effective_from DATE NOT NULL,
+                    effective_to DATE DEFAULT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    PRIMARY KEY (topping_price_id),
+                    KEY idx_tph_active (topping_id, effective_to),
+                    CONSTRAINT fk_tph_toppings FOREIGN KEY (topping_id) REFERENCES toppings(topping_id) ON DELETE CASCADE ON UPDATE RESTRICT
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $e) {
+            // Fallback without ON UPDATE clause for compatibility
+            try {
+                $pdo->exec(
+                    "CREATE TABLE IF NOT EXISTS toppings_price_history (
+                        topping_price_id INT NOT NULL AUTO_INCREMENT,
+                        topping_id INT NOT NULL,
+                        price DECIMAL(10,2) NOT NULL,
+                        effective_from DATE NOT NULL,
+                        effective_to DATE DEFAULT NULL,
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (topping_price_id),
+                        KEY idx_tph_active (topping_id, effective_to)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+                );
+            } catch (Throwable $_) { /* ignore */ }
+        }
+        // Ensure helpful index exists
+        try { $pdo->exec("ALTER TABLE toppings_price_history ADD INDEX idx_tph_active (topping_id, effective_to)"); } catch (Throwable $_) {}
+
+        // Backfill: for toppings without any history row, insert a starting record effective today
+        try {
+            $pdo->exec(
+                "INSERT INTO toppings_price_history (topping_id, price, effective_from)
+                 SELECT t.topping_id, t.price, CURDATE()
+                 FROM toppings t
+                 LEFT JOIN toppings_price_history tph ON tph.topping_id = t.topping_id
+                 WHERE tph.topping_id IS NULL"
+            );
+        } catch (Throwable $_) { /* ignore */ }
+    }
+
+    /** Return current active price for a topping_id from history; fallback to toppings.price if missing. */
+    public function get_topping_price_for_active(int $topping_id): float
+    {
+        if ($topping_id <= 0) return 0.0;
+        $pdo = $this->opencon();
+        try {
+            $st = $pdo->prepare("SELECT price FROM toppings_price_history WHERE topping_id = ? AND (effective_from <= CURDATE()) AND (effective_to IS NULL OR effective_to >= CURDATE()) ORDER BY effective_from DESC LIMIT 1");
+            $st->execute([$topping_id]);
+            $p = $st->fetchColumn();
+            if ($p !== false) return (float)$p;
+        } catch (Throwable $_) { /* ignore */ }
+        try {
+            $st2 = $pdo->prepare("SELECT price FROM toppings WHERE topping_id = ? LIMIT 1");
+            $st2->execute([$topping_id]);
+            $p2 = $st2->fetchColumn();
+            return $p2 !== false ? (float)$p2 : 0.0;
+        } catch (Throwable $_) { return 0.0; }
+    }
+
+    /** Resolve active topping price by name (case-insensitive). */
+    public function get_topping_price_by_name(string $name): float
+    {
+        $name = trim($name);
+        if ($name === '') return 0.0;
+        $pdo = $this->opencon();
+        try {
+            $st = $pdo->prepare("SELECT topping_id FROM toppings WHERE LOWER(name) = LOWER(?) LIMIT 1");
+            $st->execute([$name]);
+            $tid = $st->fetchColumn();
+            if ($tid) return $this->get_topping_price_for_active((int)$tid);
+        } catch (Throwable $_) { /* ignore */ }
+        return 0.0;
     }
 
     /** Resolve the size-price table name in the current DB (supports product_sizes_prices or product_size_prices). */
@@ -1119,22 +1206,16 @@ public function createPickupOrder(
                         $tid = (int)$t['topping_id'];
                         $cacheKey = 'id:' . $tid;
                         if (!array_key_exists($cacheKey, $toppingPriceCache)) {
-                            $st = $con->prepare("SELECT price FROM toppings WHERE COALESCE(status,1)=1 AND topping_id = ? LIMIT 1");
-                            $st->execute([$tid]);
-                            $p = $st->fetchColumn();
-                            $toppingPriceCache[$cacheKey] = $p !== false ? (float)$p : null;
+                            $toppingPriceCache[$cacheKey] = $this->get_topping_price_for_active($tid);
                         }
-                        $unit = $toppingPriceCache[$cacheKey] ?? 0.0;
+                        $unit = (float)($toppingPriceCache[$cacheKey] ?? 0.0);
                     } elseif (!empty($t['name'])) {
                         $name = trim((string)$t['name']);
                         $cacheKey = 'name:' . mb_strtolower($name);
                         if (!array_key_exists($cacheKey, $toppingPriceCache)) {
-                            $st = $con->prepare("SELECT price FROM toppings WHERE COALESCE(status,1)=1 AND LOWER(name) = LOWER(?) LIMIT 1");
-                            $st->execute([$name]);
-                            $p = $st->fetchColumn();
-                            $toppingPriceCache[$cacheKey] = $p !== false ? (float)$p : null;
+                            $toppingPriceCache[$cacheKey] = $this->get_topping_price_by_name($name);
                         }
-                        $unit = $toppingPriceCache[$cacheKey] ?? 0.0;
+                        $unit = (float)($toppingPriceCache[$cacheKey] ?? 0.0);
                     }
                     $t_qty   = max(1, (int)($t['quantity'] ?? 1));
                     $tSum += $unit * $t_qty;
@@ -1253,7 +1334,7 @@ public function createPickupOrder(
                         continue; // skip missing/inactive topping
                     }
                     $t_qty   = max(1, (int)($t['quantity'] ?? 1));
-                    $t_price = (float)($trow['price'] ?? 0); // authoritative unit price
+                    $t_price = $this->get_topping_price_for_active((int)$topping_id); // authoritative unit price via history
                     $insertTopping->execute([
                         $transaction_item_id,
                         (int)$topping_id,
@@ -1353,20 +1434,16 @@ public function createPickupOrder(
                             $tid = (int)$t['topping_id'];
                             $ck = 'id:' . $tid;
                             if (!array_key_exists($ck, $toppingPriceCache)) {
-                                $findToppingById->execute([$tid]);
-                                $row = $findToppingById->fetch(PDO::FETCH_ASSOC);
-                                $toppingPriceCache[$ck] = ($row && (int)$row['status'] === 1) ? (float)$row['price'] : null;
+                                $toppingPriceCache[$ck] = $this->get_topping_price_for_active($tid);
                             }
-                            $unit = $toppingPriceCache[$ck] ?? 0.0;
+                            $unit = (float)($toppingPriceCache[$ck] ?? 0.0);
                         } elseif (!empty($t['name'])) {
                             $name = trim((string)$t['name']);
                             $ck = 'name:' . mb_strtolower($name);
                             if (!array_key_exists($ck, $toppingPriceCache)) {
-                                $findToppingByName->execute([$name]);
-                                $row = $findToppingByName->fetch(PDO::FETCH_ASSOC);
-                                $toppingPriceCache[$ck] = ($row && (int)$row['status'] === 1) ? (float)$row['price'] : null;
+                                $toppingPriceCache[$ck] = $this->get_topping_price_by_name($name);
                             }
-                            $unit = $toppingPriceCache[$ck] ?? 0.0;
+                            $unit = (float)($toppingPriceCache[$ck] ?? 0.0);
                         }
                         $computed_toppings_sum += ($unit * max(1, $t_qty));
                     }
@@ -1410,14 +1487,14 @@ public function createPickupOrder(
                             $findToppingById->execute([$tid]);
                             $row = $findToppingById->fetch(PDO::FETCH_ASSOC);
                             if (!$row || (int)$row['status'] !== 1) continue;
-                            $unit = (float)$row['price'];
+                            $unit = $this->get_topping_price_for_active($tid);
                         } elseif (!empty($topping['name'])) {
                             $name = trim((string)$topping['name']);
                             $findToppingByName->execute([$name]);
                             $row = $findToppingByName->fetch(PDO::FETCH_ASSOC);
                             if (!$row || (int)$row['status'] !== 1) continue;
                             $tid = (int)$row['topping_id'];
-                            $unit = (float)$row['price'];
+                            $unit = $this->get_topping_price_for_active($tid);
                         } else {
                             continue; // insufficient data to resolve topping
                         }
@@ -1472,14 +1549,48 @@ public function createPickupOrder(
         $st = ($status === 'active') ? 1 : 0;
         $stmt = $con->prepare("INSERT INTO toppings (name, price, status, created_at) VALUES (?, ?, ?, NOW())");
         $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), $st]);
-        return $con->lastInsertId();
+        $tid = (int)$con->lastInsertId();
+        // initialize price history (effective today)
+        try {
+            $ins = $con->prepare("INSERT INTO toppings_price_history (topping_id, price, effective_from) VALUES (?, ?, CURDATE())");
+            $ins->execute([$tid, number_format(floatval($price), 2, '.', '')]);
+        } catch (Throwable $_) { /* ignore */ }
+        return $tid;
     }
 
     public function update_topping($id, $name, $price)
     {
         $con = $this->opencon();
-        $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE topping_id = ?");
-        return $stmt->execute([trim($name), number_format(floatval($price), 2, '.', ''), intval($id)]);
+        $id = intval($id);
+        $newPrice = number_format(floatval($price), 2, '.', '');
+        $con->beginTransaction();
+        try {
+            // fetch current price to detect change
+            $cur = $con->prepare("SELECT price FROM toppings WHERE topping_id = ? LIMIT 1");
+            $cur->execute([$id]);
+            $oldPrice = $cur->fetchColumn();
+
+            $stmt = $con->prepare("UPDATE toppings SET name = ?, price = ?, updated_at = NOW() WHERE topping_id = ?");
+            $ok = $stmt->execute([trim($name), $newPrice, $id]);
+
+            if ($ok && $oldPrice !== false && number_format((float)$oldPrice, 2, '.', '') !== $newPrice) {
+                // close previous active row
+                try {
+                    $con->prepare("UPDATE toppings_price_history SET effective_to = CURDATE() WHERE topping_id = ? AND effective_to IS NULL")
+                        ->execute([$id]);
+                } catch (Throwable $_) { /* ignore */ }
+                // insert new active row
+                try {
+                    $con->prepare("INSERT INTO toppings_price_history (topping_id, price, effective_from) VALUES (?, ?, CURDATE())")
+                        ->execute([$id, $newPrice]);
+                } catch (Throwable $_) { /* ignore */ }
+            }
+            $con->commit();
+            return $ok;
+        } catch (Throwable $e) {
+            if ($con->inTransaction()) $con->rollBack();
+            return false;
+        }
     }
 
     public function update_topping_status($id, $status)
