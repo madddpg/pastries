@@ -258,12 +258,15 @@ document.addEventListener("DOMContentLoaded", () => {
   showSection('live-orders');
   try { fetchOrders(status, 1); } catch (e) { /* fetchOrders defined later */ }
 
-  // Update URL without navigating, preserving location filter
+  // Update URL without navigating, preserving location and name search
   const locSel = document.getElementById('live-location-filter');
-  const location = locSel ? locSel.value : '';
+  const nameInput = document.getElementById('live-name-search');
+  const location = locSel ? (locSel.value || '') : '';
+  const qVal = nameInput ? (nameInput.value || '').trim() : '';
   const params = new URLSearchParams();
   params.set('status', status);
   if (location) params.set('location', location);
+  if (qVal) params.set('q', qVal);
   const newUrl = '?' + params.toString();
   history.replaceState(null, '', newUrl);
     }, true); // capture phase
@@ -281,6 +284,10 @@ document.addEventListener("DOMContentLoaded", () => {
       params.set('status', status);
       const locVal = liveLocationFilter.value || '';
       if (locVal) params.set('location', locVal); else params.delete('location');
+      // keep q
+      const qEl = document.getElementById('live-name-search');
+      const qVal = (qEl && qEl.value) ? qEl.value.trim() : '';
+      if (qVal) params.set('q', qVal); else params.delete('q');
       history.replaceState(null, '', '?' + params.toString());
     });
   }
@@ -295,6 +302,39 @@ document.addEventListener("DOMContentLoaded", () => {
     for (const opt of sel.options) {
       if (opt.value === loc) { sel.value = loc; break; }
     }
+  })();
+
+  // Initialize live name search from URL and wire up events
+  (function initLiveNameSearch() {
+    const input = document.getElementById('live-name-search');
+    if (!input) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    if (q) input.value = q;
+
+    let t = null;
+    const trigger = () => {
+      const activeTab = document.querySelector('#live-orders-tabs .tab.active');
+      const status = activeTab ? (activeTab.dataset.status || '') : '';
+      try { fetchOrders(status, 1); } catch (e) {}
+      // sync URL
+      const locSel = document.getElementById('live-location-filter');
+      const location = locSel ? (locSel.value || '') : '';
+      const params = new URLSearchParams(window.location.search);
+      params.set('status', status);
+      if (location) params.set('location', location); else params.delete('location');
+      const val = (input.value || '').trim();
+      if (val) params.set('q', val); else params.delete('q');
+      history.replaceState(null, '', '?' + params.toString());
+    };
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); trigger(); }
+    });
+    input.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(trigger, 400); // debounce
+    });
   })();
 
   // Busy Mode Toggle (optional)
@@ -878,8 +918,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof status === 'string') liveOrdersState.status = status;
     liveOrdersState.location = location;
     if (page !== null) liveOrdersState.page = page;
+    const qEl = document.getElementById('live-name-search');
+    let q = qEl ? (qEl.value || '').trim() : '';
+    if (!q) {
+      const params = new URLSearchParams(window.location.search);
+      q = (params.get('q') || '').trim();
+    }
     const url = 'AJAX/fetch_live_orders.php?status=' + encodeURIComponent(liveOrdersState.status)
       + (location ? ('&location=' + encodeURIComponent(location)) : '')
+      + (q ? ('&q=' + encodeURIComponent(q)) : '')
       + '&page=' + encodeURIComponent(liveOrdersState.page)
       + '&perPage=' + encodeURIComponent(liveOrdersState.perPage);
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })

@@ -6,6 +6,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
 $status  = isset($_GET['status']) ? trim($_GET['status']) : '';
 $location = isset($_GET['location']) ? trim($_GET['location']) : '';
+$q = isset($_GET['q']) ? trim($_GET['q']) : '';
 // Pagination params
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['perPage']) ? max(1, min(50, (int)$_GET['perPage'])) : 8; // clamp 1..50
@@ -22,6 +23,13 @@ if ($status !== '' && in_array($status, $allowed, true)) {
 if ($location !== '') {
     $clauses[] = 'p.pickup_location LIKE :location';
     $bind[':location'] = $location . '%';
+}
+if ($q !== '') {
+    $clauses[] = "(CONCAT_WS(' ', u.user_FN, u.user_LN) LIKE :q1 OR u.user_FN LIKE :q2 OR u.user_LN LIKE :q3)";
+    $like = '%' . $q . '%';
+    $bind[':q1'] = $like;
+    $bind[':q2'] = $like;
+    $bind[':q3'] = $like;
 }
 // Only show today's orders so previous-day live orders expire at midnight
 $clauses[] = 'DATE(t.created_at) = CURDATE()';

@@ -54,7 +54,7 @@ function fetch_pickedup_orders_pdo($con)
 }
 
 // Helper: live orders
-function fetch_live_orders_pdo($con, $status = '', $location = '')
+function fetch_live_orders_pdo($con, $status = '', $location = '', $q = '')
 {
     $allowed_statuses = ['pending', 'preparing', 'ready'];
     if ($status !== '' && in_array($status, $allowed_statuses)) {
@@ -68,6 +68,13 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
         $where .= " AND p.pickup_location LIKE ?";
         $params[] = $location . '%';
     }
+    if ($q !== '') {
+        $where .= " AND (CONCAT_WS(' ', u.user_FN, u.user_LN) LIKE ? OR u.user_FN LIKE ? OR u.user_LN LIKE ?)";
+        $like = '%' . $q . '%';
+        $params[] = $like; $params[] = $like; $params[] = $like;
+    }
+    // Only today's orders for live view
+    $where .= " AND DATE(t.created_at) = CURDATE()";
     // Dynamically select the available receipt column (avoid referencing a non-existent column)
     $receiptCol = 'NULL AS gcash_receipt_path';
     try {
@@ -81,7 +88,8 @@ function fetch_live_orders_pdo($con, $status = '', $location = '')
     } catch (Throwable $_) { /* ignore */ }
 
     $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
-        u.user_FN AS customer_name, p.pickup_location, p.pickup_time, p.special_instructions,
+        u.user_FN AS customer_name, u.user_FN AS user_FN, u.user_LN AS user_LN,
+        p.pickup_location, p.pickup_time, p.special_instructions,
            a.admin_id AS approved_by_admin_id, a.username AS approved_by,
            COALESCE(t.payment_method, 'gcash') AS payment_method,
            {$receiptCol}
@@ -147,6 +155,7 @@ function fetch_locations_pdo($con)
 // Set live order filters from query or default
 $live_status = isset($_GET['status']) ? $_GET['status'] : '';
 $live_location = isset($_GET['location']) ? $_GET['location'] : '';
+$live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 ?>
 <!DOCTYPE html>
@@ -508,7 +517,7 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                         <a href="?status=pending" class="tab<?= $live_status === 'pending' ? ' active' : '' ?>" data-status="pending">Pending</a>
                     </div>
 
-                    <div class="live-orders-filters" style="display:flex;gap:10px;align-items:center;margin:10px 0 18px;">
+                    <div class="live-orders-filters" style="display:flex;gap:10px;align-items:center;margin:10px 0 18px;flex-wrap:wrap;">
                         <label for="live-location-filter" style="font-weight:600;">Location:</label>
                         <select id="live-location-filter" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;min-width:220px;">
                             <option value="">All locations</option>
@@ -524,12 +533,14 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                             } catch (Throwable $e) { /* ignore */ }
                             ?>
                         </select>
+                        <label for="live-name-search" style="font-weight:600;margin-left:12px;">Search:</label>
+                        <input type="text" id="live-name-search" placeholder="Search by name" value="<?= htmlspecialchars($live_q, ENT_QUOTES, 'UTF-8') ?>" style="padding:6px 10px;border:1px solid #059669;border-radius:6px;min-width:240px;" />
                     </div>
 
                     <div class="live-orders-grid">
                         <?php
                         // Use the same data + template as AJAX to keep design identical
-                        $orders = fetch_live_orders_pdo($con, $live_status, $live_location);
+                        $orders = fetch_live_orders_pdo($con, $live_status, $live_location, $live_q);
                         require __DIR__ . '/AJAX/markup.php';
                         ?>
                     </div>
