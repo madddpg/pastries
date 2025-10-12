@@ -3717,6 +3717,45 @@ label[for="acceptTerms"] { white-space: nowrap; }
   overflow: hidden;
   box-shadow: 0 6px 18px rgba(0,0,0,0.04);
 }
+.oh-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.oh-order {
+  display: block;
+  text-decoration: none;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #111827;
+  transition: box-shadow .18s ease, transform .12s ease, border-color .18s ease;
+}
+.oh-order:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  border-color: #d1d5db;
+}
+.oh-order-top {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+.oh-ref { font-weight: 700; letter-spacing: .2px; }
+.oh-date { color: #6b7280; font-size: .95rem; }
+.oh-status { justify-self: end; }
+.oh-items { margin-top: 8px; color: #374151; line-height: 1.5; }
+.oh-order-bottom {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: baseline;
+}
+.oh-total-label { color: #6b7280; font-weight: 600; }
+.oh-total-amount { font-weight: 800; color: #065f46; }
 .oh-table thead th {
   background: #f9fafb;
   color: #111827;

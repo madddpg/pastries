@@ -90,61 +90,52 @@ if (count($orders) > 0) {
     <?php if (count($orders) === 0): ?>
         <div class="alert alert-info">No orders found.</div>
     <?php else: ?>
-        <div class="oh-card table-responsive">
-        <table class="table align-middle oh-table">
-            <thead class="table-light">
-                <tr>
-                    <th>Reference Number</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Items</th>
-                    <th>Total Price</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($orders as $order): ?>
-                <tr class="order-row" style="cursor:pointer;"
-                    onclick="window.location.href='order_detail.php?id=<?php echo urlencode(htmlspecialchars($order['reference_number'])); ?>'">
-                    <td><?php echo htmlspecialchars($order['reference_number']); ?></td>
-                    <td><?php echo htmlspecialchars($order['created_at']); ?></td>
-                    <td>
-                        <?php
+                <div class="oh-list">
+                <?php foreach ($orders as $order): ?>
+                    <?php
                         $status = strtolower($order['status']);
+                        $badgeHtml = '';
                         if ($status === 'ready') {
-                            echo '<span class="oh-badge status-ready">Ready</span>';
+                            $badgeHtml = '<span class="oh-badge status-ready">Ready</span>';
                         } elseif ($status === 'pending') {
-                            echo '<span class="oh-badge status-pending">Pending</span>';
+                            $badgeHtml = '<span class="oh-badge status-pending">Pending</span>';
                         } elseif ($status === 'preparing') {
-                            echo '<span class="oh-badge status-preparing">Preparing</span>';
+                            $badgeHtml = '<span class="oh-badge status-preparing">Preparing</span>';
                         } elseif ($status === 'picked up') {
-                            echo '<span class="oh-badge status-pickedup">Picked Up</span>';
+                            $badgeHtml = '<span class="oh-badge status-pickedup">Picked Up</span>';
                         } elseif ($status === 'cancelled') {
-                            echo '<span class="oh-badge status-cancelled">Cancelled</span>';
+                            $badgeHtml = '<span class="oh-badge status-cancelled">Cancelled</span>';
                         } else {
-                            echo htmlspecialchars(ucfirst($order['status']));
+                            $badgeHtml = '<span class="oh-badge">'.htmlspecialchars(ucfirst($order['status'])).'</span>';
                         }
-                        ?>
-                    </td>
-                    <td>
-                        <ul class="mb-0">
-                        <?php
                         $orderDetail = $db->fetchOrderDetail($user_id, $order['transac_id']);
-                        foreach ($orderDetail['items'] as $item):
-                        ?>
-                            <li>
-                                <?php echo htmlspecialchars($item['name']); ?>
-                                (<?php echo htmlspecialchars($item['size']); ?>) &times; <?php echo (int)$item['quantity']; ?>
-                                - ₱<?php echo number_format($item['price'], 2); ?>
-                            </li>
-                        <?php endforeach; ?>
-                        </ul>
-                    </td>
-                    <td>₱<?php echo number_format($order['total_amount'], 2); ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        </div>
+                        $itemsText = '';
+                        if (!empty($orderDetail['items'])) {
+                            $parts = [];
+                            foreach ($orderDetail['items'] as $it) {
+                                $name = htmlspecialchars($it['name']);
+                                $size = htmlspecialchars($it['size']);
+                                $qty = (int)$it['quantity'];
+                                $price = '₱'.number_format((float)$it['price'], 2);
+                                $parts[] = "• {$name} ({$size}) × {$qty} – {$price}";
+                            }
+                            $itemsText = implode('<br>', $parts);
+                        }
+                    ?>
+                    <a class="oh-order" href="order_detail.php?id=<?php echo urlencode(htmlspecialchars($order['reference_number'])); ?>">
+                        <div class="oh-order-top">
+                            <div class="oh-ref"><?php echo htmlspecialchars($order['reference_number']); ?></div>
+                            <div class="oh-date"><?php echo htmlspecialchars($order['created_at']); ?></div>
+                            <div class="oh-status"><?php echo $badgeHtml; ?></div>
+                        </div>
+                        <div class="oh-items"><?php echo $itemsText ?: '-'; ?></div>
+                        <div class="oh-order-bottom">
+                            <span class="oh-total-label">Total</span>
+                            <span class="oh-total-amount">₱<?php echo number_format((float)$order['total_amount'], 2); ?></span>
+                        </div>
+                    </a>
+                <?php endforeach; ?>
+                </div>
         <?php if ($totalPages > 1): ?>
         <nav aria-label="Order history pagination" class="mt-3">
             <ul class="pagination oh-pagination">
