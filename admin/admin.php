@@ -912,7 +912,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                             <th>Name</th>
                                             <th style="width:140px;text-align:right;">Price</th>
                                             <th style="width:120px;text-align:center;">Status</th>
-                                            <th style="width:160px;text-align:center;">Action</th>
+                                            <th style="width:240px;text-align:center;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>

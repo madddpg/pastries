@@ -440,6 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </td>
             <td style="text-align:center;white-space:nowrap;">
               <button class="btn-edit-topping" data-topping-id="${idVal}">Edit</button>
+              <button class="btn-topping-price-history" data-topping-id="${idVal}" style="margin-left:8px;color:#059669;">Price history</button>
               <button class="btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:8px;">
                 ${status === 'active' ? 'Set Inactive' : 'Set Active'}
               </button>
@@ -526,6 +527,43 @@ document.addEventListener("DOMContentLoaded", () => {
   // delegated actions: edit / toggle / delete
   document.body.addEventListener('click', async function (e) {
     const target = e.target;
+    if (target.matches('.btn-topping-price-history')) {
+      const id = target.getAttribute('data-topping-id');
+      if (!id) return;
+      try {
+        const url = new URL('AJAX/fetch_topping_price_history.php', window.location.href);
+        url.searchParams.set('topping_id', id);
+        const res = await fetch(url.toString(), { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!res.ok || !data || !data.success) throw new Error(data?.message || `Failed (${res.status})`);
+        const list = Array.isArray(data.data) ? data.data : [];
+        if (list.length === 0) {
+          window.__openPriceHistory('<div style="padding:12px;color:#64748b;">No price history found.</div>');
+          return;
+        }
+        const headers = ['Price (₱)','Effective From','Effective To'];
+        const th = headers.map(h => `<th style="text-align:left;padding:8px;border-bottom:1px solid #e5e7eb;">${h}</th>`).join('');
+        const rows = list.map(r => {
+          const price = Number(r.price || 0).toFixed(2);
+          const from = r.effective_from || '';
+          const to = r.effective_to || '';
+          return `<tr>`+
+            `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">₱${price}</td>`+
+            `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">${from}</td>`+
+            `<td style="padding:8px;border-bottom:1px solid #f3f4f6;">${to || '—'}</td>`+
+          `</tr>`;
+        }).join('');
+        const html = `<table style="width:100%;border-collapse:collapse;font-size:14px;">`+
+          `<thead><tr>${th}</tr></thead>`+
+          `<tbody>${rows}</tbody>`+
+        `</table>`;
+        window.__openPriceHistory(html);
+      } catch (err) {
+        console.error('[admin] topping price history error', err);
+        window.__openPriceHistory('<div style="padding:12px;color:#dc2626;">Failed to load history.</div>');
+      }
+      return;
+    }
 
     if (target.matches('.btn-edit-topping')) {
       const id = target.getAttribute('data-topping-id');
