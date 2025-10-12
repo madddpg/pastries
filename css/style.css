@@ -2370,6 +2370,117 @@ label[for="acceptTerms"] { white-space: nowrap; }
   box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
 }
 
+/* ===== Pastries: align visuals with standard product cards ===== */
+/* Grid alignment same as other product lists */
+.pastries-section .product-list {
+  justify-items: center;
+  gap: 18px;
+  padding: 0 12px;
+}
+
+/* Card container: same radius, shadow, and hover as default product cards */
+.pastries-section .product-item {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+.pastries-section .product-item:hover {
+  transform: translateY(-10px);
+}
+
+/* Image well: match height-centered layout (no gradient background) */
+.pastries-section .product-image {
+  height: 250px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pastries-section .product-image img {
+  width: 80%;
+  height: 80%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Content spacing and typography consistent with other cards */
+.pastries-section .product-info {
+  padding: 25px;
+}
+.pastries-section .product-info h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--dark-text);
+}
+.pastries-section .product-info p {
+  color: #6b7280;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+/* Footer layout same as default */
+.pastries-section .product-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 25px 25px;
+  margin-top: 0;
+}
+
+/* Button style unified to default purple gradient */
+.pastries-section .view-btn {
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Keep pastries imagery responsive like other cards on small screens */
+@media (max-width: var(--bp-phone)) {
+  .pastries-section .product-image {
+    margin: 12px auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: calc(100% - 28px);
+    max-width: 420px;
+    box-sizing: border-box;
+  }
+  .pastries-section .product-image img {
+    margin: 0 auto !important;
+    display: block !important;
+    width: auto !important;
+    max-width: 90% !important;
+    height: auto !important;
+    object-fit: contain !important;
+  }
+}
+@media (min-width: calc(var(--bp-phone) + 1px)) and (max-width: calc(var(--bp-tablet) - 1px)) {
+  .pastries-section .product-image {
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .pastries-section .product-image img {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    object-fit: contain;
+  }
+}
+
 .add-btn {
   background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
   color: white;
