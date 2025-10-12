@@ -645,32 +645,28 @@ $live_location = isset($_GET['location']) ? $_GET['location'] : '';
                                                 </button>
 
                                                 <div class="dropdown-menu"
-                                                    style="display: none; position: absolute; z-index: 10; left: -160px; top: 0; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 10px 16px; display: flex; flex-direction: row; gap: 12px;  width: 300px;">
+                                                    style="display:none; position:absolute; z-index:10; left:-160px; top:0; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:6px 0; width:220px; display:flex; flex-direction:column; gap:0;">
 
                                                     <button type="button" class="menu-item edit-product-btn"
-                                                        style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #374151; cursor: pointer; white-space: nowrap;">
+                                                        style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#374151; cursor:pointer; white-space:nowrap;">
                                                         Edit
                                                     </button>
 
                                                     <button type="button" class="menu-item btn-price-history"
-                                                        style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #059669; cursor: pointer; white-space: nowrap;">
+                                                        style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#059669; cursor:pointer; white-space:nowrap;">
                                                         Price history
                                                     </button>
 
-                                                    <button
-                                                        type="button"
-                                                        class="btn-toggle-product"
+                                                    <button type="button" class="menu-item btn-toggle-product"
                                                         data-id="<?= htmlspecialchars($product['product_id']) ?>"
                                                         data-status="<?= htmlspecialchars($product['status']) ?>"
-                                                        style="flex: 1; padding: 10px 16px; background: none; border: none; font-size: 14px; color: #2563eb; cursor: pointer; white-space: nowrap;">
+                                                        style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#2563eb; cursor:pointer; white-space:nowrap;">
                                                         Set <?= $product['status'] === 'active' ? 'Inactive' : 'Active' ?>
                                                     </button>
 
                                                     <?php if (Database::isSuperAdmin()): ?>
-                                                    <button
-                                                        type="button"
-                                                        class="menu-item delete-product-btn"
-                                                        style="flex: 1; padding: 10px 16px; background: none; border: 1px solid #fee2e2; border-radius:8px; font-size: 14px; color: #dc2626; cursor: pointer; white-space: nowrap;">
+                                                    <button type="button" class="menu-item delete-product-btn"
+                                                        style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#dc2626; cursor:pointer; white-space:nowrap;">
                                                         Delete
                                                     </button>
                                                     <?php endif; ?>
