@@ -2511,6 +2511,56 @@ label[for="acceptTerms"] { white-space: nowrap; }
   /* Remove max-width, margin, fixed, overlay, align-items, justify-content */
 }
 
+/* ===== Top Products: card visuals (match screenshot) ===== */
+.top-products-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px;
+}
+.top-product-card {
+  background: #fffbe9; /* warm cream */
+  border-radius: 18px;
+  padding: 16px;
+  min-width: 240px;
+  max-width: 280px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  border: 1px solid rgba(0,0,0,0.04);
+}
+.top-product-card h4 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1f3b31;
+}
+.top-product-card .desc {
+  font-size: 0.98rem;
+  color: #374151;
+  min-height: 48px;
+}
+.top-product-image {
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.top-product-image .img-well {
+  background: #274e41; /* deep green */
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: inline-flex;
+}
+.top-product-image img {
+  max-height: 100px;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.badge.best-seller {
+  background: #facc15 !important; /* yellow */
+  color: #1f2937 !important; /* text-dark */
+  font-weight: 800;
+}
+
 
 .product-modal-details {
   background: white;
