@@ -34,51 +34,6 @@ if (count($orders) > 0) {
     <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
 <body>
-    <!-- Site Header (consistent with homepage) -->
-    <?php
-        $isLoggedIn = isset($_SESSION['user']);
-        $userFirstName = $isLoggedIn ? ($_SESSION['user']['user_FN'] ?? '') : '';
-    ?>
-    <header class="header">
-        <div class="header-content">
-            <div class="logo">C&C</div>
-            <button class="hamburger-menu" aria-label="Menu">
-                <i class="fas fa-bars"></i>
-            </button>
-            <nav class="nav-menu">
-                <a href="index.php" class="nav-item">Home</a>
-                <a href="index.php#about" class="nav-item">About</a>
-                <a href="index.php#products" class="nav-item">Shop</a>
-                <a href="index.php#locations" class="nav-item">Locations</a>
-                <div class="profile-dropdown">
-                    <button class="profile-btn" id="profileDropdownBtn" type="button">
-                        <span class="profile-initials">
-                            <?php if ($isLoggedIn): ?>
-                                <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); ?>
-                            <?php else: ?>
-                                <i class="fas fa-user"></i>
-                            <?php endif; ?>
-                        </span>
-                        <i class="fas fa-caret-down ms-1"></i>
-                    </button>
-                    <div class="profile-dropdown-menu" id="profileDropdownMenu">
-                        <?php if ($isLoggedIn): ?>
-                            <a href="order_history.php" class="dropdown-item">Order History</a>
-                            <a href="logout.php" class="dropdown-item">Logout</a>
-                        <?php else: ?>
-                            <a href="login.php" class="dropdown-item">Sign In</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php if ($isLoggedIn): ?>
-                    <span class="navbar-username" style="margin-left:10px;font-weight:600;">
-                        <?php echo htmlspecialchars($userFirstName); ?>
-                    </span>
-                <?php endif; ?>
-            </nav>
-        </div>
-    </header>
-
 <main class="order-history-page">
 <div class="container mb-5">
     <h2 class="mb-4 section-title" style="font-size:2rem;margin-top:8px;">Order History</h2>
@@ -168,35 +123,7 @@ if (count($orders) > 0) {
 </div>
 </main>
 
-<script>
-    // Minimal dropdown toggle to match site behavior
-    (function(){
-        const btn = document.getElementById('profileDropdownBtn');
-        const menu = document.getElementById('profileDropdownMenu');
-        if (!btn || !menu) return;
-            btn.addEventListener('click', function(e){
-                e.stopPropagation();
-                menu.classList.toggle('show');
-            });
-        document.addEventListener('click', function(){
-                menu.classList.remove('show');
-        });
-    })();
 
-        // Mobile nav toggle
-        (function(){
-            const burger = document.querySelector('.hamburger-menu');
-            const nav = document.querySelector('.nav-menu');
-            if (!burger || !nav) return;
-            burger.addEventListener('click', function(e){
-                e.stopPropagation();
-                nav.classList.toggle('mobile-open');
-            });
-            document.addEventListener('click', function(){
-                nav.classList.remove('mobile-open');
-            });
-        })();
-</script>
 </body>
 </html>
 
