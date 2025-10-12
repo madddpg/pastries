@@ -3708,7 +3708,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 /* Order History page styles */
 .order-history-page {
-  padding-top: 120px; /* clear fixed header */
+  padding-top: 160px; /* clear fixed header comfortably */
 }
 .oh-card {
   background: #fff;
@@ -3722,9 +3722,9 @@ label[for="acceptTerms"] { white-space: nowrap; }
   color: #111827;
   font-weight: 600;
 }
-.oh-table tbody tr:hover {
-  background: #f9fafb;
-}
+.oh-table tbody tr:nth-child(odd) { background: #fcfdfd; }
+.oh-table tbody tr:hover { background: #f3f4f6; }
+.oh-table th, .oh-table td { padding: 12px 14px; vertical-align: middle; }
 .oh-badge {
   display: inline-block;
   padding: 6px 10px;
@@ -3738,13 +3738,23 @@ label[for="acceptTerms"] { white-space: nowrap; }
 .oh-badge.status-pickedup { background: #9ca3af; color: #111827; }
 .oh-badge.status-cancelled { background: #ef4444; color: #fff; }
 .oh-pagination .page-item.active .page-link {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  background-color: var(--emerald-600);
+  border-color: var(--emerald-600);
   color: #fff;
 }
 .oh-pagination .page-link {
   color: #374151;
 }
+.oh-pagination .page-link:hover { color: var(--emerald-700); }
+
+/* Back button aligned to theme */
+.oh-back-btn {
+  background: #e5f6ef;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-weight: 600;
+}
+.oh-back-btn:hover { background: #d1fae5; color: #064e3b; }
 
 
 #pickupLocation, select[name="pickupLocation"] {

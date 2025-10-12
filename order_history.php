@@ -81,7 +81,7 @@ if (count($orders) > 0) {
 
 <main class="order-history-page">
 <div class="container mb-5">
-    <h2 class="mb-4 section-title" style="font-size:2rem;">Order History</h2>
+    <h2 class="mb-4 section-title" style="font-size:2rem;margin-top:8px;">Order History</h2>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">
             Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
@@ -173,7 +173,7 @@ if (count($orders) > 0) {
         </nav>
         <?php endif; ?>
     <?php endif; ?>
-            <a href="index.php" class="btn btn-secondary mt-3">Back to Home</a>
+            <a href="index.php" class="btn oh-back-btn mt-3">Back to Home</a>
 </div>
 </main>
 
