@@ -51,10 +51,17 @@
 #products-filter-tabs .tab.active[data-filter="pastries"] { color:#fff; background: var(--type-pastries); }
 #products-filter-tabs .tab.active[data-filter="all"] { color:#152e22; background:#e8f5e8; }
 
-/* Product table row accents based on data type */
-.products-table tbody tr[data-product-type="hot"] { border-left: 4px solid var(--type-hot); background: linear-gradient(90deg, var(--type-bg-hot), transparent); }
-.products-table tbody tr[data-product-type="cold"] { border-left: 4px solid var(--type-cold); background: linear-gradient(90deg, var(--type-bg-cold), transparent); }
-.products-table tbody tr[data-product-type="pastries"] { border-left: 4px solid var(--type-pastries); background: linear-gradient(90deg, var(--type-bg-pastries), transparent); }
+/* Product table row accents aligned to site theme (brand green) */
+.products-table tbody tr[data-product-type="hot"],
+.products-table tbody tr[data-product-type="cold"],
+.products-table tbody tr[data-product-type="pastries"] {
+  border-left: 4px solid #059669; /* site green */
+  background: linear-gradient(90deg, #e8f5e8, transparent);
+}
+/* Slight lift on hover */
+.products-table tbody tr:hover {
+  background: linear-gradient(90deg, #e6f9f1, transparent);
+}
 
 /* Small pill badge for type (can be used in table) */
 .type-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600; }
