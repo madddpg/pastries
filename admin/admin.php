@@ -596,9 +596,9 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
                                         <td><?= htmlspecialchars($product['product_id']) ?></td>
                                         <td>
-                                            <?= htmlspecialchars($product['category_id']) ?>
-                                            <?php $ptype = strtolower($product['data_type'] ?? ''); if ($ptype): ?>
-                                                <span class="type-badge <?= htmlspecialchars($ptype) ?>" style="margin-left:8px;">
+                                            <?php $ptype = strtolower($product['data_type'] ?? ''); ?>
+                                            <?php if ($ptype): ?>
+                                                <span class="type-badge <?= htmlspecialchars($ptype) ?>">
                                                     <?php if ($ptype === 'hot'): ?>
                                                         <i class="bi bi-cup-hot"></i>
                                                     <?php elseif ($ptype === 'cold'): ?>
@@ -608,6 +608,8 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                                     <?php endif; ?>
                                                     <?= ucfirst($ptype) ?>
                                                 </span>
+                                            <?php else: ?>
+                                                <span style="color:#64748b">—</span>
                                             <?php endif; ?>
                                         </td>
                                         <?php
