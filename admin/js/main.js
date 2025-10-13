@@ -1382,7 +1382,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
       pager.appendChild(mk('Prev', Math.max(1, current - 1), current <= 1));
       // show up to 7 windowed numbers
-      const windowSize = 7;
+      const windowSize = 8;
       let start = Math.max(1, current - Math.floor(windowSize / 2));
       let end = Math.min(totalPages, start + windowSize - 1);
       start = Math.max(1, end - windowSize + 1);
