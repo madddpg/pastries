@@ -29,7 +29,18 @@ $status  = isset($_GET['status']) ? trim(strtolower($_GET['status'])) : '';
 $type    = isset($_GET['type']) ? trim(strtolower($_GET['type'])) : ''; // product data_type
 $location = isset($_GET['location']) ? trim($_GET['location']) : '';
 
-$allowedStatuses = ['pending','preparing','ready','picked up','cancelled'];
+// CSV policy: include only picked up and cancelled orders
+// Accept common synonyms for convenience
+$statusMap = [
+    'pickedup' => 'picked up',
+    'picked_up' => 'picked up',
+    'picked up' => 'picked up',
+    'complete' => 'picked up',
+    'completed' => 'picked up',
+    'cancel' => 'cancelled',
+    'canceled' => 'cancelled',
+    'cancelled' => 'cancelled'
+];
 
 // Column selection (optional); default order below
 $defaultColumns = [
@@ -65,7 +76,15 @@ $where = [];
 $params = [];
 if ($from) { $where[] = 'DATE(t.created_at) >= ?'; $params[] = $from; }
 if ($to)   { $where[] = 'DATE(t.created_at) <= ?'; $params[] = $to; }
-if ($status !== '' && in_array($status, $allowedStatuses, true)) { $where[] = 'LOWER(t.status) = ?'; $params[] = $status; }
+// Enforce only picked up / cancelled in CSV; if a specific status is passed and maps to one of them, narrow to it.
+if ($status !== '' && isset($statusMap[$status])) {
+    $where[] = 'LOWER(t.status) = ?';
+    $params[] = $statusMap[$status];
+} else {
+    $where[] = 'LOWER(t.status) IN (?, ?)';
+    $params[] = 'picked up';
+    $params[] = 'cancelled';
+}
 if ($location !== '') { $where[] = 'p.pickup_location LIKE ?'; $params[] = $location . '%'; }
 if ($type !== '') { $where[] = 'LOWER(COALESCE(pr.data_type, pr2.data_type)) = ?'; $params[] = $type; }
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';

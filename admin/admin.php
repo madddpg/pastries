@@ -872,6 +872,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                     </tbody>
                                 </table>
                             </div>
+                            <div id="report-daily-pagination" class="pagination" aria-label="Daily breakdown pagination" style="margin-top:10px;"></div>
                         </div>
                         <div class="report-card-block">
                             <h3 class="report-block-title">Products Sold (This Month)</h3>
@@ -888,6 +889,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                     </tbody>
                                 </table>
                             </div>
+                            <div id="report-products-pagination" class="pagination" aria-label="Products sold pagination" style="margin-top:10px;"></div>
                         </div>
                     </div>
                 </div>
@@ -1950,6 +1952,46 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             const reportSummary = document.getElementById('report-summary');
             const reportDailyBody = document.getElementById('report-daily-body');
             const reportProductsBody = document.getElementById('report-products-body');
+            const reportDailyPag = document.getElementById('report-daily-pagination');
+            const reportProductsPag = document.getElementById('report-products-pagination');
+            const REPORTS_ROWS_PER_PAGE = 15;
+
+            function paginateTable(tbody, pagEl, perPage = REPORTS_ROWS_PER_PAGE) {
+                if (!tbody || !pagEl) return;
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+                const total = rows.length;
+                const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+                function render(page) {
+                    const current = Math.min(Math.max(1, page), totalPages);
+                    const start = (current - 1) * perPage;
+                    const end = start + perPage;
+                    const set = new Set(rows.slice(start, end));
+                    rows.forEach(tr => { tr.style.display = set.has(tr) ? '' : 'none'; });
+                    // pager
+                    pagEl.innerHTML = '';
+                    if (totalPages <= 1) return;
+                    const mk = (label, p, disabled=false, active=false) => {
+                        const b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'pager-btn' + (active ? ' active' : '');
+                        b.textContent = label;
+                        b.disabled = !!disabled;
+                        b.dataset.page = String(p);
+                        return b;
+                    };
+                    pagEl.appendChild(mk('Prev', Math.max(1, current-1), current===1));
+                    for (let p=1;p<=totalPages;p++) pagEl.appendChild(mk(String(p), p, false, p===current));
+                    pagEl.appendChild(mk('Next', Math.min(totalPages, current+1), current===totalPages));
+                    pagEl.onclick = (ev) => {
+                        const btn = ev.target.closest('button.pager-btn');
+                        if (!btn) return;
+                        const n = parseInt(btn.dataset.page||'1',10)||1;
+                        render(n);
+                    };
+                }
+                render(1);
+            }
                 const reportLocation = document.getElementById('report-location');
                 const reportType = document.getElementById('report-type');
 
@@ -2002,6 +2044,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                     <td class="text-right">${money(d.revenue)}</td>
                                 </tr>`;
                             }).join('');
+                            paginateTable(reportDailyBody, reportDailyPag, REPORTS_ROWS_PER_PAGE);
                         }
 
                         // Products
@@ -2013,6 +2056,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                 <td>${p.name}</td>
                                 <td class="text-right">${p.qty}</td>
                             </tr>`).join('');
+                            paginateTable(reportProductsBody, reportProductsPag, REPORTS_ROWS_PER_PAGE);
                         }
                     })
                     .catch(err => {

@@ -183,6 +183,47 @@
   cursor:default;
 }
 
+/* Reports paginations reuse same look */
+#report-daily-pagination,
+#report-products-pagination {
+  display:flex;
+  gap:4px;
+  justify-content:center;
+  align-items:center;
+  margin-top:12px;
+  flex-wrap:wrap;
+  padding:8px 0 0;
+}
+#report-daily-pagination .pager-btn,
+#report-products-pagination .pager-btn {
+  padding:6px 12px;
+  font-size:12px;
+  background:#fff;
+  border:1px solid #059669;
+  border-radius:8px;
+  color:#059669;
+  cursor:pointer;
+  min-width:34px;
+  font-weight:600;
+  line-height:1;
+  transition:background .15s,color .15s;
+}
+#report-daily-pagination .pager-btn:hover:not(:disabled):not(.active),
+#report-products-pagination .pager-btn:hover:not(:disabled):not(.active){
+  background:#e6f9f1;
+}
+#report-daily-pagination .pager-btn:disabled,
+#report-products-pagination .pager-btn:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+#report-daily-pagination .pager-btn.active,
+#report-products-pagination .pager-btn.active {
+  background:#059669;
+  color:#fff;
+  cursor:default;
+}
+
 /* Make modals adapt full width on small screens */
 .modal-content, .product-modal-content {
   width: 96%;
