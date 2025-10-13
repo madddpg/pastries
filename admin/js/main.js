@@ -514,10 +514,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('toppingId').value = '';
       document.getElementById('toppingName').value = '';
       document.getElementById('toppingPrice').value = '';
-      const tAllowedTypes = document.getElementById('toppingAllowedTypes');
-      const tAllowedCats = document.getElementById('toppingAllowedCategories');
-      if (tAllowedTypes) tAllowedTypes.value = '';
-      if (tAllowedCats) tAllowedCats.value = '';
       if (addModal) addModal.style.display = 'flex';
     });
   }
@@ -642,14 +638,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = document.getElementById('toppingId').value;
       const name = document.getElementById('toppingName').value.trim();
       const price = document.getElementById('toppingPrice').value;
-  const allowedTypes = (document.getElementById('toppingAllowedTypes')?.value || '').trim();
-  const allowedCats = (document.getElementById('toppingAllowedCategories')?.value || '').trim();
       if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
       const body = new URLSearchParams();
       body.append('name', name);
       body.append('price', price);
-  if (allowedTypes) body.append('allowed_types', allowedTypes);
-  if (allowedCats) body.append('allowed_categories', allowedCats);
       if (!id) {
         body.append('action', 'add');
       } else {
