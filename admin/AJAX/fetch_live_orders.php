@@ -14,8 +14,10 @@ $allowed = ['pending', 'preparing', 'ready'];
 // Build WHERE with named binds to avoid mixing placeholders
 $bind = [];
 $clauses = [];
-// Status clause: always include user-cancelled orders for visibility in Live Orders
-if ($status !== '' && in_array($status, $allowed, true)) {
+// Status clause: for specific statuses include user-cancelled alongside; for special tab cancelled_user show only user-cancelled
+if ($status === 'cancelled_user') {
+    $clauses[] = "(t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0))";
+} elseif ($status !== '' && in_array($status, $allowed, true)) {
     $clauses[] = "(t.status = :status OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)))";
     $bind[':status'] = $status;
 } else {

@@ -57,11 +57,15 @@ function fetch_pickedup_orders_pdo($con)
 function fetch_live_orders_pdo($con, $status = '', $location = '', $q = '')
 {
     $allowed_statuses = ['pending', 'preparing', 'ready'];
-    if ($status !== '' && in_array($status, $allowed_statuses)) {
+    if ($status === 'cancelled_user') {
+        $where = "WHERE t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)";
+        $params = [];
+    } elseif ($status !== '' && in_array($status, $allowed_statuses)) {
         $where = "WHERE t.status = ?";
         $params = [$status];
     } else {
-        $where = "WHERE t.status IN ('pending','preparing','ready')";
+        // Default: include active statuses plus user-cancelled for visibility
+        $where = "WHERE (t.status IN ('pending','preparing','ready') OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)))";
         $params = [];
     }
     if ($location !== '') {
@@ -87,7 +91,7 @@ function fetch_live_orders_pdo($con, $status = '', $location = '', $q = '')
         }
     } catch (Throwable $_) { /* ignore */ }
 
-    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at,
+    $sql = "SELECT t.transac_id, t.user_id, t.total_amount, t.status, t.created_at, t.admin_id,
         u.user_FN AS customer_name, u.user_FN AS user_FN, u.user_LN AS user_LN,
         p.pickup_location, p.pickup_time, p.special_instructions,
            a.admin_id AS approved_by_admin_id, a.username AS approved_by,
@@ -513,6 +517,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         <a href="?status=preparing" class="tab<?= $live_status === 'preparing' ? ' active' : '' ?>" data-status="preparing">Preparing</a>
                         <a href="?status=ready" class="tab<?= $live_status === 'ready' ? ' active' : '' ?>" data-status="ready">Ready</a>
                         <a href="?status=pending" class="tab<?= $live_status === 'pending' ? ' active' : '' ?>" data-status="pending">Pending</a>
+                        <a href="?status=cancelled_user" class="tab<?= $live_status === 'cancelled_user' ? ' active' : '' ?>" data-status="cancelled_user">Cancelled by user</a>
                     </div>
 
                     <div class="live-orders-filters" style="display:flex;gap:10px;align-items:center;margin:10px 0 18px;flex-wrap:wrap;">
