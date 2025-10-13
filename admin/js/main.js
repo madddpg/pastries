@@ -196,6 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function onProductsPaginateClick(e) {
     const btn = e.target.closest('button.pager-btn');
     if (!btn) return;
+    // Close any open product dropdown before re-render
+    document.querySelectorAll('#products-section .dropdown-menu').forEach(m => { m.style.display = 'none'; m.classList?.remove('open-up'); });
     const page = parseInt(btn.dataset.page || '1', 10) || 1;
     const active = document.querySelector('#products-filter-tabs .tab.active');
     const filter = (active?.dataset.filter || 'all').toLowerCase();

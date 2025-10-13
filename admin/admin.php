@@ -1126,6 +1126,12 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     if (menu.style.display !== 'none') menu.style.display = 'none';
                 });
             }, true);
+            window.addEventListener('resize', function() {
+                document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
+                    menu.style.display = 'none';
+                    menu.classList.remove('open-up');
+                });
+            });
 
             // Toggle dropdown menus
             document.querySelectorAll('.action-btn').forEach(function(btn) {
@@ -1137,13 +1143,28 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
                         if (menu !== btn.nextElementSibling) {
                             menu.style.display = 'none';
+                            menu.classList.remove('open-up');
                         }
                     });
 
                     // Toggle current dropdown
                     const dropdown = btn.nextElementSibling;
                     if (dropdown && dropdown.classList.contains('dropdown-menu')) {
-                        dropdown.style.display = (dropdown.style.display === 'flex' || dropdown.style.display === 'block') ? 'none' : 'flex';
+                        const willOpen = (dropdown.style.display === 'flex' || dropdown.style.display === 'block') ? false : true;
+                        if (willOpen) {
+                            // Determine available space below vs above
+                            const rect = btn.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                            const estimatedMenuHeight = Math.max(180, dropdown.scrollHeight || 0); // rough default
+                            const spaceBelow = viewportHeight - rect.bottom;
+                            // Flip upward if not enough space below
+                            if (spaceBelow < estimatedMenuHeight + 12) {
+                                dropdown.classList.add('open-up');
+                            } else {
+                                dropdown.classList.remove('open-up');
+                            }
+                        }
+                        dropdown.style.display = willOpen ? 'flex' : 'none';
                     }
                 });
             });

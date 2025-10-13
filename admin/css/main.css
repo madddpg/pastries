@@ -2386,9 +2386,16 @@ h1 {
 .action-menu .dropdown-menu {
   left: auto !important;        /* ignore inline left:-160px */
   right: 0 !important;          /* align to button's right edge */
-  top: 44px !important;         /* below 36px button + small gap */
+  top: 44px;                    /* below 36px button + small gap */
   min-width: 200px;             /* keep menu wide enough for labels */
   width: max(200px, fit-content);
+  z-index: 5000;                /* sit above table scrollbars/borders */
+}
+
+/* Flip placement upward when near the bottom */
+.action-menu .dropdown-menu.open-up {
+  top: auto;
+  bottom: 44px;
 }
 
 .menu-item {
