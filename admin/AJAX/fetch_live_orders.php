@@ -14,11 +14,12 @@ $allowed = ['pending', 'preparing', 'ready'];
 // Build WHERE with named binds to avoid mixing placeholders
 $bind = [];
 $clauses = [];
+// Status clause: always include user-cancelled orders for visibility in Live Orders
 if ($status !== '' && in_array($status, $allowed, true)) {
-    $clauses[] = 't.status = :status';
+    $clauses[] = "(t.status = :status OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)))";
     $bind[':status'] = $status;
 } else {
-    $clauses[] = "t.status IN ('pending','preparing','ready')";
+    $clauses[] = "(t.status IN ('pending','preparing','ready') OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)))";
 }
 if ($location !== '') {
     $clauses[] = 'p.pickup_location LIKE :location';
@@ -42,7 +43,7 @@ try {
     $orders = [];
     try {
         // Count total for pagination
-        $countSql = "SELECT COUNT(*)
+    $countSql = "SELECT COUNT(*)
                 FROM `transaction` t
                 LEFT JOIN users u ON t.user_id = u.user_id
                 LEFT JOIN pickup_detail p ON t.transac_id = p.transaction_id
@@ -55,12 +56,13 @@ try {
         // Full dataset with pagination (safe aliases and backticks)
         $limit = (int)$perPage;
         $offset = (int)(($page - 1) * $perPage);
-                                                                $sql = "SELECT
+                                                                                                                                $sql = "SELECT
                   t.transac_id,
                   COALESCE(t.reference_number, t.transac_id) AS reference_number,
                   t.user_id,
                   t.total_amount,
                   t.status,
+                                    t.admin_id,
                   t.created_at,
                                                                         COALESCE(t.payment_method,'gcash') AS payment_method,
                                                                         COALESCE(t.gcash_receipt_path, t.gcash_reciept_path) AS gcash_receipt_path,
@@ -111,6 +113,7 @@ try {
                                     t.user_id,
                                     t.total_amount,
                                     t.status,
+                                    t.admin_id,
                                     t.created_at,
                                     u.user_FN AS user_FN,
                                     u.user_LN AS user_LN

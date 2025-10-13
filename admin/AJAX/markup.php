@@ -11,6 +11,7 @@ foreach ($orders as $order):
   $refVal = isset($order['reference_number']) && $order['reference_number'] !== '' ? $order['reference_number'] : $id;
   $ref    = esc($refVal);
   $status = strtolower((string)($order['status'] ?? ''));
+  $adminId = isset($order['admin_id']) ? (int)$order['admin_id'] : 0;
   $time   = esc($order['created_at'] ?? '');
   $first  = trim((string)($order['user_FN'] ?? ''));
   $last   = trim((string)($order['user_LN'] ?? ''));
@@ -126,8 +127,10 @@ foreach ($orders as $order):
     <!-- See receipt on top -->
     <button type="button" class="btn-see-receipt" data-receipt-url="<?= esc($receiptUrl) ?>" title="<?= esc($title) ?>" style="width:100%;border:none;border-radius:6px;padding:10px;background:<?= esc($bg) ?>;color:#fff;">See receipt</button>
 
-    <!-- Action choices below -->
-    <?php if ($status === 'pending'): ?>
+    <!-- Status and action choices below -->
+    <?php if ($status === 'cancelled' && $adminId === 0): ?>
+      <div style="padding:8px 10px;border:1px dashed #ef4444;border-radius:8px;color:#ef4444;font-weight:600;text-align:center;background:#fff7f7;">Cancelled by user</div>
+    <?php elseif ($status === 'pending'): ?>
       <div style="display:flex;gap:8px;">
         <button type="button" class="btn-accept" data-id="<?= $id ?>" style="flex:1;">Accept</button>
         <button type="button" class="btn-reject" data-id="<?= $id ?>" style="flex:1;">Cancel</button>
@@ -136,6 +139,8 @@ foreach ($orders as $order):
       <button type="button" class="btn-ready" data-id="<?= $id ?>" style="width:100%;">Mark as Ready</button>
     <?php elseif ($status === 'ready'): ?>
       <button type="button" class="btn-complete" data-id="<?= $id ?>" style="width:100%;">Mark as Picked Up</button>
+    <?php elseif ($status === 'cancelled'): ?>
+      <div style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;text-align:center;background:#fff;">Cancelled</div>
     <?php endif; ?>
   </div>
 </div>
