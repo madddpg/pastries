@@ -2099,6 +2099,27 @@ h1 {
   border: 1px solid #e6f2ea;
 }
 
+/* Full-bleed Order History table (use the entire content width) */
+#order-history-section .table-container {
+  width: calc(100% + 60px); /* match .page-content padding (30px on both sides) */
+  margin-left: -30px;
+  margin-right: -30px;
+  border-left: 0;
+  border-right: 0;
+  border-radius: 8px; /* small rounding for top/bottom edges */
+}
+
+@media (max-width: 600px) {
+  #order-history-section .table-container {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    border-left: 1px solid #e6f2ea;
+    border-right: 1px solid #e6f2ea;
+    border-radius: 12px;
+  }
+}
+
 .orders-table,
 .products-table,
 .stock-table {
