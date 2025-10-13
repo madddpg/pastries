@@ -1347,6 +1347,9 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
+                        // Close dropdown if open
+                        var dd = btn.closest('.dropdown-menu');
+                        if (dd) dd.style.display = 'none';
                         var row = btn.closest('tr');
                         const pid = row.getAttribute('data-product-id');
                         const dtype = (row.getAttribute('data-product-type')||'').toLowerCase();
