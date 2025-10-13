@@ -3,7 +3,7 @@ console.info('[admin] main.js loaded');
 document.addEventListener("DOMContentLoaded", () => {
   console.info('[admin] DOMContentLoaded fired');
   // Products pagination page size (must be defined before initial apply)
-  const PRODUCTS_PER_PAGE = 7;
+  const PRODUCTS_PER_PAGE = 8;
 
   // Track current section safely
   let currentSection = null;
