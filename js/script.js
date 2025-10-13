@@ -625,6 +625,16 @@ function startCheckout() {
   let deliveryOptions = document.getElementById("deliveryOptions");
   if (deliveryOptions) {
     deliveryOptions.style.display = "block";
+    // Prefill pickup name for existing static form using server-provided name
+    try {
+      const cartModal = document.getElementById('cartModal');
+      const fullName = (cartModal?.dataset?.userFullName || '').trim();
+      const pickupNameEl = deliveryOptions.querySelector('#pickupName');
+      if (pickupNameEl && fullName) {
+        pickupNameEl.value = fullName;
+        pickupNameEl.readOnly = true;
+      }
+    } catch (_) {}
     return;
   }
   deliveryOptions = document.createElement("div");
