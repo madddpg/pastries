@@ -2328,7 +2328,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             if (!tbody || !pager) return;
 
             let pickedUpPage = 1;
-            const pageSize = 10;
+            const pageSize = 15;
 
             function money(v) {
                 return Number(v || 0).toFixed(2);
