@@ -1281,9 +1281,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = e.target.closest('.btn-price-history');
     if (!btn) return;
     e.preventDefault();
-    // Close any open dropdown menu
-    const dd = btn.closest('.dropdown-menu');
-    if (dd) dd.style.display = 'none';
+    // Close any open dropdown menu and restore to original parent if floating
+    document.querySelectorAll('#products-section .dropdown-menu').forEach(m => {
+      if (m && m.style) { m.style.display = 'none'; }
+      // Note: restoration handled in admin.php closeAllMenus; this is a best-effort extra guard
+    });
     // Find product id from the row
     const row = btn.closest('tr[data-product-id]');
     const productId = row ? (row.getAttribute('data-product-id') || '').trim() : '';
