@@ -2163,6 +2163,16 @@ h1 {
   border-bottom-right-radius: 8px;
 }
 
+/* Bullet list styling for the Items column */
+#order-history-section .oh-items-list {
+  margin: 0;
+  padding-left: 18px; /* indent bullets a bit */
+}
+#order-history-section .oh-items-list li {
+  margin: 2px 0; /* tight vertical rhythm */
+  line-height: 1.3;
+}
+
 .orders-table th,
 .orders-table td,
 .products-table th,

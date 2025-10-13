@@ -2340,15 +2340,17 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:12px;">No picked up orders.</td></tr>';
                     return;
                 }
+                const esc = (s) => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
                 list.forEach(o => {
-                    const itemsText = (o.items || [])
-                        .map(i => `${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)
-                        .join(', ');
+                    const items = Array.isArray(o.items) ? o.items : [];
+                    const itemsHtml = items.length
+                        ? `<ul class="oh-items-list">${items.map(i => `<li>${esc(`${i.quantity}x ${i.name}${i.size?(' ('+i.size+')'):''}`)}</li>`).join('')}</ul>`
+                        : '-';
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                 <td style="padding:6px;">${o.reference_number}</td>
                 <td style="padding:6px;">${o.customer_name}</td>
-                <td style="padding:6px;">${itemsText || '-'}</td>
+                <td style="padding:6px;">${itemsHtml}</td>
                 <td style="padding:6px;">${money(o.total_amount)}</td>
                 <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
                 <td style="padding:6px;">${new Date(o.created_at).toLocaleString()}</td>`;
