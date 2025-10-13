@@ -2127,6 +2127,42 @@ h1 {
   border-collapse: collapse;
 }
 
+/* Order History specific row spacing and first-column padding */
+#order-history-section .orders-table {
+  border-collapse: separate;        /* allow vertical gaps between rows */
+  border-spacing: 0 8px;            /* 8px space between table rows */
+}
+
+/* Extra left padding for the first column (Reference) to add space from the green design */
+#order-history-section .orders-table th:first-child,
+#order-history-section .orders-table td:first-child {
+  padding-left: 24px; /* a little more than default 15px */
+}
+
+/* Create a subtle card look for each row while preserving table layout */
+#order-history-section .orders-table tbody td {
+  border-bottom: 0; /* remove default divider; we’ll draw our own per row */
+  background: #ffffff;
+}
+
+/* Top/bottom borders for all cells in a row */
+#order-history-section .orders-table tbody tr td {
+  border-top: 1px solid #e6f2ea;
+  border-bottom: 1px solid #e6f2ea;
+}
+
+/* Left and right borders + rounded corners for the row block */
+#order-history-section .orders-table tbody tr td:first-child {
+  border-left: 1px solid #e6f2ea;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+#order-history-section .orders-table tbody tr td:last-child {
+  border-right: 1px solid #e6f2ea;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
 .orders-table th,
 .orders-table td,
 .products-table th,
