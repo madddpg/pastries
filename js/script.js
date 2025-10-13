@@ -638,7 +638,7 @@ function startCheckout() {
     <form id="pickupForm" style="margin-bottom:0;">
       <div class="form-group" style="margin-bottom:12px;">
         <label style="font-weight:600;">Pickup Name</label>
-        <input type="text" id="pickupName" placeholder="Enter your name" required style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #e5e7eb;">
+  <input type="text" id="pickupName" placeholder="Enter your name" required style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #e5e7eb;">
       </div>
       <div class="form-group" style="margin-bottom:12px;">
         <label style="font-weight:600;">Pickup Location</label>
@@ -663,6 +663,17 @@ function startCheckout() {
   } else if (cartContent) {
     cartContent.appendChild(deliveryOptions);
   }
+
+  // Prefill pickup name from server-provided user name (if logged in) and lock the field
+  try {
+    const cartModal = document.getElementById('cartModal');
+    const fullName = (cartModal?.dataset?.userFullName || '').trim();
+    const pickupNameEl = document.getElementById('pickupName');
+    if (pickupNameEl && fullName) {
+      pickupNameEl.value = fullName;
+      pickupNameEl.readOnly = true;
+    }
+  } catch (_) {}
 
   setTimeout(() => {
     const pickupTimeInput = document.getElementById("pickupTime");

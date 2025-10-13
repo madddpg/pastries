@@ -1,7 +1,9 @@
 <?php
 session_start();
 $isLoggedIn = isset($_SESSION['user']);
-$userFirstName = $isLoggedIn ? $_SESSION['user']['user_FN'] : '';
+$userFirstName = $isLoggedIn ? ($_SESSION['user']['user_FN'] ?? '') : '';
+$userLastName  = $isLoggedIn ? ($_SESSION['user']['user_LN'] ?? '') : '';
+$userFullName  = trim(($userFirstName . ' ' . $userLastName));
 
 // Connection
 require_once __DIR__ . '/admin/database/db_connect.php';
@@ -1344,7 +1346,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
 
     <!-- Cart Modal -->
-    <div id="cartModal" class="cart-modal">
+    <div id="cartModal" class="cart-modal" data-user-full-name="<?php echo htmlspecialchars($userFullName ?: '', ENT_QUOTES); ?>">
         <div class="cart-content">
             <div class="cart-header">
                 <h3>Your Cart</h3>
@@ -1360,7 +1362,14 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <h4>Pickup Details</h4>
                 <div class="form-group">
                     <label for="pickupName">Name for Pickup</label>
-                    <input type="text" id="pickupName" placeholder="Enter your name" required>
+                    <input
+                        type="text"
+                        id="pickupName"
+                        placeholder="Enter your name"
+                        required
+                        value="<?php echo htmlspecialchars($userFullName ?: '', ENT_QUOTES); ?>"
+                        <?php echo $isLoggedIn && $userFullName !== '' ? 'readonly' : ''; ?>
+                    >
                 </div>
                 <div class="form-group">
                     <label for="pickupLocation">Pickup Location</label>
