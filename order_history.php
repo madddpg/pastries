@@ -76,6 +76,7 @@ if (count($orders) > 0) {
                             }
                             $itemsText = implode('<br>', $parts);
                         }
+                        $canCancel = ($status === 'pending');
                     ?>
                     <a class="oh-order" href="order_detail.php?id=<?php echo urlencode(htmlspecialchars($order['reference_number'])); ?>">
                         <div class="oh-order-top">
@@ -87,6 +88,9 @@ if (count($orders) > 0) {
                         <div class="oh-order-bottom">
                             <span class="oh-total-label">Total</span>
                             <span class="oh-total-amount">₱<?php echo number_format((float)$order['total_amount'], 2); ?></span>
+                            <?php if ($canCancel): ?>
+                              <button type="button" class="oh-cancel-btn" data-transac-id="<?php echo (int)$order['transac_id']; ?>" onclick="event.preventDefault(); event.stopPropagation(); return false;">Cancel</button>
+                            <?php endif; ?>
                         </div>
                     </a>
                 <?php endforeach; ?>
@@ -125,5 +129,37 @@ if (count($orders) > 0) {
 
 
 </body>
+<script>
+(function(){
+    function onCancelClick(e){
+        const btn = e.target.closest('.oh-cancel-btn');
+        if(!btn) return;
+        e.preventDefault(); e.stopPropagation();
+        if(btn.disabled) return;
+        if(!confirm('Cancel this order?')) return;
+        const id = btn.getAttribute('data-transac-id');
+        if(!id) return;
+        btn.disabled = true; btn.textContent = 'Cancelling…';
+        fetch('AJAX/cancel_order.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: 'id=' + encodeURIComponent(id)
+        }).then(r=>r.json()).then(data=>{
+            if(data && data.success){
+                // Reload to reflect updated status
+                window.location.reload();
+            } else {
+                alert(data && data.message ? data.message : 'Failed to cancel');
+                btn.disabled = false; btn.textContent = 'Cancel';
+            }
+        }).catch(()=>{
+            alert('Network error.');
+            btn.disabled = false; btn.textContent = 'Cancel';
+        });
+    }
+    document.addEventListener('click', onCancelClick, true);
+})();
+</script>
 </html>
 

@@ -39,6 +39,26 @@ body {
   min-height: 100vh;
 }
 
+/* Order History: cancel button */
+.order-history-page .oh-order-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.order-history-page .oh-cancel-btn {
+  appearance: none;
+  border: 1px solid var(--red-500);
+  background: #fff;
+  color: var(--red-500);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.order-history-page .oh-cancel-btn:hover { background: #fee2e2; }
+.order-history-page .oh-cancel-btn[disabled] { opacity: 0.7; cursor: not-allowed; }
+
 /* Section Management */
 .section-content {
   display: none; 

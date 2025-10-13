@@ -52,6 +52,9 @@ if (!$order) {
                 ?>
             </p>
             <p class="card-text"><strong>Total Amount:</strong> ₱<?php echo number_format($order['total_amount'], 2); ?></p>
+            <?php if (strtolower($order['status']) === 'pending'): ?>
+                <button type="button" id="btnCancelOrder" data-transac-id="<?php echo (int)$order['transac_id']; ?>" class="btn btn-outline-danger">Cancel Order</button>
+            <?php endif; ?>
         </div>
     </div>
     <h5>Items</h5>
@@ -64,7 +67,37 @@ if (!$order) {
             </li>
         <?php endforeach; ?>
     </ul>
-    <a href="order_history.php" class="btn btn-secondary">Back to Order History</a>
+        <a href="order_history.php" class="btn btn-secondary">Back to Order History</a>
 </div>
+<script>
+(function(){
+    const btn = document.getElementById('btnCancelOrder');
+    if(!btn) return;
+    btn.addEventListener('click', function(e){
+        e.preventDefault();
+        if(btn.disabled) return;
+        if(!confirm('Cancel this order?')) return;
+        const id = btn.getAttribute('data-transac-id');
+        if(!id) return;
+        btn.disabled = true; btn.textContent = 'Cancelling…';
+        fetch('AJAX/cancel_order.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: 'id=' + encodeURIComponent(id)
+        }).then(r=>r.json()).then(data=>{
+            if(data && data.success){
+                window.location.href = 'order_history.php';
+            } else {
+                alert(data && data.message ? data.message : 'Failed to cancel');
+                btn.disabled = false; btn.textContent = 'Cancel Order';
+            }
+        }).catch(()=>{
+            alert('Network error.');
+            btn.disabled = false; btn.textContent = 'Cancel Order';
+        });
+    });
+})();
+</script>
 </body>
 </html>
