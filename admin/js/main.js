@@ -1286,9 +1286,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (m && m.style) { m.style.display = 'none'; }
       // Note: restoration handled in admin.php closeAllMenus; this is a best-effort extra guard
     });
-    // Find product id from the row
+    // Find product id from the row or from the button's dataset (menu may be floating)
     const row = btn.closest('tr[data-product-id]');
-    const productId = row ? (row.getAttribute('data-product-id') || '').trim() : '';
+    let productId = row ? (row.getAttribute('data-product-id') || '').trim() : '';
+    if (!productId) {
+      productId = (btn.getAttribute('data-product-id') || '').trim();
+    }
     if (!productId) { alert('Missing product id.'); return; }
     try {
       const url = new URL('AJAX/fetch_price_history.php', window.location.href);

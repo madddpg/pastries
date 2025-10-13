@@ -663,12 +663,12 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                                 <div class="dropdown-menu"
                                                     style="display:none; position:absolute; z-index:10; left:-160px; top:0; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:6px 0; width:220px; display:flex; flex-direction:column; gap:0;">
 
-                                                    <button type="button" class="menu-item edit-product-btn"
+                                                    <button type="button" class="menu-item edit-product-btn" data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                                         style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#374151; cursor:pointer; white-space:nowrap;">
                                                         Edit
                                                     </button>
 
-                                                    <button type="button" class="menu-item btn-price-history"
+                                                    <button type="button" class="menu-item btn-price-history" data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                                         style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#059669; cursor:pointer; white-space:nowrap;">
                                                         Price history
                                                     </button>
@@ -681,7 +681,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                                     </button>
 
                                                     <?php if (Database::isSuperAdmin()): ?>
-                                                    <button type="button" class="menu-item delete-product-btn"
+                                                    <button type="button" class="menu-item delete-product-btn" data-product-id="<?= htmlspecialchars($product['product_id']) ?>"
                                                         style="width:100%; text-align:left; padding:10px 16px; background:none; border:none; font-size:14px; color:#dc2626; cursor:pointer; white-space:nowrap;">
                                                         Delete
                                                     </button>
@@ -1220,11 +1220,12 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     e.preventDefault();
                     e.stopPropagation();
                     var row = btn.closest('tr');
-                    if (!row) return;
-                    var id = row.getAttribute('data-product-id');
+                    var id = row ? row.getAttribute('data-product-id') : '';
+                    if (!id) { id = btn.getAttribute('data-id') || btn.getAttribute('data-product-id') || ''; }
+                    if (!row && id) { row = document.querySelector(`tr[data-product-id="${CSS.escape(id)}"]`); }
+                    if (!row || !id) return;
                     var currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
                     var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                    if (!id) return;
 
                     // Warn admin when deactivating a product
                     if (newStatus === 'inactive') {
@@ -1288,10 +1289,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 e.stopPropagation();
 
                 const btn = delBtn || forceBtn;
-                const row = btn.closest('tr');
-                if (!row) return;
-                const id = row.getAttribute('data-product-id');
-                if (!id) return;
+                let row = btn.closest('tr');
+                let id = row ? row.getAttribute('data-product-id') : '';
+                if (!id) { id = btn.getAttribute('data-product-id') || ''; }
+                if (!row && id) { row = document.querySelector(`tr[data-product-id="${CSS.escape(id)}"]`); }
+                if (!row || !id) return;
 
                 const action = delBtn ? 'delete' : 'force_delete';
                 const confirmMsg = action === 'delete'
@@ -1417,7 +1419,13 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         var dd = btn.closest('.dropdown-menu');
                         if (dd) { dd.style.display = 'none'; }
                         var row = btn.closest('tr');
-                        const pid = row.getAttribute('data-product-id');
+                        var pid = row ? row.getAttribute('data-product-id') : '';
+                        if (!pid) { pid = btn.getAttribute('data-product-id') || ''; }
+                        if (!row) {
+                            // Attempt to locate the row by product id
+                            row = pid ? document.querySelector(`tr[data-product-id="${CSS.escape(pid)}"]`) : null;
+                        }
+                        if (!row || !pid) { alert('Missing product id.'); return; }
                         const dtype = (row.getAttribute('data-product-type')||'').toLowerCase();
                         // For pastries, open the pastry variants modal instead of the regular edit
                         if (dtype === 'pastries' && pastryModal) {
