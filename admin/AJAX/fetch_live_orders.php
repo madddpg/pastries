@@ -3,6 +3,8 @@
 ini_set('display_errors', '0');
 require_once __DIR__ . '/../database/db_connect.php';
 header('Content-Type: text/html; charset=UTF-8');
+// Ensure PHP runs in Philippines time when formatting any dates.
+if (!ini_get('date.timezone')) { date_default_timezone_set('Asia/Manila'); }
 
 $status  = isset($_GET['status']) ? trim($_GET['status']) : '';
 $location = isset($_GET['location']) ? trim($_GET['location']) : '';
@@ -41,6 +43,8 @@ $where = 'WHERE ' . implode(' AND ', $clauses);
 try {
     $db  = new Database();
     $con = $db->opencon();
+    // Force MySQL session to Manila time so CURDATE()/NOW() align with PH midnight.
+    try { $con->exec("SET time_zone = '+08:00'"); } catch (Throwable $_) { /* ignore if not supported */ }
 
     $orders = [];
     try {
