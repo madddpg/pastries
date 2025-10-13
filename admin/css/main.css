@@ -2092,10 +2092,11 @@ h1 {
 }
 
 .table-container {
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(16,185,129,0.05);
   overflow: hidden;
+  border: 1px solid #e6f2ea;
 }
 
 .orders-table,
@@ -2119,18 +2120,19 @@ h1 {
 .orders-table th,
 .products-table th,
 .stock-table th {
-  font-weight: 500;
-  color: #666;
-  font-size: 14px;
-  background-color: #f9fafb;
-  cursor: pointer;
+  font-weight: 700;
+  color: #255a44;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background-color: #f3f9f7;
+  border-bottom: 1px solid #e1f3eb;
+  cursor: default;
 }
 
 .orders-table th:hover,
 .products-table th:hover,
-.stock-table th:hover {
-  background-color: #f0f2f5;
-}
+.stock-table th:hover { background-color: #f3f9f7; }
 
 .sort-icon {
   font-size: 10px;
