@@ -1108,10 +1108,24 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 // Close all dropdowns when clicking outside
                 if (!e.target.closest('.action-menu')) {
                     document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
-                        menu.style.display = "none";
+                        menu.style.display = 'none';
+                    });
+                }
+            }, true);
+
+            // Close any open dropdown on ESC and on scroll
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
+                        menu.style.display = 'none';
                     });
                 }
             });
+            window.addEventListener('scroll', function() {
+                document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
+                    if (menu.style.display !== 'none') menu.style.display = 'none';
+                });
+            }, true);
 
             // Toggle dropdown menus
             document.querySelectorAll('.action-btn').forEach(function(btn) {
@@ -1122,14 +1136,14 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     // Close all other dropdowns first
                     document.querySelectorAll('.dropdown-menu').forEach(function(menu) {
                         if (menu !== btn.nextElementSibling) {
-                            menu.style.display = "none";
+                            menu.style.display = 'none';
                         }
                     });
 
                     // Toggle current dropdown
                     const dropdown = btn.nextElementSibling;
                     if (dropdown && dropdown.classList.contains('dropdown-menu')) {
-                        dropdown.style.display = dropdown.style.display === "flex" ? "none" : "flex";
+                        dropdown.style.display = (dropdown.style.display === 'flex' || dropdown.style.display === 'block') ? 'none' : 'flex';
                     }
                 });
             });

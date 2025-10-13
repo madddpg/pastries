@@ -2382,6 +2382,15 @@ h1 {
   display: none;
 }
 
+/* Products action menu: force consistent placement below the kebab (override inline left/top) */
+.action-menu .dropdown-menu {
+  left: auto !important;        /* ignore inline left:-160px */
+  right: 0 !important;          /* align to button's right edge */
+  top: 44px !important;         /* below 36px button + small gap */
+  min-width: 200px;             /* keep menu wide enough for labels */
+  width: max(200px, fit-content);
+}
+
 .menu-item {
   display: block;
   padding: 10px 15px;
