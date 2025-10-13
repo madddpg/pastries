@@ -1296,7 +1296,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     <div class="product-modal-sugar">
                         <h3>Sugar</h3>
                         <div class="sugar-buttons">
-                            <button type="button" class="sugar-btn active" data-sugar="Less Sweet">Less Sweet</button>
+                            <button type="button" class="sugar-btn" data-sugar="Less Sweet">Less Sweet</button>
+                            <button type="button" class="sugar-btn active" data-sugar="Regular">Regular</button>
                             <button type="button" class="sugar-btn" data-sugar="More Sweet">More Sweet</button>
                         </div>
                     </div>

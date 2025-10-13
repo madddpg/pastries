@@ -42,7 +42,7 @@ function showSection(sectionName) {
 
 window.showSection = showSection;
 // Ensure a global default sugar selection
-window.selectedSugar = window.selectedSugar || 'Less Sweet';
+window.selectedSugar = window.selectedSugar || 'Regular';
 let cart = []
 let currentSection = "home"
 let isLoggedIn = false
@@ -67,7 +67,7 @@ function selectSugar(level) {
   const btnMatch = Array.from(document.querySelectorAll('.sugar-btn'))
     .find(b => (b.dataset.sugar || b.textContent).trim().toLowerCase() === normalized.toLowerCase());
   if (btnMatch) btnMatch.classList.add('active');
-  window.selectedSugar = normalized || 'Less Sweet';
+  window.selectedSugar = normalized || 'Regular';
   if (currentProduct) currentProduct.sugar = window.selectedSugar;
   if (typeof recalcModalTotal === 'function') recalcModalTotal();
 }
@@ -157,7 +157,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       grandePrice,
       supremePrice,
       variants: null,
-      sugar: window.selectedSugar || 'Less Sweet',
+  sugar: window.selectedSugar || 'Regular',
       category_id: categoryId || ''
     };
 
@@ -331,7 +331,7 @@ function addProductToCart() {
   });
   const toppingsSum = toppingsArr.reduce((s, t) => s + (t.price * t.quantity), 0);
   const itemPrice = Number((base + toppingsSum).toFixed(2));
-  const sugarLevel = currentProduct.sugar || window.selectedSugar || 'Less Sweet';
+  const sugarLevel = currentProduct.sugar || window.selectedSugar || 'Regular';
 
   const item = {
     product_id: currentProduct.id || ('manual-' + (currentProduct.name || '').replace(/\s+/g, '-').toLowerCase()),
