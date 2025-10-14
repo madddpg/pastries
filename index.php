@@ -1247,6 +1247,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <li>Open your GCash app and scan the QR.</li>
                             <li>Enter the total amount and complete the payment.</li>
                             <li>Upload a screenshot of your receipt below.</li>
+                            <span>Note: Please ensure the receipt is clear and legible.</span>
+                            
                         </ol>
                         <div>
                             <input type="file" id="gcashReceiptInput" accept="image/*" style="display:block;margin:8px 0;" />
