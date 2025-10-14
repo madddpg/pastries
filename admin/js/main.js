@@ -939,7 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function fetchOrders(status = '', page = null) {
     // Use the same container your initial render uses (do not change wrapper)
-    const listContainer = document.querySelector('.live-orders-grid'); // or '#live-orders-list' if that is your inner list
+    const listContainer = document.querySelector('.live-orders-grid'); 
     if (!listContainer) {
       console.warn('[admin] live-orders container not found');
       return;

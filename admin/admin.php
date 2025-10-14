@@ -934,7 +934,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         <div id="addToppingModal" class="modal" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.15);z-index:9999;">
                             <div class="modal-content" style="background:#fff;padding:24px;border-radius:12px;max-width:420px;width:100%;">
                                 <button id="closeAddToppingModal" type="button" style="position:absolute;right:18px;top:12px;background:none;border:none;font-size:20px;">&times;</button>
-                                <h3 id="addToppingTitle">Add Topping</h3>
+                                <h3 id="addToppingTitle">Add Add-ons</h3>
                                 <form id="toppingForm">
                                     <input type="hidden" id="toppingId" name="topping_id" value="">
                                     <div class="form-group" style="margin-bottom:8px;">
@@ -2419,7 +2419,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             if (!tbody || !pager) return;
 
             let pickedUpPage = 1;
-            const pageSize = 15;
+            const pageSize = 10;
 
             function money(v) {
                 return Number(v || 0).toFixed(2);

@@ -8,7 +8,7 @@ $user_id = $_SESSION['user']['user_id'];
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$perPage = 15;
+$perPage = 10;
 $total = 0;
 $orders = method_exists($db, 'fetchUserOrdersPaginated')
     ? $db->fetchUserOrdersPaginated($user_id, $page, $perPage, $total)

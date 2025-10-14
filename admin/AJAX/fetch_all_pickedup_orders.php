@@ -5,8 +5,8 @@ header('Content-Type: application/json; charset=UTF-8');
 require_once __DIR__ . '/../database/db_connect.php';
 
 $page     = max(1, (int)($_GET['page'] ?? 1));
-$pageSize = (int)($_GET['pageSize'] ?? 15);
-if ($pageSize < 1)  $pageSize = 15;
+$pageSize = (int)($_GET['pageSize'] ?? 10);
+if ($pageSize < 1)  $pageSize = 10;
 if ($pageSize > 50) $pageSize = 50;
 $offset = ($page - 1) * $pageSize;
 
