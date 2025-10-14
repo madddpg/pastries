@@ -140,7 +140,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <div class="logo">C&C</div>
+            <div class="logo"></div>
             <button class="hamburger-menu">
                 <i class="fas fa-bars"></i>
             </button>
@@ -1248,7 +1248,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <li>Enter the total amount and complete the payment.</li>
                             <li>Upload a screenshot of your receipt below.</li>
                             <span>Note: Please ensure the receipt is clear and legible.</span>
-                            
+
                         </ol>
                         <div>
                             <input type="file" id="gcashReceiptInput" accept="image/*" style="display:block;margin:8px 0;" />
