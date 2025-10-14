@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   console.info('[admin] DOMContentLoaded fired');
   // Products pagination page size (must be defined before initial apply)
   const PRODUCTS_PER_PAGE = 8;
+  // Products search state
+  const productsSearchState = { term: '' };
 
   // Track current section safely
   let currentSection = null;
@@ -108,6 +110,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Delegated handler as a fallback to ensure clicks are captured
   const productsTabs = document.getElementById('products-filter-tabs');
+  const productsSearchInput = document.getElementById('products-search-input');
+  const productsSearchClear = document.getElementById('products-search-clear');
+
+  // Debounce helper
+  function debounce(fn, delay = 250) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+  }
+
+  function applyProductsSearch(term) {
+    const v = String(term || '').trim();
+    productsSearchState.term = v.toLowerCase();
+    if (productsSearchClear) productsSearchClear.style.display = v ? 'block' : 'none';
+    // Re-apply current filter + pagination from page 1
+    const active = document.querySelector('#products-filter-tabs .tab.active');
+    const filter = (active?.dataset.filter || 'all').toLowerCase();
+    applyProductsFilterAndPaginate(filter);
+  }
+
+  if (productsSearchInput) {
+    const onInput = debounce(() => applyProductsSearch(productsSearchInput.value), 250);
+    productsSearchInput.addEventListener('input', onInput);
+    productsSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        productsSearchInput.value = '';
+        applyProductsSearch('');
+        productsSearchInput.blur();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        applyProductsSearch(productsSearchInput.value);
+      }
+    });
+  }
+  if (productsSearchClear) {
+    productsSearchClear.addEventListener('click', () => {
+      if (productsSearchInput) productsSearchInput.value = '';
+      applyProductsSearch('');
+      if (productsSearchInput) productsSearchInput.focus();
+    });
+  }
   if (productsTabs) {
     productsTabs.addEventListener('click', function (e) {
       const a = e.target.closest('.tab');
@@ -135,9 +177,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody = document.querySelector('#products-section .products-table tbody');
     if (!tbody) return [];
     const rows = Array.from(tbody.querySelectorAll('tr'));
-    return rows.filter(tr => {
+    const typeFiltered = rows.filter(tr => {
       const type = (tr.getAttribute('data-product-type') || '').toLowerCase();
       return filter === 'all' || type === filter;
+    });
+    const term = productsSearchState.term;
+    if (!term) return typeFiltered;
+    return typeFiltered.filter(tr => {
+      const id = (tr.getAttribute('data-product-id') || '').toLowerCase();
+      const name = (tr.getAttribute('data-product-name') || '').toLowerCase();
+      const status = (tr.getAttribute('data-product-status') || '').toLowerCase();
+      const cat = (tr.getAttribute('data-product-category') || '').toLowerCase();
+      return id.includes(term) || name.includes(term) || status.includes(term) || cat.includes(term);
     });
   }
 
@@ -152,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const set = new Set(rows.slice(start, end));
 
     // Show only rows in the current page; hide the rest (but keep filter state)
+    // Remove any previous no-results row
+    const prevNo = tbody.querySelector('tr.no-results-row');
+    if (prevNo) prevNo.remove();
     Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
       if (rows.includes(tr)) {
         tr.style.display = set.has(tr) ? '' : 'none';
@@ -159,6 +213,21 @@ document.addEventListener("DOMContentLoaded", () => {
         tr.style.display = 'none';
       }
     });
+
+    // If no results, show a friendly message and clear pagination
+    if (total === 0) {
+      const no = document.createElement('tr');
+      no.className = 'no-results-row';
+      const td = document.createElement('td');
+      td.colSpan = 9; // matches the number of header columns
+      td.style.cssText = 'text-align:center;padding:12px;color:#64748b;';
+      td.textContent = productsSearchState.term ? 'No products match your search.' : 'No products found.';
+      no.appendChild(td);
+      tbody.appendChild(no);
+      const pag = document.getElementById('products-pagination');
+      if (pag) pag.innerHTML = '';
+      return;
+    }
 
     renderProductsPagination(totalPages, clamped);
   }

@@ -563,6 +563,16 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         <a href="#" class="tab" data-filter="pastries"><i class="bi bi-egg-fried" style="margin-right:6px"></i>Pastries</a>
                     </div>
 
+                    <!-- Products Search -->
+                    <div id="products-search-bar" style="margin:10px 0 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <div style="position:relative;flex:1;min-width:260px;max-width:420px;">
+                            <input type="text" id="products-search-input" aria-label="Search products" placeholder="Search products by name or ID..."
+                                   style="width:100%;padding:10px 36px 10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.95rem;">
+                            <button type="button" id="products-search-clear" aria-label="Clear search"
+                                    title="Clear" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#64748b;font-size:18px;cursor:pointer;display:none;">&times;</button>
+                        </div>
+                    </div>
+
                     <div class="table-container">
                         <div style="font-size:12px;color:#64748b;margin:6px 0 10px;">
                             For pastries: columns show Per piece, Box of 4, Box of 6. For drinks: Grande and Supreme appear in the first two columns.
