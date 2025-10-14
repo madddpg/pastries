@@ -5,6 +5,10 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 $user_id = $_SESSION['user']['user_id'];
+// Header/user context (match index.php header usage)
+$isLoggedIn = isset($_SESSION['user']) && !empty($_SESSION['user']);
+$userFirstName = isset($_SESSION['user']['user_FN']) ? $_SESSION['user']['user_FN'] : '';
+$userLastName  = isset($_SESSION['user']['user_LN']) ? $_SESSION['user']['user_LN'] : '';
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
@@ -34,6 +38,44 @@ if (count($orders) > 0) {
     <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
 <body>
+<!-- Site Header (reused design from index.php) -->
+<header class="header">
+    <div class="header-content">
+        <div class="logo"></div>
+        <button class="hamburger-menu" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <nav class="nav-menu">
+            <a href="index.php#home" class="nav-item">Home</a>
+            <a href="index.php#about" class="nav-item">About</a>
+            <a href="index.php#products" class="nav-item">Shop</a>
+            <a href="index.php#locations" class="nav-item">Locations</a>
+
+            <div class="profile-dropdown">
+                <button class="profile-btn" id="profileDropdownBtnOH" type="button" aria-haspopup="true" aria-expanded="false">
+                    <span class="profile-initials">
+                        <?php if ($isLoggedIn): ?>
+                            <?php echo htmlspecialchars(mb_substr($userFirstName ?: 'U', 0, 1)); ?>
+                        <?php else: ?>
+                            <i class="fas fa-user"></i>
+                        <?php endif; ?>
+                    </span>
+                    <i class="fas fa-caret-down ms-1"></i>
+                </button>
+                <div class="profile-dropdown-menu" id="profileDropdownMenuOH" role="menu">
+                    <a href="order_history.php" class="dropdown-item" role="menuitem">Order History</a>
+                    <a href="logout.php" class="dropdown-item" role="menuitem">Logout</a>
+                </div>
+            </div>
+            <?php if ($isLoggedIn): ?>
+                <span class="navbar-username" style="margin-left:10px;font-weight:600;">
+                    <?php echo htmlspecialchars($userFirstName); ?>
+                </span>
+            <?php endif; ?>
+        </nav>
+    </div>
+</header>
+
 <main class="order-history-page">
 <div class="container mb-5">
     <h2 class="mb-4 section-title oh-title">Order History</h2>
@@ -159,6 +201,23 @@ if (count($orders) > 0) {
         });
     }
     document.addEventListener('click', onCancelClick, true);
+})();
+</script>
+<script>
+// Minimal header dropdown toggle for Order History page
+(function(){
+    const btn = document.getElementById('profileDropdownBtnOH');
+    const menu = document.getElementById('profileDropdownMenuOH');
+    if (!btn || !menu) return;
+    function closeMenu(){ menu.classList.remove('show'); btn.setAttribute('aria-expanded','false'); }
+    btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        const open = menu.classList.toggle('show');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', function(e){
+        if (!menu.contains(e.target) && !btn.contains(e.target)) closeMenu();
+    });
 })();
 </script>
 </html>

@@ -1234,14 +1234,14 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
             <!-- GCash QR + receipt upload (hidden until selected) -->
             <div id="gcashPreview" style="display:none;margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
-                <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                    <a href="img/qr_code.jpg" target="_blank" rel="noopener noreferrer" title="Open QR in new tab">
+                <div style="display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;">
+                    <a href="img/qr_code.jpg" target="_blank" rel="noopener noreferrer" title="Open QR in new tab" style="display:block;">
                         <img id="gcashQrImage" src="img/qr_code.jpg" alt="GCash QR Code"
-                             style="width:220px;height:220px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:block;"
+                             style="width:min(360px, 90vw);height:min(360px, 90vw);object-fit:contain;border-radius:12px;border:1px solid #e5e7eb;background:#fff;display:block;"
                              onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='img/qr_code.jpg';}" />
                     </a>
-                    <small style="display:block;color:#6b7280;margin-top:6px;">Click the QR to enlarge</small>
-                    <div style="flex:1;min-width:240px;">
+                    <small style="display:block;color:#6b7280;">Click the QR to open full size</small>
+                    <div style="width:100%;max-width:680px;">
                         <div style="font-weight:700;color:#1f2937;margin-bottom:6px;">Scan to pay with GCash</div>
                         <ol style="margin:0 0 10px 18px;color:#374151;">
                             <li>Open your GCash app and scan the QR.</li>
@@ -1254,7 +1254,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <input type="file" id="gcashReceiptInput" accept="image/*" style="display:block;margin:8px 0;" />
                             <small style="color:#6b7280;">Accepted formats: JPG, PNG, JPEG. Max ~5MB.</small>
                         </div>
-                        <div style="margin-top:10px;display:flex;gap:10px;">
+                        <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
                             <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#059669;color:#fff;border:none;border-radius:8px;">I've paid — Submit</button>
                             <button type="button" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#e5e7eb;color:#111827;border:none;border-radius:8px;" onclick="document.getElementById('gcashPreview').style.display='none'">Cancel</button>
                         </div>
