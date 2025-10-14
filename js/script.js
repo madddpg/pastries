@@ -451,7 +451,7 @@ function addToCart(product_id, name, price, size) {
     setTimeout(() => {
       button.innerHTML = originalText;
       button.style.background = "";
-    }, 1500);
+    }, 500);
   }
 }
 
