@@ -3889,7 +3889,11 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 /* Order History page styles */
 .order-history-page {
-  padding-top: 32px; /* smaller top spacing now that header is removed */
+  /* Add enough space to clear the fixed header (header ~65px + paddings) */
+  padding-top: 140px;
+}
+@media (max-width: 600px) {
+  .order-history-page { padding-top: 110px; }
 }
 .oh-title {
   font-size: 2rem;

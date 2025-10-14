@@ -77,8 +77,8 @@ if (count($orders) > 0) {
 </header>
 
 <main class="order-history-page">
-<div class="container mb-5">
-    <h2 class="mb-4 section-title oh-title">Order History</h2>
+<div class="container mb-5" style="margin-top:0;">
+    <h2 class="mb-4 section-title oh-title" style="margin-top: 0;">Order History</h2>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">
             Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
