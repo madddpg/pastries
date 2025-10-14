@@ -1235,8 +1235,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             <!-- GCash QR + receipt upload (hidden until selected) -->
             <div id="gcashPreview" style="display:none;margin-top:16px;padding:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
                 <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                    <a href="img/qr_code.jpeg" target="_blank" rel="noopener noreferrer" title="Open QR in new tab">
-                        <img id="gcashQrImage" src="img/qr_code.jpeg" alt="GCash QR Code"
+                    <a href="img/qr_code.jpg" target="_blank" rel="noopener noreferrer" title="Open QR in new tab">
+                        <img id="gcashQrImage" src="img/qr_code.jpg" alt="GCash QR Code"
                              style="width:220px;height:220px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;background:#fff;display:block;"
                              onerror="if(!this.dataset.fallback){this.dataset.fallback='1';this.src='img/qr_code.jpg';}" />
                     </a>
