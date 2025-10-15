@@ -3984,6 +3984,58 @@ label[for="acceptTerms"] { white-space: nowrap; }
 }
 .oh-back-btn:hover { background: #d1fae5; color: #064e3b; }
 
+/* Order History Hero */
+.oh-hero {
+  position: relative;
+  margin: 0 auto 18px auto;
+  width: 100%;
+  border-radius: 40px;
+  background: linear-gradient(160deg, #173b2f, #0f2a21 55%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+.oh-hero-inner {
+  position: relative;
+  padding: 80px 20px 90px;
+  text-align: center;
+}
+.oh-hero-title {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  color: #e5e7eb;
+}
+.oh-hero-sub {
+  margin: 8px 0 0 0;
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  color: #d1d5db;
+}
+
+/* Decorative dots matching theme */
+.oh-hero::before,
+.oh-hero::after {
+  content: "";
+  position: absolute;
+  width: 12px; height: 12px;
+  background: #bc8c23;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+.oh-hero::before { top: 22px; left: 26%; }
+.oh-hero::after  { top: 22px; right: 26%; }
+
+@media (max-width: 600px) {
+  .oh-hero { border-radius: 24px; }
+  .oh-hero-inner { padding: 56px 14px 66px; }
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 
 #pickupLocation, select[name="pickupLocation"] {
     width: 100%;
