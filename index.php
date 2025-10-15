@@ -1255,7 +1255,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                             <small style="color:#6b7280;">Accepted formats: JPG, PNG, JPEG. Max ~5MB.</small>
                         </div>
                         <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                            <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#059669;color:#fff;border:none;border-radius:8px;">I've paid — Submit</button>
+                            <button id="gcashDoneBtn" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#059669;color:#fff;border:none;border-radius:8px;">Submit</button>
                             <button type="button" class="auth-btn" style="padding:10px 14px;flex:0 0 auto;background:#e5e7eb;color:#111827;border:none;border-radius:8px;" onclick="document.getElementById('gcashPreview').style.display='none'">Cancel</button>
                         </div>
                     </div>
