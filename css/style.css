@@ -3985,8 +3985,12 @@ label[for="acceptTerms"] { white-space: nowrap; }
 /* Order History Hero */
 .oh-hero {
   position: relative;
-  margin: 0 auto 18px auto;
-  width: 100%;
+  /* Full-bleed: extend to viewport width while inside a constrained container */
+  margin-left: calc(50% - 50vw + 12px);
+  margin-right: calc(50% - 50vw + 12px);
+  margin-top: 0;
+  margin-bottom: 24px;
+  width: calc(100vw - 24px);
   border-radius: 40px;
   background: linear-gradient(160deg, #173b2f, #0f2a21 55%);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
