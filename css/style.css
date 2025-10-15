@@ -1,6 +1,6 @@
-.oh-hero {
+:root {
+  /* Theme colors (global) */
   --secondary-purple: #163829;
-  margin: 0 auto 24px auto;
   --green-accent: #10b981;
   --orange-accent: #f97316;
   --light-green: #e9e3c3;
@@ -8,20 +8,22 @@
 
   /* New About Section Colors */
   --emerald-50: #ecfdf5;
-  padding: 120px 24px 130px;
   --emerald-200: #a7f3d0;
   --emerald-600: #059669;
   --emerald-700: #047857;
   --emerald-800: #065f46;
-  font-size: clamp(2.4rem, 6vw, 3.8rem);
+
   --amber-50: #fffbeb;
   --amber-100: #fef3c7;
   --amber-600: #d97706;
   --amber-700: #b45309;
+
   --red-500: #ef4444;
-  font-size: clamp(1.05rem, 3vw, 1.35rem);
   --green-500: #22c55e;
   --purple-500: #909048;
+
+  /* Brand primary (used widely across UI) */
+  --primary-purple: #6b22f2;
 }
 
 
