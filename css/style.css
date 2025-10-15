@@ -22,8 +22,8 @@
   --green-500: #22c55e;
   --purple-500: #909048;
 
-  /* Brand primary (used widely across UI) */
-  --primary-purple: #6b22f2;
+  /* Brand primary (used widely across UI) - set to green */
+  --primary-purple: #059669;
 }
 
 
@@ -84,13 +84,12 @@ img, svg, picture, video {
 }
 
 .hero {
-  background-color: #6b22f2;
+  background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
   color: white;
   padding: 2rem 1rem 4rem;
   border-radius: 2rem;
   position: relative;
   text-align: center;
-  
 }
 
 .section-title {
