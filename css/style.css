@@ -393,22 +393,22 @@ img, svg, picture, video {
   padding: 10px 20px; /* Add some padding for spacing */
 }
 
-.nav-item {
+.header .nav-menu .nav-item {
   margin: 0 10px;
   text-decoration: none;
-  color: black; /* Adjust the text color */
+  color: var(--dark-text);
   font-weight: 600;
   cursor: pointer; /* Add cursor pointer to indicate clickable */
 }
 
-.nav-item:hover,
-.nav-item.active {
+.header .nav-menu .nav-item:hover,
+.header .nav-menu .nav-item.active {
   background-color: transparent;
   color: var(--dark-text);
   opacity: 0.7;
 }
 
-.nav-item.active {
+.header .nav-menu .nav-item.active {
   color: var(--primary-purple); /* Highlight the active link */
 }
 
