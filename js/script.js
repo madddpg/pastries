@@ -2564,6 +2564,9 @@ function showEditProfileModal() {
   document.getElementById('editProfileFN').value = window.PHP_USER_FN || '';
   document.getElementById('editProfileLN').value = window.PHP_USER_LN || '';
   document.getElementById('editProfileEmail').value = window.PHP_USER_EMAIL || '';
+  // Ensure email is not editable
+  const epEmail = document.getElementById('editProfileEmail');
+  if (epEmail) { epEmail.readOnly = true; epEmail.setAttribute('aria-readonly', 'true'); }
   document.getElementById('editProfilePassword').value = '';
   document.getElementById('editProfileSuccess').style.display = 'none';
   document.getElementById('editProfileError').style.display = 'none';
@@ -2586,7 +2589,8 @@ function handleEditProfile(event) {
   btn.classList.add('loading');
   const FN = document.getElementById('editProfileFN').value.trim();
   const LN = document.getElementById('editProfileLN').value.trim();
-  const email = document.getElementById('editProfileEmail').value.trim();
+  // Email is not editable; always use the current logged-in email
+  const email = window.PHP_USER_EMAIL || document.getElementById('editProfileEmail').value.trim();
   const password = document.getElementById('editProfilePassword').value;
   const data = {
     user_FN: FN,
@@ -2606,9 +2610,9 @@ function handleEditProfile(event) {
         document.getElementById('editProfileSuccess').textContent = result.message || 'Profile updated!';
         document.getElementById('editProfileSuccess').style.display = 'block';
         document.getElementById('editProfileError').style.display = 'none';
-        window.PHP_USER_FN = FN;
-        window.PHP_USER_LN = LN;
-        window.PHP_USER_EMAIL = email;
+  window.PHP_USER_FN = FN;
+  window.PHP_USER_LN = LN;
+  // Do not update window.PHP_USER_EMAIL here (email is immutable)
         setTimeout(() => {
           closeEditProfileModal();
           showNotification('Profile updated!', 'success');

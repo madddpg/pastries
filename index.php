@@ -1779,7 +1779,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             </div>
             <div class="form-group">
                 <label for="editProfileEmail">Email</label>
-                <input type="email" id="editProfileEmail" name="user_email" required />
+                <input type="email" id="editProfileEmail" name="user_email" required readonly aria-readonly="true" title="Email cannot be changed" />
+                <div class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">Your email address cannot be changed.</div>
             </div>
             <div class="form-group">
                 <label for="editProfilePassword">New Password <span style="font-weight:400;font-size:0.95em;">(leave blank to keep current)</span></label>
