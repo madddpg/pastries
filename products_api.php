@@ -62,7 +62,7 @@ try {
     }
 
     // 3) Build SQL with filters
-    $sql    = "SELECT products_pk, product_id, name, data_type, description, image, created_at, status, quantity, category_id
+    $sql    = "SELECT products_pk, product_id, name, data_type, description, image, created_at, status, category_id
                FROM products WHERE 1=1";
     $params = [];
 
