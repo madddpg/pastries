@@ -132,8 +132,18 @@ foreach ($orders as $order):
       <div style="padding:8px 10px;border:1px dashed #ef4444;border-radius:8px;color:#ef4444;font-weight:600;text-align:center;background:#fff7f7;">Cancelled by user</div>
     <?php elseif ($status === 'pending'): ?>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="btn-accept" data-id="<?= $id ?>" style="flex:1;">Accept</button>
-        <button type="button" class="btn-reject" data-id="<?= $id ?>" style="flex:1;">Cancel</button>
+        <button type="button" class="btn-accept" data-id="<?= $id ?>" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;">
+          <span class="btn-icon" aria-hidden="true" style="display:inline-flex;align-items:center;">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#4caf50"/><path d="M6 10.5l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          Accept
+        </button>
+        <button type="button" class="btn-reject" data-id="<?= $id ?>" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;">
+          <span class="btn-icon" aria-hidden="true" style="display:inline-flex;align-items:center;">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#f44336"/><path d="M7 7l6 6M13 7l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+          Cancel
+        </button>
       </div>
     <?php elseif ($status === 'preparing'): ?>
       <button type="button" class="btn-ready" data-id="<?= $id ?>" style="width:100%;">Mark as Ready</button>

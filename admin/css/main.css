@@ -1,3 +1,26 @@
+/* Ripple effect for Accept/Reject buttons */
+.btn-accept .btn-ripple,
+.btn-reject .btn-ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: btn-ripple-anim 0.5s linear;
+  background: rgba(255,255,255,0.4);
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes btn-ripple-anim {
+  to {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.btn-accept, .btn-reject {
+  position: relative;
+  overflow: hidden;
+}
 /* Reset and Base Styles */
 
 :root {
@@ -1982,6 +2005,34 @@ h1 {
   flex: 1;
 }
 
+/* Enhanced Accept/Reject button styles */
+.btn-accept {
+  background-color: var(--csd-accent-green, #4caf50);
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  box-shadow: 0 2px 8px rgba(76,175,80,0.10);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-accept:hover, .btn-accept:focus {
+  background-color: var(--csd-accent-dark-green, #388e3c);
+  box-shadow: 0 4px 16px rgba(76,175,80,0.18);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-accept:active {
+  background-color: #388e3c;
+  transform: scale(0.97);
+}
+
 .btn-reject,
 .btn-cancel {
   background-color: #f44336;
@@ -1993,16 +2044,37 @@ h1 {
   cursor: pointer;
   flex: 1;
 }
-
-.btn-notify {
-  background-color: #2196f3;
-  color: white;
+.btn-reject {
+  background-color: #f44336;
+  color: #fff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-size: 12px;
+  padding: 12px 0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   flex: 1;
+  box-shadow: 0 2px 8px rgba(244,67,54,0.10);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-reject:hover, .btn-reject:focus {
+  background-color: #b71c1c;
+  box-shadow: 0 4px 16px rgba(244,67,54,0.18);
+  transform: translateY(-2px) scale(1.03);
+}
+.btn-reject:active {
+  background-color: #b71c1c;
+  transform: scale(0.97);
+}
+
+.btn-accept .btn-icon svg,
+.btn-reject .btn-icon svg {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .offers-grid {
@@ -2314,15 +2386,20 @@ h1 {
 
 .status.cancelled::before {
   background-color: #f44336;
-}
-
-.status-badge {
-  display: inline-flex;
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex: 1;
+  box-shadow: 0 2px 8px rgba(244,67,54,0.10);
+  transition: background 0.15s, box-shadow 0.15s, transform 0.08s;
+  display: flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
+  justify-content: center;
+  gap: 8px;
 }
 
 .status-badge.active {
@@ -3145,4 +3222,4 @@ input:checked + .toggle-slider:before {
   }
 }
 
-/*edit */
+
