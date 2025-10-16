@@ -1030,7 +1030,6 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => feedbackEl.remove(), 300);
     }, 2000);
   }
-  }, true); // capture to block inline onclicks if any
 
   // Removed duplicate toppings management block (loadToppings + handlers) to avoid conflicts.
 
@@ -1187,41 +1186,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(err => console.error('[admin] fetchOrders error', err));
   }
 
-  // Keep a no-op to avoid errors where older code calls this
-  function attachOrderActionHandlers() {
-    // Events are delegated globally; nothing to do here
-  }
-
-
-  function attachOrderActionHandlers() {
-    const map = new Map([
-      ['.btn-accept', 'preparing'],
-      ['.btn-ready', 'ready'],
-      ['.btn-complete', 'picked up'],
-      ['.btn-reject', 'cancelled'],
-    ]);
-
-    map.forEach((status, selector) => {
-      document.querySelectorAll(selector).forEach(btn => {
-        if (btn._boundByMainJs) return;
-        btn._boundByMainJs = true;
-        btn.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const id = getOrderIdFrom(btn);
-          if (!id) {
-            console.error('[admin] Unable to determine order ID for action', selector);
-            return;
-          }
-          const prevDisabled = btn.disabled;
-          btn.disabled = true;
-          updateOrderStatus(id, status)
-            .finally(() => { btn.disabled = prevDisabled; });
-        }, { capture: true });
-      });
-    });
-  } 
-  
+  // Keep compatibility function name but wire nothing (events are delegated globally)
   function attachOrderActionHandlers() {
     const map = new Map([
       ['.btn-accept', 'preparing'],
