@@ -26,7 +26,9 @@ if ($status === 'cancelled_user') {
     $clauses[] = "(t.status IN ('pending','preparing','ready') OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0)))";
 }
 if ($location !== '') {
-    $clauses[] = 'p.pickup_location LIKE :location';
+    // Preserve user-cancelled orders even if pickup_detail is missing (NULL)
+    // Apply location filter normally, but allow cancelled-by-user rows to pass when pickup_location is NULL
+    $clauses[] = "(p.pickup_location LIKE :location OR (t.status = 'cancelled' AND (t.admin_id IS NULL OR t.admin_id = 0) AND p.pickup_location IS NULL))";
     $bind[':location'] = $location . '%';
 }
 if ($q !== '') {

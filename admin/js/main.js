@@ -1166,10 +1166,19 @@ document.addEventListener("DOMContentLoaded", () => {
         // Read pagination headers before consuming body
         const totalPages = parseInt(res.headers.get('X-Total-Pages') || '0', 10) || 0;
         const currentPage = parseInt(res.headers.get('X-Page') || String(liveOrdersState.page), 10) || liveOrdersState.page;
+        // If our current page is now out of range (e.g., after an item moved/cancelled), refetch the last valid page
+        if (totalPages >= 1 && currentPage > totalPages) {
+          liveOrdersState.page = totalPages;
+          // Trigger a corrected fetch and short-circuit this pipeline
+          fetchOrders(liveOrdersState.status, totalPages);
+          // Return a noop object to stop downstream update
+          return { html: null, totalPages, currentPage: totalPages, _skip: true };
+        }
         const html = await res.text();
         return { html, totalPages, currentPage };
       })
-      .then(({ html, totalPages, currentPage }) => {
+      .then(({ html, totalPages, currentPage, _skip }) => {
+        if (_skip) return; // already re-fetching with corrected page
         // Replace only the inner content so layout styles remain
         listContainer.innerHTML = html;
         // Delegated click handler covers new buttons

@@ -162,7 +162,11 @@ foreach ($orders as $order):
     <?php elseif ($status === 'ready'): ?>
       <button type="button" class="btn-complete" data-id="<?= $id ?>" style="width:100%;">Mark as Picked Up</button>
     <?php elseif ($status === 'cancelled'): ?>
-      <div style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;text-align:center;background:#fff;">Cancelled</div>
+      <?php if ($adminId === 0): ?>
+        <div style="padding:8px 10px;border:1px dashed #ef4444;border-radius:8px;color:#ef4444;font-weight:600;text-align:center;background:#fff7f7;">Cancelled by user</div>
+      <?php else: ?>
+        <div style="padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;color:#6b7280;text-align:center;background:#fff;">Cancelled</div>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 </div>
