@@ -855,17 +855,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const notificationIcon = document.querySelector(".notification-icon");
   if (notificationIcon) notificationIcon.addEventListener("click", () => showNotification("Notifications panel opened"));
 
-  // Toast
-  function showNotification(message) {
+  // Enhanced Toast notification system
+  function showNotification(message, type = 'success') {
     const notification = document.createElement("div");
-    notification.className = "notification";
-    notification.textContent = message;
+    notification.className = `notification notification-${type}`;
+    
+    // Add icon based on type
+    const icon = type === 'error' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
+    notification.innerHTML = `
+      <span class="notification-icon">${icon}</span>
+      <span class="notification-message">${message}</span>
+    `;
+    
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === 'error' ? '#f44336' : type === 'success' ? '#4caf50' : '#2196f3'};
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-width: 300px;
+    `;
+    
     document.body.appendChild(notification);
-    setTimeout(() => notification.classList.add("show"), 10);
+    
+    // Animate in
     setTimeout(() => {
-      notification.classList.remove("show");
+      notification.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Animate out
+    setTimeout(() => {
+      notification.style.transform = 'translateX(100%)';
       setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    }, type === 'error' ? 5000 : 3000);
+    
+    // Click to dismiss
+    notification.addEventListener('click', () => {
+      notification.style.transform = 'translateX(100%)';
+      setTimeout(() => notification.remove(), 300);
+    });
   }
 
 
@@ -878,8 +916,12 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
     e.stopImmediatePropagation();
 
-    // --- Ripple feedback animation ---
+    // Enhanced visual feedback for Accept/Reject buttons
     if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
+      // Add loading state
+      btn.classList.add('loading');
+      
+      // Create ripple effect
       const ripple = document.createElement('span');
       ripple.className = 'btn-ripple';
       const rect = btn.getBoundingClientRect();
@@ -889,6 +931,20 @@ document.addEventListener("DOMContentLoaded", () => {
       ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
       btn.appendChild(ripple);
       setTimeout(() => ripple.remove(), 500);
+
+      // Add confirmation feedback
+      const isAccept = btn.classList.contains('btn-accept');
+      const actionText = isAccept ? 'Accepting order...' : 'Cancelling order...';
+      
+      // Update button text temporarily
+      const textSpan = btn.querySelector('.btn-text');
+      const originalText = textSpan ? textSpan.textContent : btn.textContent;
+      if (textSpan) {
+        textSpan.textContent = actionText;
+      }
+      
+      // Show immediate visual confirmation
+      showActionFeedback(btn, isAccept ? 'accept' : 'reject');
     }
 
     const map = {
@@ -910,8 +966,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const prev = btn.disabled;
     btn.disabled = true;
+    
     updateOrderStatus(orderId, nextStatus)
-      .finally(() => { btn.disabled = prev; });
+      .then(() => {
+        // Success feedback
+        if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
+          const isAccept = btn.classList.contains('btn-accept');
+          showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
+        }
+      })
+      .catch((error) => {
+        // Error feedback
+        console.error('[admin] Action failed:', error);
+        if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
+          const isAccept = btn.classList.contains('btn-accept');
+          showNotification(isAccept ? 'Failed to accept order' : 'Failed to cancel order', 'error');
+          
+          // Restore original button text on error
+          const textSpan = btn.querySelector('.btn-text');
+          if (textSpan) {
+            textSpan.textContent = isAccept ? 'Accept Order' : 'Cancel Order';
+          }
+        }
+      })
+      .finally(() => { 
+        btn.disabled = prev;
+        btn.classList.remove('loading');
+      });
+  }, true); // capture to block inline onclicks if any
+
+  // Enhanced feedback function for Accept/Reject actions
+  function showActionFeedback(button, action) {
+    const feedbackEl = document.createElement('div');
+    feedbackEl.className = `action-feedback action-feedback-${action}`;
+    feedbackEl.style.cssText = `
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100%);
+      background: ${action === 'accept' ? '#4caf50' : '#f44336'};
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    `;
+    feedbackEl.textContent = action === 'accept' ? 'Processing...' : 'Cancelling...';
+    
+    button.style.position = 'relative';
+    button.appendChild(feedbackEl);
+    
+    // Animate in
+    setTimeout(() => feedbackEl.style.opacity = '1', 10);
+    
+    // Remove after delay
+    setTimeout(() => {
+      feedbackEl.style.opacity = '0';
+      setTimeout(() => feedbackEl.remove(), 300);
+    }, 2000);
+  }
   }, true); // capture to block inline onclicks if any
 
   // Removed duplicate toppings management block (loadToppings + handlers) to avoid conflicts.

@@ -131,18 +131,30 @@ foreach ($orders as $order):
     <?php if ($status === 'cancelled' && $adminId === 0): ?>
       <div style="padding:8px 10px;border:1px dashed #ef4444;border-radius:8px;color:#ef4444;font-weight:600;text-align:center;background:#fff7f7;">Cancelled by user</div>
     <?php elseif ($status === 'pending'): ?>
-      <div style="display:flex;gap:8px;">
-        <button type="button" class="btn-accept" data-id="<?= $id ?>" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;">
-          <span class="btn-icon" aria-hidden="true" style="display:inline-flex;align-items:center;">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#4caf50"/><path d="M6 10.5l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="btn-accept btn-action-primary" data-id="<?= $id ?>" 
+                title="Accept this order and start preparation" 
+                aria-label="Accept order <?= $ref ?>"
+                style="flex:1;">
+          <span class="btn-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.2"/>
+              <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </span>
-          Accept
+          <span class="btn-text">Accept Order</span>
         </button>
-        <button type="button" class="btn-reject" data-id="<?= $id ?>" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;">
-          <span class="btn-icon" aria-hidden="true" style="display:inline-flex;align-items:center;">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="10" fill="#f44336"/><path d="M7 7l6 6M13 7l-6 6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        <button type="button" class="btn-reject btn-action-danger" data-id="<?= $id ?>" 
+                title="Cancel this order permanently" 
+                aria-label="Cancel order <?= $ref ?>"
+                style="flex:1;">
+          <span class="btn-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="10" fill="currentColor" fill-opacity="0.2"/>
+              <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
           </span>
-          Cancel
+          <span class="btn-text">Cancel Order</span>
         </button>
       </div>
     <?php elseif ($status === 'preparing'): ?>
