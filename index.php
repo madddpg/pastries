@@ -206,6 +206,9 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password" required>
                 </div>
+                <div class="form-group" style="text-align:right;margin-top:-6px;">
+                    <a href="#" onclick="openForgotPassword(); return false;" style="color:#2f855a;text-decoration:underline;font-size:0.9em;">Forgot password?</a>
+                </div>
                 <button type="submit" class="auth-btn" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i>
                     Sign In
@@ -1757,6 +1760,63 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 </body>
 
 </html>
+
+<!-- Edit Profile Modal -->
+<!-- Forgot Password Modal -->
+<div id="forgotPasswordModal" class="auth-modal">
+        <div class="auth-content" style="max-width:420px;">
+                <button class="close-auth" onclick="document.getElementById('forgotPasswordModal').classList.remove('active')">
+                        <i class="fas fa-times"></i>
+                </button>
+                <div class="auth-header">
+                        <h3>Forgot Password</h3>
+                        <p>We'll email you a link to reset it.</p>
+                </div>
+                <form onsubmit="handleForgotPassword(event); return false;" class="auth-form">
+                        <div class="form-group">
+                                <label for="forgotEmail">Email</label>
+                                <input type="email" id="forgotEmail" placeholder="Enter your account email" required />
+                                <div id="forgotEmailError" class="text-danger small"></div>
+                        </div>
+                        <button type="submit" class="auth-btn">
+                                <i class="fas fa-paper-plane"></i>
+                                Send reset link
+                        </button>
+                        <div id="forgotMsg" class="text-center" style="margin-top:10px;font-size:0.95em;"></div>
+                </form>
+        </div>
+    </div>
+
+<script>
+function openForgotPassword(){
+    const m = document.getElementById('forgotPasswordModal');
+    if (m) { m.classList.add('active'); document.getElementById('forgotEmail').focus(); }
+}
+function handleForgotPassword(e){
+    e.preventDefault();
+    const emailEl = document.getElementById('forgotEmail');
+    const errEl = document.getElementById('forgotEmailError');
+    const msgEl = document.getElementById('forgotMsg');
+    errEl.textContent = ''; msgEl.textContent='';
+    const email = (emailEl.value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { errEl.textContent='Enter a valid email.'; return; }
+    const btn = e.target.querySelector('button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; }
+    fetch('reset_password.php',{
+        method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body: new URLSearchParams({action:'request', email}).toString()
+    }).then(r=>r.json()).then(data=>{
+        msgEl.style.color = data.success ? '#16a34a' : '#b91c1c';
+        msgEl.textContent = data.message || 'If the email exists, a reset link has been sent.';
+    }).catch(()=>{
+        msgEl.style.color = '#b91c1c';
+        msgEl.textContent = 'Something went wrong. Please try again later.';
+    }).finally(()=>{
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send reset link'; }
+    });
+}
+</script>
 
 <!-- Edit Profile Modal -->
 <div id="editProfileModal" class="auth-modal">

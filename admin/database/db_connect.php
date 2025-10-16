@@ -27,6 +27,7 @@ class Database
     try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensurePasswordResetSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -59,7 +60,31 @@ class Database
         try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensurePasswordResetSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
+    }
+
+    /** Ensure password_resets table exists for secure reset tokens. */
+    private function ensurePasswordResetSchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS password_resets (
+                    id INT NOT NULL AUTO_INCREMENT,
+                    user_id INT NOT NULL,
+                    token_hash CHAR(64) NOT NULL,
+                    expires_at DATETIME NOT NULL,
+                    used_at DATETIME DEFAULT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uq_token_hash (token_hash),
+                    KEY idx_user_expiry (user_id, expires_at),
+                    KEY idx_used_at (used_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            // Add FK if possible (ignore failures on shared hosts)
+            try { $pdo->exec("ALTER TABLE password_resets ADD CONSTRAINT fk_pr_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"); } catch (Throwable $_) {}
+        } catch (Throwable $_) { /* ignore */ }
     }
 
     /** Create toppings_price_history table to log add-on price changes over time. */
