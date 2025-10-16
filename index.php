@@ -205,9 +205,9 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <div class="form-group">
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password" required>
-                </div>
-                <div class="form-group" style="text-align:right;margin-top:-6px;">
-                    <a href="#" onclick="openForgotPassword(); return false;" style="color:#2f855a;text-decoration:underline;font-size:0.9em;">Forgot password?</a>
+                    <div style="text-align:right;margin-top:8px;">
+                        <a href="#" onclick="openForgotPassword(); return false;" style="color:#40534b;text-decoration:none;font-size:0.9em;font-weight:500;">Forgot password?</a>
+                    </div>
                 </div>
                 <button type="submit" class="auth-btn" id="loginBtn">
                     <i class="fas fa-sign-in-alt"></i>
