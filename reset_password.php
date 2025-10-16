@@ -9,6 +9,9 @@ header('Content-Type: application/json');
 $db = new Database();
 $pdo = $db->opencon();
 
+// Simple debug toggle for local troubleshooting (do not enable in production)
+define('APP_DEBUG', isset($_REQUEST['debug']) && $_REQUEST['debug'] == '1');
+
 function json_fail($message) {
     echo json_encode(['success' => false, 'message' => $message]);
     exit;
@@ -38,7 +41,10 @@ if ($action === 'request') {
         $st->execute([$email]);
         $user = $st->fetch(PDO::FETCH_ASSOC);
         if (!$user) {
-            // Pretend success
+            // Pretend success (avoid user enumeration)
+            if (APP_DEBUG) {
+                error_log('[reset_password] request: email not found: ' . $email);
+            }
             $pdo->commit();
             json_ok(['message' => 'If the email exists, a reset link has been sent.']);
         }
@@ -63,8 +69,9 @@ if ($action === 'request') {
         $mail->Port       = 587;
         $mail->SMTPAuth   = true;
         $mail->SMTPSecure = 'tls';
-        $mail->SMTPDebug = 0;
-        $mail->Timeout = 20;
+    $mail->SMTPDebug = APP_DEBUG ? 2 : 0;
+    $mail->Debugoutput = function ($str, $level) { error_log("[PHPMailer] ($level) $str"); };
+    $mail->Timeout = 20;
         $mail->SMTPOptions = [
             'ssl' => [
                 'verify_peer'       => false,
@@ -96,12 +103,19 @@ if ($action === 'request') {
         $mail->AltBody = "Open this link to reset your password: $resetUrl";
 
         if (!$mail->send()) {
-            json_ok(['message' => 'If the email exists, a reset link has been sent.']);
-        } else {
+            if (APP_DEBUG) {
+                error_log('[reset_password] mail send failed: ' . $mail->ErrorInfo);
+                json_fail('Mailer error: ' . $mail->ErrorInfo);
+            }
             json_ok(['message' => 'If the email exists, a reset link has been sent.']);
         }
+        json_ok(['message' => 'If the email exists, a reset link has been sent.']);
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) { $pdo->rollBack(); }
+        if (APP_DEBUG) {
+            error_log('[reset_password] exception in request: ' . $e->getMessage());
+            json_fail('Server error: ' . $e->getMessage());
+        }
         json_ok(['message' => 'If the email exists, a reset link has been sent.']);
     }
 }
