@@ -1004,6 +1004,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Centralized update with consistent button UX
   function performUpdate(btn, orderId, nextStatus) {
+    try { console.debug('[admin] performUpdate start', { orderId: String(orderId), nextStatus }); } catch (_) {}
     const prevDisabled = btn.disabled;
     const isAccept = nextStatus === 'preparing';
     // Apply loading/text now (for Accept after confirmation; for Reject we may have already applied)
@@ -1076,7 +1077,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnClose && btnClose.removeEventListener('click', onCancel);
       modal && modal.removeEventListener('click', onBackdrop);
     }
-  function onOk() { try { if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
+  function onOk() { try { console.debug('[admin] confirmAction OK clicked'); if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
     function onCancel() { close(); }
     function onBackdrop(e) { if (e.target && e.target.getAttribute('data-close') === 'backdrop') close(); }
 
