@@ -916,12 +916,9 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
     e.stopImmediatePropagation();
 
-    // Enhanced visual feedback for Accept/Reject buttons
-    if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
-      // Add loading state
+    // Enhanced visual feedback: only apply immediate loading/text for Reject (Accept waits for confirmation)
+    if (btn.classList.contains('btn-reject')) {
       btn.classList.add('loading');
-      
-      // Create ripple effect
       const ripple = document.createElement('span');
       ripple.className = 'btn-ripple';
       const rect = btn.getBoundingClientRect();
@@ -931,20 +928,10 @@ document.addEventListener("DOMContentLoaded", () => {
       ripple.style.top = (e.clientY - rect.top - size/2) + 'px';
       btn.appendChild(ripple);
       setTimeout(() => ripple.remove(), 500);
-
-      // Add confirmation feedback
-      const isAccept = btn.classList.contains('btn-accept');
-      const actionText = isAccept ? 'Accepting order...' : 'Cancelling order...';
-      
-      // Update button text temporarily
       const textSpan = btn.querySelector('.btn-text');
-      const originalText = textSpan ? textSpan.textContent : btn.textContent;
-      if (textSpan) {
-        textSpan.textContent = actionText;
-      }
-      
-      // Show immediate visual confirmation
-      showActionFeedback(btn, isAccept ? 'accept' : 'reject');
+      if (textSpan && !btn.dataset.originalText) btn.dataset.originalText = textSpan.textContent || '';
+      if (textSpan) textSpan.textContent = 'Cancelling order...';
+      showActionFeedback(btn, 'reject');
     }
 
     const map = {
@@ -1018,10 +1005,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Centralized update with consistent button UX
   function performUpdate(btn, orderId, nextStatus) {
     const prevDisabled = btn.disabled;
+    const isAccept = nextStatus === 'preparing';
+    // Apply loading/text now (for Accept after confirmation; for Reject we may have already applied)
+    btn.classList.add('loading');
+    const textSpan = btn.querySelector('.btn-text');
+    if (textSpan && !btn.dataset.originalText) btn.dataset.originalText = textSpan.textContent || '';
+    if (textSpan) textSpan.textContent = isAccept ? 'Accepting order...' : (nextStatus === 'cancelled' ? 'Cancelling order...' : textSpan.textContent);
     btn.disabled = true;
     updateOrderStatus(orderId, nextStatus)
       .then(() => {
-        const isAccept = nextStatus === 'preparing';
         const isReject = nextStatus === 'cancelled';
         if (isAccept || isReject) {
           showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
@@ -1029,12 +1021,16 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => {
         console.error('[admin] Action failed:', error);
-        const isAccept = nextStatus === 'preparing';
         showNotification(isAccept ? 'Failed to accept order' : 'Failed to update order', 'error');
       })
       .finally(() => {
         btn.disabled = prevDisabled;
         btn.classList.remove('loading');
+        const textSpan = btn.querySelector('.btn-text');
+        if (textSpan && btn.dataset.originalText !== undefined) {
+          textSpan.textContent = btn.dataset.originalText;
+        }
+        delete btn.dataset.originalText;
       });
   }
 
@@ -1059,7 +1055,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnClose && btnClose.removeEventListener('click', onCancel);
       modal && modal.removeEventListener('click', onBackdrop);
     }
-    function onOk() { try { if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
+  function onOk() { try { if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
     function onCancel() { close(); }
     function onBackdrop(e) { if (e.target && e.target.getAttribute('data-close') === 'backdrop') close(); }
 
@@ -1265,9 +1261,13 @@ document.addEventListener("DOMContentLoaded", () => {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'X-Requested-With': 'XMLHttpRequest'
       },
+      credentials: 'same-origin',
       body: 'id=' + encodeURIComponent(orderId) + '&status=' + encodeURIComponent(status)
     })
       .then(res => {
+        if (res.status === 403) {
+          return res.json().then(d => { throw new Error(d && d.message ? d.message : 'Forbidden'); });
+        }
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return res.json();
       })
@@ -1280,7 +1280,7 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch(err => {
         console.error('[admin] updateOrderStatus error', err);
-        alert('Failed to update order status.');
+        alert(err && err.message ? err.message : 'Failed to update order status.');
         throw err;
       });
   }
