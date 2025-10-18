@@ -1014,10 +1014,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (textSpan) textSpan.textContent = isAccept ? 'Accepting order...' : (nextStatus === 'cancelled' ? 'Cancelling order...' : textSpan.textContent);
     btn.disabled = true;
     updateOrderStatus(orderId, nextStatus)
-      .then(() => {
+      .then((resp) => {
         const isReject = nextStatus === 'cancelled';
         if (isAccept || isReject) {
-          showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
+          const after = resp && resp.status_after ? String(resp.status_after) : nextStatus;
+          showNotification(isAccept ? `Order accepted → ${after}` : 'Order cancelled successfully!');
         }
         // If we accepted, jump to the Preparing tab to display the updated order
         if (isAccept) {
@@ -1037,7 +1038,10 @@ document.addEventListener("DOMContentLoaded", () => {
             if (qVal) params.set('q', qVal);
             history.replaceState(null, '', '?' + params.toString());
             // Fetch preparing list page 1
+            try { console.debug('[admin] fetchOrders preparing (immediate)'); } catch(_) {}
             fetchOrders('preparing', 1);
+            // Extra safety: refetch after a short delay to beat any DB replication or caching race
+            setTimeout(() => { try { console.debug('[admin] fetchOrders preparing (delayed)'); fetchOrders('preparing', 1); } catch(e) {} }, 450);
           } catch (_) { /* ignore */ }
         }
       })
