@@ -2307,7 +2307,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             }
         });
     </script>
-    <script src="js/main.js?v=20251012"></script>
+    <script src="js/main.js?v=20251018"></script>
         <script>
             // Minimal receipt modal wiring (kept separate to avoid coupling to main.js build)
             (function(){

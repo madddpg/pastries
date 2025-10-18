@@ -953,12 +953,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // For Accept only, show a modal confirmation
     if (cls === 'btn-accept') {
+      // Reset confirm handled flag
+      try { window.__confirmHandled = false; } catch (_) {}
       openConfirmAction({
         title: 'Accept order?',
         message: 'This will move the order to Preparing.',
         confirmLabel: 'Accept',
-        onConfirm: () => performUpdate(btn, orderId, nextStatus)
+        onConfirm: () => { try { window.__confirmHandled = true; } catch(_) {} performUpdate(btn, orderId, nextStatus); }
       });
+      // Failsafe: if modal OK wiring fails, fallback to native confirm after a short delay
+      setTimeout(() => {
+        try {
+          if (window.__confirmHandled) return;
+          const modal = document.getElementById('confirmActionModal');
+          const visible = modal && modal.style && modal.style.display === 'flex';
+          if (!visible) return; // probably handled/closed
+          const ok = window.confirm('Accept order? This will move the order to Preparing.');
+          if (ok) {
+            window.__confirmHandled = true;
+            performUpdate(btn, orderId, nextStatus);
+            if (modal) modal.style.display = 'none';
+            try { console.debug('[admin] Used native confirm fallback for Accept'); } catch(_) {}
+          }
+        } catch (_) {}
+      }, 1200);
       return;
     }
 
@@ -1004,7 +1022,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Centralized update with consistent button UX
   function performUpdate(btn, orderId, nextStatus) {
-    try { console.debug('[admin] performUpdate start', { orderId: String(orderId), nextStatus }); } catch (_) {}
+  try { console.info('[admin] performUpdate start', { orderId: String(orderId), nextStatus }); } catch (_) {}
     const prevDisabled = btn.disabled;
     const isAccept = nextStatus === 'preparing';
     // Apply loading/text now (for Accept after confirmation; for Reject we may have already applied)
@@ -1076,20 +1094,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Store pending action as a global fallback in case event binding is disrupted
     try { window.__pendingConfirmAction = (typeof onConfirm === 'function') ? onConfirm : null; } catch (_) {}
-  try { console.debug('[admin] openConfirmAction wired', { hasOk: !!btnOk, hasCancel: !!btnCancel, hasClose: !!btnClose }); } catch (_) {}
+  try { console.info('[admin] openConfirmAction wired', { hasOk: !!btnOk, hasCancel: !!btnCancel, hasClose: !!btnClose }); } catch (_) {}
 
-    function close() { modal.style.display = 'none'; cleanup(); }
+  function close() { modal.style.display = 'none'; cleanup(); }
     function cleanup() {
       btnOk && btnOk.removeEventListener('click', onOk);
       btnCancel && btnCancel.removeEventListener('click', onCancel);
       btnClose && btnClose.removeEventListener('click', onCancel);
       modal && modal.removeEventListener('click', onBackdrop);
     }
-  function onOk() { try { console.debug('[admin] confirmAction OK clicked'); if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
+  function onOk() { try { console.info('[admin] confirmAction OK clicked'); if (typeof onConfirm === 'function') onConfirm(); } finally { try { window.__confirmHandled = true; } catch(_) {} close(); } }
     function onCancel() { close(); }
     function onBackdrop(e) { if (e.target && e.target.getAttribute('data-close') === 'backdrop') close(); }
 
-    btnOk && btnOk.addEventListener('click', onOk, { once: true });
+    if (btnOk) {
+      btnOk.addEventListener('click', onOk, { once: true });
+      // Also set onclick for robustness if another script interferes with listeners
+      btnOk.onclick = onOk;
+    }
     btnCancel && btnCancel.addEventListener('click', onCancel, { once: true });
     btnClose && btnClose.addEventListener('click', onCancel, { once: true });
     modal && modal.addEventListener('click', onBackdrop, { once: true });
@@ -1104,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.addEventListener('click', function (e) {
     const ok = e.target && e.target.closest && e.target.closest('#confirmActionOk');
     if (!ok) return;
-    try { console.debug('[admin] confirmAction OK clicked (fallback)'); } catch (_) {}
+    try { console.info('[admin] confirmAction OK clicked (fallback)'); } catch (_) {}
     try {
       if (typeof window.__pendingConfirmAction === 'function') {
         window.__pendingConfirmAction();
