@@ -909,6 +909,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   document.addEventListener('click', function (e) {
+    // If the confirmation modal is open and the click is inside it, ignore live-order button handling
+    const modal = document.getElementById('confirmActionModal');
+    if (modal && modal.style && modal.style.display === 'flex' && e.target && modal.contains(e.target)) {
+      return;
+    }
     const btn = e.target.closest('.btn-accept, .btn-ready, .btn-complete, .btn-reject');
     if (!btn) return;
     // Prevent any form submission or inline handlers
