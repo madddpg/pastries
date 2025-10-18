@@ -909,11 +909,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   document.addEventListener('click', function (e) {
-    // If the confirmation modal is open and the click is inside it, ignore live-order button handling
-    const modal = document.getElementById('confirmActionModal');
-    if (modal && modal.style && modal.style.display === 'flex' && e.target && modal.contains(e.target)) {
-      return;
-    }
     const btn = e.target.closest('.btn-accept, .btn-ready, .btn-complete, .btn-reject');
     if (!btn) return;
     // Prevent any form submission or inline handlers
@@ -958,14 +953,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // For Accept only, show a modal confirmation
     if (cls === 'btn-accept') {
-      // Reset confirm handled flag
-      try { window.__confirmHandled = false; } catch (_) {}
-      openConfirmAction({
-        title: 'Accept order?',
-        message: 'This will move the order to Preparing.',
-        confirmLabel: 'Accept',
-        onConfirm: () => { try { window.__confirmHandled = true; } catch(_) {} performUpdate(btn, orderId, nextStatus); }
-      });
+      const ok = window.confirm('Accept order? This will move the order to Preparing.');
+      if (ok) performUpdate(btn, orderId, nextStatus);
       return;
     }
 
@@ -1106,26 +1095,10 @@ document.addEventListener("DOMContentLoaded", () => {
     modal && modal.addEventListener('click', onBackdrop, { once: true });
     modal.style.display = 'flex';
 
-    // Allow Enter key to confirm while modal is visible
-    function onKey(e){ if (e.key === 'Enter') { e.preventDefault(); onOk(); } }
-    document.addEventListener('keydown', onKey, { once: true });
+    // Note: Accept action uses native confirm now; keep modal utilities for other actions if needed.
   }
 
-  // Global fallback: if OK button click isn't wired, this ensures action still runs
-  document.addEventListener('click', function (e) {
-    const ok = e.target && e.target.closest && e.target.closest('#confirmActionOk');
-    if (!ok) return;
-    try { console.info('[admin] confirmAction OK clicked (fallback)'); } catch (_) {}
-    try {
-      if (typeof window.__pendingConfirmAction === 'function') {
-        window.__pendingConfirmAction();
-        window.__pendingConfirmAction = null;
-      }
-    } catch (_) {}
-    // Close modal if present
-    const modal = document.getElementById('confirmActionModal');
-    if (modal) modal.style.display = 'none';
-  }, true);
+  // Note: native confirm is used for Accept, modal-specific fallback is not required.
 
   // Removed duplicate toppings management block (loadToppings + handlers) to avoid conflicts.
 
