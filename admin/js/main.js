@@ -1217,7 +1217,7 @@ document.addEventListener("DOMContentLoaded", () => {
       + '&page=' + encodeURIComponent(liveOrdersState.page)
       + '&perPage=' + encodeURIComponent(liveOrdersState.perPage)
       + '&_ts=' + Date.now(); // cache-bust
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-Debug': '1' }, cache: 'no-store' })
       .then(async res => {
         // Read pagination headers before consuming body
         const totalPages = parseInt(res.headers.get('X-Total-Pages') || '0', 10) || 0;
@@ -1281,12 +1281,14 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Debug': '1'
       },
       credentials: 'same-origin',
       body: 'id=' + encodeURIComponent(orderId) + '&status=' + encodeURIComponent(status)
     })
       .then(res => {
+        console.debug('[admin] updateOrderStatus response status', res.status);
         if (res.status === 403) {
           return res.json().then(d => { throw new Error(d && d.message ? d.message : 'Forbidden'); });
         }
@@ -1294,6 +1296,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return res.json();
       })
       .then(data => {
+        console.debug('[admin] updateOrderStatus response body', data);
         if (!data || !data.success) throw new Error((data && data.message) || 'Update failed');
         const activeTab = document.querySelector('#live-orders-tabs .tab.active');
         const activeStatus = activeTab ? (activeTab.dataset.status || '') : '';

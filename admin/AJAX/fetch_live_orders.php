@@ -18,6 +18,16 @@ $q = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['perPage']) ? max(1, min(50, (int)$_GET['perPage'])) : 8; // clamp 1..50
 $allowed = ['pending', 'preparing', 'ready'];
+
+// Debug logger
+$logDir = __DIR__ . '/../logs';
+if (!is_dir($logDir)) { @mkdir($logDir, 0777, true); }
+$logFile = $logDir . '/live_orders_debug.log';
+$log = function(array $payload) use ($logFile) {
+    $payload['ts'] = date('Y-m-d H:i:s');
+    $payload['ip'] = $_SERVER['REMOTE_ADDR'] ?? '';
+    @file_put_contents($logFile, json_encode($payload, JSON_UNESCAPED_SLASHES) . PHP_EOL, FILE_APPEND);
+};
 // Build WHERE with named binds to avoid mixing placeholders
 $bind = [];
 $clauses = [];
@@ -95,6 +105,17 @@ try {
         foreach ($bind as $k => $v) { $stmt->bindValue($k, $v); }
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Debug log basic query meta
+        $log([
+            'event' => 'fetch_live_orders',
+            'status' => $status,
+            'location' => $location,
+            'q' => $q,
+            'page' => $page,
+            'perPage' => $perPage,
+            'total' => $total,
+            'totalPages' => (int)ceil($total / max(1, $perPage)),
+        ]);
         // Set pagination headers
         header('X-Total-Count: ' . $total);
         $totalPages = (int)ceil($total / max(1, $perPage));
@@ -116,7 +137,9 @@ try {
             header('X-Total-Pages: ' . $totalPages);
             header('X-Page: ' . $page);
             header('X-Per-Page: ' . $perPage);
-        } catch (Throwable $e2) { /* ignore */ }
+        } catch (Throwable $e2) { 
+            $log(['event'=>'fetch_live_orders_count_fallback_error','error'=>$e2->getMessage()]);
+        }
 
         $limit = (int)$perPage;
         $offset = (int)(($page - 1) * $perPage);
@@ -140,6 +163,7 @@ try {
         foreach ($bind as $k => $v) { $stmt->bindValue($k, $v); }
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $log(['event'=>'fetch_live_orders_fallback','count'=>count($orders)]);
     }
 
     // Try to attach items; skip silently if table/columns differ
@@ -164,6 +188,7 @@ try {
     require __DIR__ . '/markup.php';
 } catch (Throwable $e) {
     error_log('fetch_live_orders failed: ' . $e->getMessage());
+    $log(['event'=>'fetch_live_orders_error','error'=>$e->getMessage()]);
     http_response_code(500);
     echo '<div class="error-state">Failed to load orders.</div>';
 }
