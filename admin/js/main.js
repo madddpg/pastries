@@ -1074,6 +1074,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (elMsg) elMsg.textContent = message;
     if (btnOk) btnOk.textContent = confirmLabel;
 
+    // Store pending action as a global fallback in case event binding is disrupted
+    try { window.__pendingConfirmAction = (typeof onConfirm === 'function') ? onConfirm : null; } catch (_) {}
+  try { console.debug('[admin] openConfirmAction wired', { hasOk: !!btnOk, hasCancel: !!btnCancel, hasClose: !!btnClose }); } catch (_) {}
+
     function close() { modal.style.display = 'none'; cleanup(); }
     function cleanup() {
       btnOk && btnOk.removeEventListener('click', onOk);
@@ -1090,7 +1094,27 @@ document.addEventListener("DOMContentLoaded", () => {
     btnClose && btnClose.addEventListener('click', onCancel, { once: true });
     modal && modal.addEventListener('click', onBackdrop, { once: true });
     modal.style.display = 'flex';
+
+    // Allow Enter key to confirm while modal is visible
+    function onKey(e){ if (e.key === 'Enter') { e.preventDefault(); onOk(); } }
+    document.addEventListener('keydown', onKey, { once: true });
   }
+
+  // Global fallback: if OK button click isn't wired, this ensures action still runs
+  document.addEventListener('click', function (e) {
+    const ok = e.target && e.target.closest && e.target.closest('#confirmActionOk');
+    if (!ok) return;
+    try { console.debug('[admin] confirmAction OK clicked (fallback)'); } catch (_) {}
+    try {
+      if (typeof window.__pendingConfirmAction === 'function') {
+        window.__pendingConfirmAction();
+        window.__pendingConfirmAction = null;
+      }
+    } catch (_) {}
+    // Close modal if present
+    const modal = document.getElementById('confirmActionModal');
+    if (modal) modal.style.display = 'none';
+  }, true);
 
   // Removed duplicate toppings management block (loadToppings + handlers) to avoid conflicts.
 
