@@ -961,22 +961,6 @@ document.addEventListener("DOMContentLoaded", () => {
         confirmLabel: 'Accept',
         onConfirm: () => { try { window.__confirmHandled = true; } catch(_) {} performUpdate(btn, orderId, nextStatus); }
       });
-      // Failsafe: if modal OK wiring fails, fallback to native confirm after a short delay
-      setTimeout(() => {
-        try {
-          if (window.__confirmHandled) return;
-          const modal = document.getElementById('confirmActionModal');
-          const visible = modal && modal.style && modal.style.display === 'flex';
-          if (!visible) return; // probably handled/closed
-          const ok = window.confirm('Accept order? This will move the order to Preparing.');
-          if (ok) {
-            window.__confirmHandled = true;
-            performUpdate(btn, orderId, nextStatus);
-            if (modal) modal.style.display = 'none';
-            try { console.debug('[admin] Used native confirm fallback for Accept'); } catch(_) {}
-          }
-        } catch (_) {}
-      }, 1200);
       return;
     }
 
