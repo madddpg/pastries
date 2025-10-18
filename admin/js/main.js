@@ -1018,6 +1018,27 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isAccept || isReject) {
           showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
         }
+        // If we accepted, jump to the Preparing tab to display the updated order
+        if (isAccept) {
+          try {
+            const tabs = document.querySelectorAll('#live-orders-tabs .tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            const prepTab = document.querySelector('#live-orders-tabs .tab[data-status="preparing"]');
+            if (prepTab) prepTab.classList.add('active');
+            // Update URL query params to reflect preparing view
+            const locSel = document.getElementById('live-location-filter');
+            const nameInput = document.getElementById('live-name-search');
+            const location = locSel ? (locSel.value || '') : '';
+            const qVal = nameInput ? (nameInput.value || '').trim() : '';
+            const params = new URLSearchParams();
+            params.set('status', 'preparing');
+            if (location) params.set('location', location);
+            if (qVal) params.set('q', qVal);
+            history.replaceState(null, '', '?' + params.toString());
+            // Fetch preparing list page 1
+            fetchOrders('preparing', 1);
+          } catch (_) { /* ignore */ }
+        }
       })
       .catch((error) => {
         console.error('[admin] Action failed:', error);
