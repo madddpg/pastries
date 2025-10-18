@@ -2160,6 +2160,36 @@ h1 {
   to { transform: rotate(360deg); }
 }
 
+/* Unified styling for live order action buttons */
+.btn-accept,
+.btn-ready,
+.btn-complete,
+.btn-reject {
+  border-radius: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-ready {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  border: none;
+}
+.btn-ready:hover { filter: brightness(0.95); }
+.btn-ready:active { transform: translateY(1px); }
+
+.btn-complete {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  color: #fff;
+  border: none;
+}
+.btn-complete:hover { filter: brightness(0.95); }
+.btn-complete:active { transform: translateY(1px); }
+
+/* Accept/Reject already themed via .btn-action-primary / .btn-action-danger */
+
 .offers-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));

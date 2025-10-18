@@ -964,35 +964,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const nextStatus = map[cls];
     console.info('[admin] live action:', { id: orderId, status: nextStatus });
 
-    const prev = btn.disabled;
-    btn.disabled = true;
-    
-    updateOrderStatus(orderId, nextStatus)
-      .then(() => {
-        // Success feedback
-        if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
-          const isAccept = btn.classList.contains('btn-accept');
-          showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
-        }
-      })
-      .catch((error) => {
-        // Error feedback
-        console.error('[admin] Action failed:', error);
-        if (btn.classList.contains('btn-accept') || btn.classList.contains('btn-reject')) {
-          const isAccept = btn.classList.contains('btn-accept');
-          showNotification(isAccept ? 'Failed to accept order' : 'Failed to cancel order', 'error');
-          
-          // Restore original button text on error
-          const textSpan = btn.querySelector('.btn-text');
-          if (textSpan) {
-            textSpan.textContent = isAccept ? 'Accept Order' : 'Cancel Order';
-          }
-        }
-      })
-      .finally(() => { 
-        btn.disabled = prev;
-        btn.classList.remove('loading');
+    // For Accept only, show a modal confirmation
+    if (cls === 'btn-accept') {
+      openConfirmAction({
+        title: 'Accept order?',
+        message: 'This will move the order to Preparing.',
+        confirmLabel: 'Accept',
+        onConfirm: () => performUpdate(btn, orderId, nextStatus)
       });
+      return;
+    }
+
+    // Others proceed immediately
+    performUpdate(btn, orderId, nextStatus);
   }, true); // capture to block inline onclicks if any
 
   // Enhanced feedback function for Accept/Reject actions
@@ -1029,6 +1013,61 @@ document.addEventListener("DOMContentLoaded", () => {
       feedbackEl.style.opacity = '0';
       setTimeout(() => feedbackEl.remove(), 300);
     }, 2000);
+  }
+
+  // Centralized update with consistent button UX
+  function performUpdate(btn, orderId, nextStatus) {
+    const prevDisabled = btn.disabled;
+    btn.disabled = true;
+    updateOrderStatus(orderId, nextStatus)
+      .then(() => {
+        const isAccept = nextStatus === 'preparing';
+        const isReject = nextStatus === 'cancelled';
+        if (isAccept || isReject) {
+          showNotification(isAccept ? 'Order accepted successfully!' : 'Order cancelled successfully!');
+        }
+      })
+      .catch((error) => {
+        console.error('[admin] Action failed:', error);
+        const isAccept = nextStatus === 'preparing';
+        showNotification(isAccept ? 'Failed to accept order' : 'Failed to update order', 'error');
+      })
+      .finally(() => {
+        btn.disabled = prevDisabled;
+        btn.classList.remove('loading');
+      });
+  }
+
+  // Confirmation modal wiring
+  function openConfirmAction({ title = 'Confirm', message = 'Are you sure?', confirmLabel = 'Confirm', onConfirm = null } = {}) {
+    const modal = document.getElementById('confirmActionModal');
+    if (!modal) { if (typeof onConfirm === 'function') onConfirm(); return; }
+    const elTitle = document.getElementById('confirmActionTitle');
+    const elMsg = document.getElementById('confirmActionMessage');
+    const btnOk = document.getElementById('confirmActionOk');
+    const btnCancel = document.getElementById('confirmActionCancel');
+    const btnClose = document.getElementById('confirmActionClose');
+
+    if (elTitle) elTitle.textContent = title;
+    if (elMsg) elMsg.textContent = message;
+    if (btnOk) btnOk.textContent = confirmLabel;
+
+    function close() { modal.style.display = 'none'; cleanup(); }
+    function cleanup() {
+      btnOk && btnOk.removeEventListener('click', onOk);
+      btnCancel && btnCancel.removeEventListener('click', onCancel);
+      btnClose && btnClose.removeEventListener('click', onCancel);
+      modal && modal.removeEventListener('click', onBackdrop);
+    }
+    function onOk() { try { if (typeof onConfirm === 'function') onConfirm(); } finally { close(); } }
+    function onCancel() { close(); }
+    function onBackdrop(e) { if (e.target && e.target.getAttribute('data-close') === 'backdrop') close(); }
+
+    btnOk && btnOk.addEventListener('click', onOk, { once: true });
+    btnCancel && btnCancel.addEventListener('click', onCancel, { once: true });
+    btnClose && btnClose.addEventListener('click', onCancel, { once: true });
+    modal && modal.addEventListener('click', onBackdrop, { once: true });
+    modal.style.display = 'flex';
   }
 
   // Removed duplicate toppings management block (loadToppings + handlers) to avoid conflicts.

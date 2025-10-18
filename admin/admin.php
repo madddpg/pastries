@@ -200,6 +200,20 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 </div>
                 <div data-close="backdrop" style="position:absolute;inset:0;"></div>
             </div>
+
+            <!-- Live Orders Action Confirmation Modal -->
+            <div id="confirmActionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:6000;align-items:center;justify-content:center;">
+                <div style="background:#ffffff;padding:22px 22px 16px;border-radius:14px;max-width:420px;width:92vw;box-shadow:0 10px 25px rgba(0,0,0,0.15);position:relative;">
+                    <button type="button" id="confirmActionClose" aria-label="Close" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:22px;line-height:1;color:#6b7280;cursor:pointer">&times;</button>
+                    <h3 id="confirmActionTitle" style="margin:0 0 10px;font-size:1.1rem;color:#111827;font-weight:700;">Confirm action</h3>
+                    <p id="confirmActionMessage" style="margin:0 0 18px;color:#374151;">Are you sure?</p>
+                    <div style="display:flex;gap:8px;justify-content:flex-end;">
+                        <button type="button" id="confirmActionCancel" class="btn-secondary" style="padding:10px 14px;border-radius:10px;">Cancel</button>
+                        <button type="button" id="confirmActionOk" class="btn-primary" style="padding:10px 14px;border-radius:10px;background:#059669;color:#fff;border:none;font-weight:600;">Confirm</button>
+                    </div>
+                </div>
+                <div data-close="backdrop" style="position:absolute;inset:0;"></div>
+            </div>
             <nav class="nav-menu">
                 <a href="#" class="nav-item active" data-section="dashboard-overview">
                     <span class="nav-icon"><i class="bi bi-grid-fill"></i></span>
@@ -259,7 +273,38 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="header"></header>
+            <header class="header" style="display:flex;align-items:center;justify-content:flex-end;padding:12px 16px;gap:12px;">
+                <?php
+                // Pull admin session info; db_connect::loginAdmin sets these
+                $adminUsername = isset($_SESSION['admin_username']) ? $_SESSION['admin_username'] : '';
+                $adminRole = isset($_SESSION['admin_role']) ? $_SESSION['admin_role'] : '';
+                // Fallback: if missing, fetch by admin_id
+                if ((!$adminUsername || !$adminRole) && !empty($_SESSION['admin_id'])) {
+                    try {
+                        $stmtHdr = $con->prepare("SELECT username, role FROM admin_users WHERE admin_id = ? LIMIT 1");
+                        $stmtHdr->execute([$_SESSION['admin_id']]);
+                        if ($rowHdr = $stmtHdr->fetch(PDO::FETCH_ASSOC)) {
+                            $adminUsername = $rowHdr['username'] ?: $adminUsername;
+                            $adminRole = $rowHdr['role'] ?: $adminRole;
+                            // hydrate session to avoid requery later
+                            $_SESSION['admin_username'] = $adminUsername;
+                            $_SESSION['admin_role'] = $adminRole;
+                        }
+                    } catch (Throwable $_) { /* ignore */ }
+                }
+                if ($adminUsername) {
+                    $initial = strtoupper(substr($adminUsername, 0, 1));
+                    $roleLabel = $adminRole ? strtoupper($adminRole) : '';
+                    echo '<div class="admin-header-user" style="display:flex;align-items:center;gap:10px;">'
+                       . '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:#059669;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;">' . htmlspecialchars($initial) . '</div>'
+                       . '<div class="meta" style="display:flex;flex-direction:column;line-height:1.2;">'
+                       . '<span style="font-weight:700;color:#111827;">' . htmlspecialchars($adminUsername) . '</span>'
+                       . '<span style="font-size:12px;color:#6b7280;">' . htmlspecialchars($roleLabel) . '</span>'
+                       . '</div>'
+                       . '</div>';
+                }
+                ?>
+            </header>
             <!-- Page Content -->
             <div class="page-content">
                 <!-- Locations Management -->
