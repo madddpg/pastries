@@ -1194,8 +1194,9 @@ document.addEventListener("DOMContentLoaded", () => {
       + (location ? ('&location=' + encodeURIComponent(location)) : '')
       + (q ? ('&q=' + encodeURIComponent(q)) : '')
       + '&page=' + encodeURIComponent(liveOrdersState.page)
-      + '&perPage=' + encodeURIComponent(liveOrdersState.perPage);
-    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      + '&perPage=' + encodeURIComponent(liveOrdersState.perPage)
+      + '&_ts=' + Date.now(); // cache-bust
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
       .then(async res => {
         // Read pagination headers before consuming body
         const totalPages = parseInt(res.headers.get('X-Total-Pages') || '0', 10) || 0;
@@ -1275,6 +1276,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!data || !data.success) throw new Error((data && data.message) || 'Update failed');
         const activeTab = document.querySelector('#live-orders-tabs .tab.active');
         const activeStatus = activeTab ? (activeTab.dataset.status || '') : '';
+        // Optimistically remove the card from Pending tab to avoid stale display while refresh happens
+        try {
+          if (activeStatus === 'pending' && status === 'preparing') {
+            const stale = document.querySelector(`.live-orders-grid [data-transac-id="${CSS.escape(String(orderId))}"]`);
+            if (stale && stale.parentElement) stale.parentElement.removeChild(stale);
+          }
+        } catch (_) { /* ignore */ }
         fetchOrders(activeStatus);
         return data;
       })

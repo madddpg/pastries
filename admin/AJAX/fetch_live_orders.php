@@ -3,6 +3,11 @@
 ini_set('display_errors', '0');
 require_once __DIR__ . '/../database/db_connect.php';
 header('Content-Type: text/html; charset=UTF-8');
+// Prevent caching to ensure live updates reflect immediately
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+header('Vary: X-Requested-With, Accept');
 // Ensure PHP runs in Philippines time when formatting any dates.
 if (!ini_get('date.timezone')) { date_default_timezone_set('Asia/Manila'); }
 

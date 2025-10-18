@@ -44,6 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'], $_POST['status'
 
         if ($isAjax) {
             header('Content-Type: application/json');
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+            header('Expires: 0');
             echo json_encode(['success'=>true,'message'=>'Status updated', 'admin_id'=>$adminId]);
             exit;
         }
@@ -52,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'], $_POST['status'
     } catch (Throwable $e) {
         if ($isAjax) {
             header('Content-Type: application/json', true, 500);
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
             echo json_encode(['success'=>false,'message'=>'Error updating status']);
             exit;
         }
@@ -61,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'], $_POST['status'
 if ($isAjax) {
     http_response_code(400);
     header('Content-Type: application/json');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     echo json_encode(['success'=>false,'message'=>'Missing id or status']);
     exit;
 }
