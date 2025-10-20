@@ -1556,7 +1556,11 @@ if (typeof window.openOnboardingModal !== 'function') {
         await load(true);
         showNotification('Posted!', 'success');
       } else {
-        showNotification(d.message||'Failed to post.', 'error');
+        if (r.status === 403) {
+          showNotification(d.message || 'Please sign in to post.', 'error');
+        } else {
+          showNotification(d.message||'Failed to post.', 'error');
+        }
       }
     } catch { showNotification('Network error.', 'error'); }
     finally { if (btn) { btn.disabled = false; btn.innerHTML = 'Post'; } }

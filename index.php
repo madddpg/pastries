@@ -9,6 +9,10 @@ $userFullName  = trim(($userFirstName . ' ' . $userLastName));
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
 $pdo = $db->opencon();
+$siteCfg = [];
+$cfgPath = __DIR__ . '/config/site.php';
+if (file_exists($cfgPath)) { $siteCfg = require $cfgPath; }
+$allowGuestInspirations = isset($siteCfg['allowGuestInspirations']) ? (bool)$siteCfg['allowGuestInspirations'] : true;
 $hasSeenOnboarding = false;
 if ($isLoggedIn) {
     try {
@@ -194,6 +198,56 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
     </header>
 
+    <!-- Inspirations Section (top-level for nav switching) -->
+    <section id="inspirations" class="section-content" style="display:none;">
+        <div class="section-header" style="text-align:center;margin:24px 0 16px;">
+            <h2 style="font-weight:800;color:#2d4a3a;">Community Inspirations</h2>
+            <p class="text-muted" style="color:#374151;">Share your quotes and inspire others.</p>
+        </div>
+        <?php if ($isLoggedIn || $allowGuestInspirations): ?>
+        <div class="card" style="max-width:800px;margin:0 auto 18px;background:#fffbe9;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+            <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:0 0 240px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;" />
+                <textarea id="inspirationContent" placeholder="Write an inspirational quote..." rows="2" style="flex:1;min-width:260px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;"></textarea>
+                <button id="inspirationPostBtn" class="auth-btn" style="white-space:nowrap;">Post</button>
+            </div>
+            <div class="text-muted" style="margin-top:8px;color:#6b7280;font-size:0.92em;">
+                <?php if ($isLoggedIn): ?>
+                    Posting as <b><?php echo htmlspecialchars($userFullName ?: $userFirstName); ?></b>.
+                <?php else: ?>
+                    <?php if ($allowGuestInspirations): ?>
+                        Not signed in — enter your name above to post as a guest.
+                        <button class="auth-btn" onclick="showLoginModal()" style="margin-left:8px;padding:6px 10px;">Sign In</button>
+                    <?php else: ?>
+                        Posting is available to signed-in users only.
+                        <button class="auth-btn" onclick="showLoginModal()" style="margin-left:8px;padding:6px 10px;">Sign In</button>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="card" style="max-width:800px;margin:0 auto 18px;background:#fffbe9;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);text-align:center;">
+            <div>Posting is available to signed-in users only.</div>
+            <button class="auth-btn" onclick="showLoginModal()" style="margin-top:10px;">Sign In</button>
+        </div>
+        <?php endif; ?>
+
+        <div style="max-width:800px;margin:0 auto 10px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-weight:700;color:#2d4a3a;">Latest Posts</div>
+            <div>
+                <label for="inspSort" class="text-muted" style="margin-right:6px;color:#374151;">Sort by:</label>
+                <select id="inspSort" style="padding:8px 10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;">
+                    <option value="newest">Newest</option>
+                    <option value="liked">Most Liked</option>
+                </select>
+            </div>
+        </div>
+        <div id="inspFeed" style="max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:12px;"></div>
+        <div id="inspMoreWrap" style="text-align:center;margin-top:12px;display:none;">
+            <button id="inspLoadMore" class="auth-btn">Load more</button>
+        </div>
+    </section>
+
     <!-- Login Modal -->
     <div id="loginModal" class="auth-modal">
         <div class="auth-content">
@@ -359,42 +413,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
         </section>
 
-        <!-- Inspirations Section -->
-        <section id="inspirations" class="section-content" style="display:none;">
-            <div class="section-header" style="text-align:center;margin-bottom:1.2em;">
-                <h2 style="font-weight:800;color:#2d4a3a;">Community Inspirations</h2>
-                <p class="text-muted" style="color:#374151;">Share your quotes and inspire others.</p>
-            </div>
-            <?php if ($isLoggedIn): ?>
-            <div class="card" style="max-width:800px;margin:0 auto 18px;background:#fffbe9;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-                <div style="display:flex;gap:10px;align-items:flex-start;">
-                    <input id="inspirationAuthor" placeholder="Your name (optional)" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:0 0 240px;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;" />
-                    <textarea id="inspirationContent" placeholder="Write an inspirational quote..." rows="2" style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;"></textarea>
-                    <button id="inspirationPostBtn" class="auth-btn" style="white-space:nowrap;">Post</button>
-                </div>
-            </div>
-            <?php else: ?>
-            <div class="card" style="max-width:800px;margin:0 auto 18px;background:#fffbe9;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);text-align:center;">
-                <div>Sign in to share your inspiration.</div>
-                <button class="auth-btn" onclick="showLoginModal()" style="margin-top:10px;">Sign In</button>
-            </div>
-            <?php endif; ?>
-
-            <div style="max-width:800px;margin:0 auto 10px;display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-weight:700;color:#2d4a3a;">Latest Posts</div>
-                <div>
-                    <label for="inspSort" class="text-muted" style="margin-right:6px;color:#374151;">Sort by:</label>
-                    <select id="inspSort" style="padding:8px 10px;border-radius:10px;border:1px solid #e5e7eb;background:#fff;">
-                        <option value="newest">Newest</option>
-                        <option value="liked">Most Liked</option>
-                    </select>
-                </div>
-            </div>
-            <div id="inspFeed" style="max-width:800px;margin:0 auto;display:flex;flex-direction:column;gap:12px;"></div>
-            <div id="inspMoreWrap" style="text-align:center;margin-top:12px;display:none;">
-                <button id="inspLoadMore" class="auth-btn">Load more</button>
-            </div>
-        </section>
+        
 
 
         <section class="cards-section">
