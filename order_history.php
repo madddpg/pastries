@@ -45,7 +45,7 @@ if (count($orders) > 0) {
         <button class="hamburger-menu" aria-label="Open menu">
             <i class="fas fa-bars"></i>
         </button>
-    <nav class="nav-menu">
+        <nav class="nav-menu">
             <a href="index.php#home" class="nav-item">Home</a>
             <a href="index.php#about" class="nav-item">About</a>
             <a href="index.php#products" class="nav-item">Shop</a>
@@ -53,7 +53,7 @@ if (count($orders) > 0) {
             <a href="index.php#locations" class="nav-item">Locations</a>
 
             <div class="profile-dropdown">
-                <button class="profile-btn" id="profileDropdownBtnOH" type="button" aria-haspopup="true" aria-expanded="false">
+                <button class="profile-btn" id="profileDropdownBtn" onclick="toggleProfileDropdown(event)" type="button" aria-haspopup="true" aria-expanded="false">
                     <span class="profile-initials">
                         <?php if ($isLoggedIn): ?>
                             <?php echo htmlspecialchars(mb_substr($userFirstName ?: 'U', 0, 1)); ?>
@@ -63,9 +63,14 @@ if (count($orders) > 0) {
                     </span>
                     <i class="fas fa-caret-down ms-1"></i>
                 </button>
-                <div class="profile-dropdown-menu" id="profileDropdownMenuOH" role="menu">
-                    <a href="order_history.php" class="dropdown-item" role="menuitem">Order History</a>
-                    <a href="logout.php" class="dropdown-item" role="menuitem">Logout</a>
+                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu">
+                    <?php if ($isLoggedIn): ?>
+                        <a href="#" class="dropdown-item" onclick="showEditProfileModal(); event.stopPropagation(); return false;" role="menuitem">Edit Profile</a>
+                        <a href="order_history.php" class="dropdown-item" role="menuitem">Order History</a>
+                        <a href="#" class="dropdown-item" onclick="logout(event); return false;" role="menuitem">Logout</a>
+                    <?php else: ?>
+                        <a href="#" class="dropdown-item" onclick="showLoginModal(); event.stopPropagation(); return false;" role="menuitem">Sign In</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php if ($isLoggedIn): ?>
@@ -231,20 +236,49 @@ if (count($orders) > 0) {
 })();
 </script>
 <script>
-// Minimal header dropdown toggle for Order History page
+// Header interactions for this page (dropdown + hamburger)
 (function(){
-    const btn = document.getElementById('profileDropdownBtnOH');
-    const menu = document.getElementById('profileDropdownMenuOH');
-    if (!btn || !menu) return;
-    function closeMenu(){ menu.classList.remove('show'); btn.setAttribute('aria-expanded','false'); }
-    btn.addEventListener('click', function(e){
-        e.stopPropagation();
-        const open = menu.classList.toggle('show');
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-    document.addEventListener('click', function(e){
-        if (!menu.contains(e.target) && !btn.contains(e.target)) closeMenu();
-    });
+    var btn = document.getElementById('profileDropdownBtn');
+    var menu = document.getElementById('profileDropdownMenu');
+    if (btn && menu) {
+        function closeMenu(){ menu.classList.remove('show'); btn.setAttribute('aria-expanded','false'); }
+        btn.addEventListener('click', function(e){
+            e.stopPropagation();
+            var open = menu.classList.toggle('show');
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+        document.addEventListener('click', function(e){
+            if (!menu.contains(e.target) && !btn.contains(e.target)) closeMenu();
+        });
+    }
+    var burger = document.querySelector('.hamburger-menu');
+    var nav = document.querySelector('.nav-menu');
+    if (burger && nav) {
+        burger.addEventListener('click', function(e){
+            e.stopPropagation();
+            nav.classList.toggle('mobile-open');
+        });
+        document.addEventListener('click', function(e){
+            if (!nav.contains(e.target) && !burger.contains(e.target)) {
+                nav.classList.remove('mobile-open');
+            }
+        });
+    }
+        // Shrink header on scroll to mirror main site behavior
+        var header = document.querySelector('.header');
+        var headerContent = document.querySelector('.header-content');
+        function onScroll(){
+            var y = window.scrollY || document.documentElement.scrollTop || 0;
+            if (y > 60) {
+                header && header.classList.add('shrink');
+                headerContent && headerContent.classList.add('shrink');
+            } else {
+                header && header.classList.remove('shrink');
+                headerContent && headerContent.classList.remove('shrink');
+            }
+        }
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
 })();
 </script>
 </html>
