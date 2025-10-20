@@ -42,15 +42,15 @@ if (count($orders) > 0) {
 <header class="header">
     <div class="header-content">
         <div class="logo"></div>
-        <button class="hamburger-menu" aria-label="Open menu">
+        <button class="hamburger-menu">
             <i class="fas fa-bars"></i>
         </button>
         <nav class="nav-menu">
-            <a href="index.php#home" class="nav-item">Home</a>
-            <a href="index.php#about" class="nav-item">About</a>
-            <a href="index.php#products" class="nav-item">Shop</a>
-            <a href="index.php#inspirations" class="nav-item">Inspirations</a>
-            <a href="index.php#locations" class="nav-item">Locations</a>
+            <a href="#" class="nav-item active" onclick="showSection('home')">Home</a>
+            <a href="#" class="nav-item" onclick="showSection('about')">About </a>
+            <a href="#" class="nav-item" onclick="showSection('products')">Shop</a>
+            <a href="#" class="nav-item" onclick="showSection('inspirations')">Inspirations</a>
+            <a href="#" class="nav-item" onclick="showSection('locations')">Locations</a>
 
             <div class="profile-dropdown">
                 <button class="profile-btn" id="profileDropdownBtn" onclick="toggleProfileDropdown(event)" type="button" aria-haspopup="true" aria-expanded="false">
@@ -61,15 +61,15 @@ if (count($orders) > 0) {
                             <i class="fas fa-user"></i>
                         <?php endif; ?>
                     </span>
-                    <i class="fas fa-caret-down ms-1"></i>
+                    <i class="fas fa-caret-down"></i>
                 </button>
-                <div class="profile-dropdown-menu" id="profileDropdownMenu" role="menu">
+                <div class="profile-dropdown-menu" id="profileDropdownMenu">
                     <?php if ($isLoggedIn): ?>
-                        <a href="#" class="dropdown-item" onclick="showEditProfileModal(); event.stopPropagation(); return false;" role="menuitem">Edit Profile</a>
-                        <a href="order_history.php" class="dropdown-item" role="menuitem">Order History</a>
-                        <a href="#" class="dropdown-item" onclick="logout(event); return false;" role="menuitem">Logout</a>
+                        <a href="#" class="dropdown-item" onclick="showEditProfileModal(); event.stopPropagation(); return false;">Edit Profile</a>
+                        <a href="order_history.php" class="dropdown-item">Order History</a>
+                        <a href="#" class="dropdown-item" onclick="logout(event); return false;">Logout</a>
                     <?php else: ?>
-                        <a href="#" class="dropdown-item" onclick="showLoginModal(); event.stopPropagation(); return false;" role="menuitem">Sign In</a>
+                        <a href="#" class="dropdown-item" onclick="showLoginModal(); event.stopPropagation(); return false;">Sign In</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -81,6 +81,23 @@ if (count($orders) > 0) {
         </nav>
     </div>
 </header>
+<script>
+// Provide global functions to match index.php markup
+window.showSection = function(section){
+    // Redirect to index.php with the correct hash
+    try { window.location.href = 'index.php#' + section; } catch(_) {}
+    return false;
+};
+window.toggleProfileDropdown = function(e){
+    if (e && e.stopPropagation) e.stopPropagation();
+    var btn = document.getElementById('profileDropdownBtn');
+    var menu = document.getElementById('profileDropdownMenu');
+    if (!btn || !menu) return false;
+    var open = menu.classList.toggle('show');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    return false;
+};
+</script>
 
 <main class="order-history-page" style="min-height:100vh;">
     <!-- Hero banner -->
