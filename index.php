@@ -1440,9 +1440,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     </div>
 
     <!-- Inspirations Section (visible above Inquire Now) -->
-    <section id="inspirations" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
-        <!-- Section Header Banner -->
-        <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
+    <div style="background-color:#f3ebd3; padding: 40px 0; margin: 20px 0; border-radius: 20px;">
+        <div class="container">
+            <section id="inspirations" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:auto;padding:1rem;border-radius:15px;">
+                <!-- Section Header Banner -->
+                <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
             <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
             <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
             <h2 style="font-weight:900;font-size:clamp(1.8rem, 4vw, 2.5rem);margin-bottom:0.5rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);color:#fff;">☕ Community Inspirations</h2>
@@ -1545,7 +1547,9 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             #inspSingleCard blockquote { font-size: 1rem !important; }
         }
         </style>
-    </section>
+            </section>
+        </div>
+    </div>
 
     <!-- ORDER ONLINE -->
     <section class="food-order-section py-5 text-center" style="background-color:#f3ebd3; color: #2d4a3a; border-radius: 20px; margin: 20px;">
