@@ -45,7 +45,7 @@ if (count($orders) > 0) {
         <button class="hamburger-menu" aria-label="Open menu">
             <i class="fas fa-bars"></i>
         </button>
-        <nav class="nav-menu">
+        <nav class="nav-menu" style="background:#a7ddcb;border-radius:40px;padding:8px 20px;margin:10px 20px;">
             <a href="index.php#home" class="nav-item">Home</a>
             <a href="index.php#about" class="nav-item">About</a>
             <a href="index.php#products" class="nav-item">Shop</a>
@@ -76,8 +76,8 @@ if (count($orders) > 0) {
     </div>
 </header>
 
-<main class="order-history-page">
-<div class="container mb-5" style="margin-top:0;">
+<main class="order-history-page" style="background:#40584e;min-height:100vh;padding-top:0;">
+<div class="container mb-5" style="margin-top:0;background:#40584e;border-radius:40px;">
     <!-- Hero banner -->
     <section class="order-history-hero-header position-relative overflow-hidden">
         <div class="order-history-hero-overlay"></div>
@@ -95,14 +95,21 @@ if (count($orders) > 0) {
         <div class="order-history-floating-bean order-history-bean-2"></div>
         <div class="order-history-floating-bean order-history-bean-3"></div>
     </section>
-    <?php if ($latest_ready): ?>
-        <div class="alert alert-success" style="font-weight:bold;">
-            Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
-        </div>
-    <?php endif; ?>
-    <?php if (count($orders) === 0): ?>
-        <div class="alert alert-info">No orders found.</div>
-    <?php else: ?>
+    
+    <div class="container py-4" style="background:#fbfaee;border-radius:40px;margin-top:20px;">
+        <?php if ($latest_ready): ?>
+            <div class="alert alert-success" style="font-weight:bold;">
+                Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
+            </div>
+        <?php endif; ?>
+        <?php if (count($orders) === 0): ?>
+            <div class="alert alert-info">No orders found.</div>
+            <div class="text-center mt-4">
+                <a href="index.php" class="btn btn-primary" style="background:#40584e;border:none;border-radius:10px;padding:10px 20px;">
+                    Back to Home
+                </a>
+            </div>
+        <?php else: ?>
                 <div class="oh-list">
                 <?php foreach ($orders as $order): ?>
                     <?php
@@ -181,8 +188,15 @@ if (count($orders) > 0) {
         </nav>
         <?php endif; ?>
     <?php endif; ?>
-            <a href="index.php" class="btn oh-back-btn mt-3">Back to Home</a>
-</div>
+    
+    <div class="text-center mt-4">
+        <a href="index.php" class="btn btn-primary" style="background:#40584e;border:none;border-radius:10px;padding:10px 20px;">
+            Back to Home
+        </a>
+    </div>
+    
+    </div> <!-- end container py-4 -->
+</div> <!-- end outer container -->
 </main>
 
 
