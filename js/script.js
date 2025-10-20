@@ -1188,6 +1188,7 @@ function handleLogin(event) {
               if (!data.is_admin) {
                 const uid = (data.user_id || window.PHP_USER_ID || '').toString();
                 localStorage.setItem('showOnboarding:' + uid, '1');
+                try { sessionStorage.setItem('onboardingTrigger:' + uid, '1'); } catch(e) {}
               }
             } catch(e) {}
             window.location.href = data.redirect;
@@ -1423,8 +1424,12 @@ if (typeof window.openOnboardingModal !== 'function') {
       if (doneBtn) doneBtn.style.display = current === steps.length - 1 ? 'inline-flex' : 'none';
     }
     function close(persist){
-      try { if (persist) localStorage.setItem('hasSeenOnboarding','1'); } catch(e) {}
-      try { localStorage.removeItem('showOnboarding'); } catch(e) {}
+      const uid = (window.PHP_USER_ID || '').toString();
+      const keySeen = 'hasSeenOnboarding:' + uid;
+      const keyShow = 'showOnboarding:' + uid;
+      try { if (persist) localStorage.setItem(keySeen,'1'); } catch(e) {}
+      try { localStorage.removeItem(keyShow); } catch(e) {}
+      try { sessionStorage.removeItem('onboardingTrigger:' + uid); } catch(e) {}
       modal.classList.remove('active');
       document.body.style.overflow = '';
     }
@@ -1803,6 +1808,7 @@ async function verifyOTP() {
           try {
             const uid = (data.user_id || window.PHP_USER_ID || '').toString();
             localStorage.setItem('showOnboarding:' + uid, '1');
+            try { sessionStorage.setItem('onboardingTrigger:' + uid, '1'); } catch(e) {}
           } catch(e) {}
           window.location.href = data.redirect;
         } else {
@@ -2102,11 +2108,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const uid = (window.PHP_USER_ID || '').toString();
     const keyShow = 'showOnboarding:' + uid;
     const keySeen = 'hasSeenOnboarding:' + uid;
-    const want = localStorage.getItem(keyShow);
+    const want = localStorage.getItem(keyShow) || sessionStorage.getItem('onboardingTrigger:' + uid);
     const seen = localStorage.getItem(keySeen);
     if (want === '1' && seen !== '1' && typeof window.openOnboardingModal === 'function') {
       // Clear the trigger before opening to avoid loops on reload
       localStorage.removeItem(keyShow);
+      try { sessionStorage.removeItem('onboardingTrigger:' + uid); } catch(e) {}
       setTimeout(() => window.openOnboardingModal(), 400);
     }
   } catch (e) { /* ignore storage errors */ }
