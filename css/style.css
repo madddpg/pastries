@@ -1237,12 +1237,14 @@ html.no-scroll, body.no-scroll {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Focus lower area where the cup and hands are */
-  object-position: center 200%;
+  /* Focus on the middle-lower part (cup area) */
+  object-position: center 80%;
   position: absolute;
   top: 0;
   left: 0;
+  border-radius: 12px; /* optional: matches rounded corners */
 }
+
 
 .card-green img {
   width: 100%;
