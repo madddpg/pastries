@@ -1184,7 +1184,12 @@ function handleLogin(event) {
         setTimeout(() => {
           closeAuthModal();
           if (data.redirect) {
-            try { if (!data.is_admin) { localStorage.setItem('showOnboarding','1'); } } catch(e) {}
+            try {
+              if (!data.is_admin) {
+                const uid = (data.user_id || window.PHP_USER_ID || '').toString();
+                localStorage.setItem('showOnboarding:' + uid, '1');
+              }
+            } catch(e) {}
             window.location.href = data.redirect;
           }
         }, 1000);
