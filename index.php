@@ -1440,7 +1440,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
     </div>
 
     <!-- Inspirations Section (visible above Inquire Now) -->
-    <section id="inspirations" class="section-content" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
+    <section id="inspirations" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
         <!-- Section Header Banner -->
         <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
             <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
@@ -1487,27 +1487,21 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <label for="inspSort" style="color:#8b795d;font-weight:600;font-size:0.95rem;">Sort by:</label>
                 <select id="inspSort" style="padding:8px 12px;border-radius:10px;border:2px solid #d4c4a8;background:#fff;color:#5d4037;font-weight:500;cursor:pointer;transition:border-color 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63'" onblur="this.style.borderColor='#d4c4a8'">
                     <option value="newest">🕒 Newest</option>
-                    <option value="liked">❤️ Most Liked</option>
+                    <option value="liked" selected>❤️ Most Liked</option>
                 </select>
             </div>
         </div>
 
-        <!-- Carousel Container -->
-        <div class="inspirations-carousel-wrapper" style="max-width:900px;margin:0 auto;position:relative;">
-            <!-- Carousel -->
-            <div class="inspirations-carousel" style="position:relative;overflow:hidden;border-radius:20px;box-shadow:0 12px 40px rgba(139,121,93,0.2);background:linear-gradient(145deg, #faf7f2 0%, #f5f1ec 100%);">
-                <div id="inspFeed" class="carousel-track" style="display:flex;transition:transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
-                
-                <!-- Navigation Arrows -->
-                <button class="carousel-nav carousel-prev" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">‹</button>
-                <button class="carousel-nav carousel-next" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">›</button>
+        <!-- Single-quote Viewer -->
+        <div class="inspirations-single-wrapper" style="max-width:900px;margin:0 auto;position:relative;">
+            <div id="inspSingleCard" style="border-radius:20px;box-shadow:0 12px 40px rgba(139,121,93,0.2);background:linear-gradient(145deg, #faf7f2 0%, #f5f1ec 100%);padding:24px;min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;color:#5d4037;">
+                <span>Loading inspirations…</span>
             </div>
-            
-            <!-- Carousel Indicators -->
-            <div class="carousel-indicators" style="display:flex;justify-content:center;gap:8px;margin-top:20px;"></div>
-            
+            <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;">
+                <button id="inspNextBtn" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(109,76,65,0.3);">Next • ❤️ Most Liked</button>
+            </div>
             <!-- Empty State -->
-            <div id="inspEmptyState" style="display:none;text-align:center;padding:4rem 2rem;color:#8b795d;">
+            <div id="inspEmptyState" style="display:none;text-align:center;padding:3rem 1.5rem;color:#8b795d;">
                 <div style="font-size:3rem;margin-bottom:1rem;">☕</div>
                 <h3 style="color:#6d4c41;margin-bottom:0.5rem;font-weight:600;">No inspirations yet</h3>
                 <p style="margin:0;">Be the first to share some wisdom!</p>
@@ -1534,46 +1528,17 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 align-self: stretch !important;
             }
             
-            /* Carousel mobile adjustments */
-            .carousel-slide {
-                padding: 1rem !important;
-            }
-            .inspiration-card {
-                padding: 1.5rem !important;
-                min-height: 250px !important;
-            }
-            .inspiration-card blockquote {
-                font-size: 1.1rem !important;
-                padding: 0 0.5rem !important;
-            }
-            .carousel-nav {
-                width: 40px !important;
-                height: 40px !important;
-                font-size: 1rem !important;
-            }
-            .carousel-prev {
-                left: 8px !important;
-            }
-            .carousel-next {
-                right: 8px !important;
-            }
+            /* Single viewer mobile adjustments */
+            #inspSingleCard { padding: 1rem !important; min-height: 180px !important; }
+            #inspSingleCard blockquote { font-size: 1.05rem !important; margin: 0.5rem 0 !important; }
         }
         
         @media (max-width: 480px) {
-            .inspirations-carousel-wrapper {
+            .inspirations-single-wrapper {
                 margin: 0 -1rem !important;
             }
-            .carousel-slide {
-                padding: 0.5rem !important;
-            }
-            .inspiration-card {
-                padding: 1rem !important;
-                min-height: 200px !important;
-            }
-            .inspiration-card blockquote {
-                font-size: 1rem !important;
-                margin: 1rem 0 !important;
-            }
+            #inspSingleCard { padding: 0.75rem !important; min-height: 160px !important; }
+            #inspSingleCard blockquote { font-size: 1rem !important; }
         }
         </style>
     </section>

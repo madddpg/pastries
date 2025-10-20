@@ -2574,6 +2574,174 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ===== Inspirations (Single-view) =====
+let INSP_STATE = {
+  items: [],
+  likedMap: {},
+  idx: 0, // current index in items
+  order: 'liked', // default sort for Next flow
+  page: 1,
+  perPage: 10,
+  total: 0
+};
+
+async function fetchInspirations(order = 'liked', page = 1) {
+  try {
+    const url = new URL('AJAX/fetch_inspirations.php', window.location.href);
+    url.searchParams.set('order', order);
+    url.searchParams.set('page', String(page));
+    const res = await fetch(url.toString(), { credentials: 'same-origin', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    if (!data || !data.success) return false;
+
+    INSP_STATE.order = order;
+    INSP_STATE.page = data.page || page;
+    INSP_STATE.perPage = data.perPage || INSP_STATE.perPage;
+    INSP_STATE.total = data.total || 0;
+
+    if (page > 1 && Array.isArray(INSP_STATE.items) && INSP_STATE.items.length) {
+      INSP_STATE.items = INSP_STATE.items.concat(data.items || []);
+    } else {
+      INSP_STATE.items = data.items || [];
+      INSP_STATE.idx = 0;
+    }
+    INSP_STATE.likedMap = data.liked || {};
+    return true;
+  } catch (e) {
+    console.error('fetchInspirations error', e);
+    return false;
+  }
+}
+
+function renderCurrentInspiration() {
+  const card = document.getElementById('inspSingleCard');
+  const empty = document.getElementById('inspEmptyState');
+  if (!card) return;
+
+  const hasItems = Array.isArray(INSP_STATE.items) && INSP_STATE.items.length > 0;
+  if (!hasItems) {
+    card.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  card.style.display = 'flex';
+
+  const i = Math.max(0, Math.min(INSP_STATE.idx, INSP_STATE.items.length - 1));
+  const it = INSP_STATE.items[i];
+  const liked = !!INSP_STATE.likedMap[Number(it.inspiration_id)] || false;
+  const likes = Number(it.like_count || 0);
+
+  const safe = (s) => String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  card.innerHTML = `
+    <div style="max-width:740px;margin:0 auto;">
+      <blockquote style="font-size:1.2rem;line-height:1.6;color:#3e2723;margin:0.5rem 0;">
+        “${safe(it.content)}”
+      </blockquote>
+      <div style="margin-top:8px;color:#6d4c41;font-weight:700;">— ${safe(it.author_name || 'Anonymous')}</div>
+      <div style="margin-top:10px;color:#8b795d;font-weight:600;display:flex;align-items:center;gap:10px;justify-content:center;">
+        <button id="inspLikeBtn" data-id="${Number(it.inspiration_id)}" aria-label="Like" style="display:inline-flex;align-items:center;gap:6px;background:${liked ? '#6d4c41' : '#8d6e63'};color:#fff;border:none;padding:6px 10px;border-radius:999px;cursor:pointer;">
+          <span>❤</span><span id="inspLikeCount">${likes}</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function nextInspiration() {
+  // If we have more in the current buffer, advance; else try to fetch next page
+  if (INSP_STATE.idx + 1 < INSP_STATE.items.length) {
+    INSP_STATE.idx += 1;
+    renderCurrentInspiration();
+    return;
+  }
+  const shown = INSP_STATE.items.length;
+  const totalAvailable = INSP_STATE.total || 0;
+  if (shown < totalAvailable) {
+    const ok = await fetchInspirations(INSP_STATE.order || 'liked', (INSP_STATE.page || 1) + 1);
+    if (ok && INSP_STATE.items.length > shown) {
+      INSP_STATE.idx = shown; // first of new page
+      renderCurrentInspiration();
+      return;
+    }
+  }
+  // fallback: loop back to top liked
+  INSP_STATE.idx = 0;
+  renderCurrentInspiration();
+}
+
+// Like toggle support (requires sign-in on server)
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest && e.target.closest('#inspLikeBtn');
+  if (!btn) return;
+  const id = Number(btn.dataset.id || 0);
+  if (!id) return;
+  try {
+    const res = await fetch('AJAX/like_inspiration.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data && data.success) {
+      const liked = !!data.liked;
+      const countSpan = document.getElementById('inspLikeCount');
+      if (countSpan) {
+        let cur = Number(countSpan.textContent || 0);
+        cur = liked ? (cur + 1) : Math.max(0, cur - 1);
+        countSpan.textContent = String(cur);
+      }
+      // update state for current item
+      const curItem = INSP_STATE.items[INSP_STATE.idx];
+      if (curItem) {
+        curItem.like_count = (curItem.like_count || 0) + (liked ? 1 : -1);
+        if (curItem.like_count < 0) curItem.like_count = 0;
+        INSP_STATE.likedMap[id] = liked ? 1 : 0;
+      }
+      // update button color
+      btn.style.background = liked ? '#6d4c41' : '#8d6e63';
+    } else if (res.status === 403) {
+      showLoginModal && showLoginModal();
+    }
+  } catch (err) {
+    console.error('like error', err);
+  }
+});
+
+// Wire Next button
+document.addEventListener('click', (e) => {
+  const nextBtn = e.target.closest && e.target.closest('#inspNextBtn');
+  if (!nextBtn) return;
+  nextInspiration();
+});
+
+// Sort select handling (optional)
+document.addEventListener('change', async (e) => {
+  const sel = e.target;
+  if (!(sel && sel.id === 'inspSort')) return;
+  const order = sel.value || 'liked';
+  await fetchInspirations(order, 1);
+  renderCurrentInspiration();
+});
+
+// Public entry point for section hook
+window.loadInspirations = async function () {
+  if (!Array.isArray(INSP_STATE.items) || INSP_STATE.items.length === 0) {
+    await fetchInspirations('liked', 1);
+  }
+  renderCurrentInspiration();
+};
+
+// Auto-load on DOM ready to populate Home section
+document.addEventListener('DOMContentLoaded', () => {
+  // Delay slightly to allow DOM elements to exist
+  setTimeout(() => {
+    if (typeof window.loadInspirations === 'function') window.loadInspirations();
+  }, 100);
+});
+
+
 
 
 
