@@ -1229,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoTimer = null;
     const firstItem = track.querySelector('.testimonial');
     const step = firstItem ? (firstItem.offsetWidth + (parseInt(getComputedStyle(firstItem).marginRight) || 12)) : Math.floor(track.clientWidth / 3);
-    const intervalMs = 2500; // faster autoplay (2.5s)
+    const intervalMs = 4000; // faster autoplay (2.5s)
 
     function startAuto() {
       stopAuto();
