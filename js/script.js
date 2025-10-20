@@ -1476,17 +1476,25 @@ if (typeof window.openOnboardingModal !== 'function') {
     try { const d = new Date(s.replace(' ', 'T')); return d.toLocaleString(); } catch { return s; }
   }
   function cardHTML(it, liked){
-    const heart = liked ? '❤️' : '🤍';
+    const heart = liked ? '💕' : '🤍';
+    const heartColor = liked ? '#e57373' : '#bcaaa4';
     return `
-      <div class="card" style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div style="font-weight:700;color:#2d4a3a;">${(it.author_name||'Anonymous').replace(/</g,'&lt;')}</div>
-          <div style="color:#6b7280;font-size:0.9em;">${fmtDate(it.created_at)}</div>
+      <div class="inspiration-card" style="background:linear-gradient(145deg, #ffffff 0%, #faf7f2 100%);border:2px solid #e6d7c3;border-radius:16px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.12);transition:all 0.3s ease;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(139,121,93,0.18)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(139,121,93,0.12)'">
+        <div style="position:absolute;top:-20px;right:-20px;width:60px;height:60px;background:rgba(141,110,99,0.05);border-radius:50%;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;position:relative;z-index:1;">
+          <div style="font-weight:700;color:#6d4c41;font-size:1.1rem;display:flex;align-items:center;gap:6px;">
+            ☕ ${(it.author_name||'Anonymous').replace(/</g,'&lt;')}
+          </div>
+          <div style="color:#8b795d;font-size:0.85rem;font-weight:500;background:#f3ede4;padding:4px 8px;border-radius:8px;">${fmtDate(it.created_at)}</div>
         </div>
-        <div style="color:#374151;white-space:pre-wrap;">${(it.content||'').replace(/</g,'&lt;')}</div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-          <button class="insp-like" data-id="${it.inspiration_id}" style="background:none;border:none;cursor:pointer;font-size:1.1em;">${heart}</button>
-          <span class="insp-count" data-id="${it.inspiration_id}" style="color:#374151;">${it.like_count||0}</span>
+        <div style="color:#5d4037;font-size:1.05rem;line-height:1.6;white-space:pre-wrap;margin-bottom:16px;font-weight:400;letter-spacing:0.2px;">"${(it.content||'').replace(/</g,'&lt;')}"</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #e6d7c3;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="insp-like" data-id="${it.inspiration_id}" style="background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px 8px;border-radius:8px;transition:all 0.3s ease;color:${heartColor};" onmouseover="this.style.background='#f3ede4';this.style.transform='scale(1.1)'" onmouseout="this.style.background='none';this.style.transform='scale(1)'">${heart}</button>
+            <span class="insp-count" data-id="${it.inspiration_id}" style="color:#6d4c41;font-weight:600;font-size:0.95rem;">${it.like_count||0}</span>
+            <span style="color:#8b795d;font-size:0.85rem;font-weight:500;">${(it.like_count||0) === 1 ? 'like' : 'likes'}</span>
+          </div>
+          <div style="color:#8b795d;font-size:0.8rem;opacity:0.7;">💬 Shared with love</div>
         </div>
       </div>`;
   }
@@ -1530,7 +1538,8 @@ if (typeof window.openOnboardingModal !== 'function') {
             cur = d.liked ? cur+1 : Math.max(0, cur-1);
             cntEl.textContent = String(cur);
           }
-          likeBtn.textContent = d.liked ? '❤️' : '🤍';
+          likeBtn.textContent = d.liked ? '💕' : '🤍';
+          likeBtn.style.color = d.liked ? '#e57373' : '#bcaaa4';
         } else if (d.message) {
           showNotification(d.message, 'error');
         }
