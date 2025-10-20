@@ -2124,7 +2124,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const uid = (window.PHP_USER_ID || '').toString();
     const seenServer = (typeof window.PHP_HAS_SEEN_ONBOARDING !== 'undefined') ? !!window.PHP_HAS_SEEN_ONBOARDING : false;
     const sessionOnceKey = 'onboardingShownOnce:' + uid;
-    if (window.PHP_IS_LOGGED_IN && !seenServer && !sessionStorage.getItem(sessionOnceKey) && typeof window.openOnboardingModal === 'function') {
+    const force = (typeof window.PHP_ONBOARDING_TRIGGER !== 'undefined') && !!window.PHP_ONBOARDING_TRIGGER;
+    if (typeof window.openOnboardingModal === 'function' && (
+        (window.PHP_IS_LOGGED_IN && !seenServer && !sessionStorage.getItem(sessionOnceKey)) || force
+      )) {
       sessionStorage.setItem(sessionOnceKey, '1');
       setTimeout(() => window.openOnboardingModal(), 450);
     }

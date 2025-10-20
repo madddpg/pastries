@@ -1513,6 +1513,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
         window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? addslashes($_SESSION['user']['profile_image']) : 'img/default-avatar.png'; ?>";
         window.PHP_HAS_SEEN_ONBOARDING = <?php echo $hasSeenOnboarding ? 'true' : 'false'; ?>;
+        window.PHP_ONBOARDING_TRIGGER = <?php echo (isset($_GET['onboarding']) && $_GET['onboarding'] === '1') ? 'true' : 'false'; ?>;
     </script>
     <script>
         // expose super-admin flag to admin UI JS (used to show force-delete)
