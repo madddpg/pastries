@@ -79,11 +79,21 @@ if (count($orders) > 0) {
 <main class="order-history-page">
 <div class="container mb-5" style="margin-top:0;">
     <!-- Hero banner -->
-    <section class="oh-hero" aria-labelledby="ohHeroTitle">
-        <div class="oh-hero-inner">
-            <h1 id="ohHeroTitle" class="oh-hero-title">Order History</h1>
-            <p class="oh-hero-sub">Your recent orders and receipts</p>
+    <section class="order-history-hero-header position-relative overflow-hidden">
+        <div class="order-history-hero-overlay"></div>
+        <div class="container-fluid h-100">
+            <div class="row h-100 align-items-center justify-content-center text-center text-white">
+                <div class="col-12">
+                    <h1 class="order-history-hero-title">Order History</h1>
+                    <p class="order-history-hero-subtitle">Your recent orders and receipts</p>
+                </div>
+            </div>
         </div>
+
+        <!-- Floating coffee beans -->
+        <div class="order-history-floating-bean order-history-bean-1"></div>
+        <div class="order-history-floating-bean order-history-bean-2"></div>
+        <div class="order-history-floating-bean order-history-bean-3"></div>
     </section>
     <?php if ($latest_ready): ?>
         <div class="alert alert-success" style="font-weight:bold;">

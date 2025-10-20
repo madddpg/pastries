@@ -2264,6 +2264,116 @@ label[for="acceptTerms"] { white-space: nowrap; }
   }
 }
 
+/* Inspirations Hero Section - matching products */
+.inspirations-hero-header {
+  height: 400px;
+  background: linear-gradient(135deg, #40584e 0%, #163829 50%, #0f2c20 100%);
+  border-radius: 40px;
+  margin: 20px;
+}
+
+.inspirations-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.inspirations-hero-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.inspirations-hero-subtitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.inspirations-floating-bean {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--amber-600);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: aboutFloat 3s ease-in-out infinite;
+}
+
+.inspirations-bean-1 {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.inspirations-bean-2 {
+  top: 30%;
+  right: 30%;
+  animation-delay: 1s;
+}
+
+.inspirations-bean-3 {
+  bottom: 20%;
+  left: 25%;
+  animation-delay: 2s;
+}
+
+/* Order History Hero Section - matching products */
+.order-history-hero-header {
+  height: 400px;
+  background: linear-gradient(135deg, #40584e 0%, #163829 50%, #0f2c20 100%);
+  border-radius: 40px;
+  margin: 20px;
+}
+
+.order-history-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.order-history-hero-title {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.order-history-hero-subtitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.order-history-floating-bean {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--amber-600);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: aboutFloat 3s ease-in-out infinite;
+}
+
+.order-history-bean-1 {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.order-history-bean-2 {
+  top: 30%;
+  right: 30%;
+  animation-delay: 1s;
+}
+
+.order-history-bean-3 {
+  bottom: 20%;
+  left: 25%;
+  animation-delay: 2s;
+}
+
 
 
 

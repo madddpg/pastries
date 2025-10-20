@@ -1174,11 +1174,24 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
     <!-- Inspirations Section -->
     <div id="inspirations" class="section-content" style="display:none;">
-        <div class="container py-4">
-            <div class="text-center mb-4">
-                <h2 style="font-weight:800;color:#2d4a3a;">Community Inspirations</h2>
-                <p class="text-muted" style="margin:0;">Share wisdom over coffee • Inspire hearts with words</p>
+        <section class="inspirations-hero-header position-relative overflow-hidden">
+            <div class="inspirations-hero-overlay"></div>
+            <div class="container-fluid h-100">
+                <div class="row h-100 align-items-center justify-content-center text-center text-white">
+                    <div class="col-12">
+                        <h1 class="inspirations-hero-title">Community Inspirations</h1>
+                        <p class="inspirations-hero-subtitle">Share wisdom over coffee • Inspire hearts with words</p>
+                    </div>
+                </div>
             </div>
+
+            <!-- Floating coffee beans -->
+            <div class="inspirations-floating-bean inspirations-bean-1"></div>
+            <div class="inspirations-floating-bean inspirations-bean-2"></div>
+            <div class="inspirations-floating-bean inspirations-bean-3"></div>
+        </section>
+
+        <div class="container py-4">
 
             <div class="row justify-content-center mb-4">
                 <div class="col-12 col-md-10 col-lg-8">
