@@ -1854,3 +1854,111 @@ function handleForgotPassword(e){
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
 </div>
+
+<!-- Onboarding / Tutorial Modal -->
+<div id="onboardingModal" class="auth-modal" style="z-index:5000;">
+    <div class="auth-content" style="max-width:640px;">
+        <button class="close-auth" onclick="(function(){ const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem('hasSeenOnboarding','1'); }catch(e){} } try{ localStorage.removeItem('showOnboarding'); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="auth-header" style="margin-bottom:10px;">
+            <h3>Welcome to Cups & Cuddles</h3>
+            <p>Quick tips to help you get the most out of your experience</p>
+        </div>
+
+        <div id="onboardingSteps">
+            <div class="onboarding-step" data-step="1" style="display:block; text-align:left; color:#374151;">
+                <h4 style="color:#2d4a3a; font-weight:800;">1) Browse and choose</h4>
+                <p>Explore our menu: cold drinks, hot drinks, and pastries. Tap <b>View</b> to see sizes, toppings, and details.</p>
+                <ul style="padding-left:18px; margin:8px 0;">
+                    <li>Use the filter at the top to switch between categories</li>
+                    <li>Pick your size and sugar level (for drinks)</li>
+                    <li>Add optional toppings before adding to cart</li>
+                </ul>
+            </div>
+
+            <div class="onboarding-step" data-step="2" style="display:none; text-align:left; color:#374151;">
+                <h4 style="color:#2d4a3a; font-weight:800;">2) Checkout and pay</h4>
+                <p>Open your cart and proceed to checkout. Choose your pickup location and time, then select your payment method.</p>
+                <ul style="padding-left:18px; margin:8px 0;">
+                    <li>Review items and quantities in your cart</li>
+                    <li>Provide special instructions if needed</li>
+                    <li>Confirm your order to receive a reference number</li>
+                </ul>
+            </div>
+
+            <div class="onboarding-step" data-step="3" style="display:none; text-align:left; color:#374151;">
+                <h4 style="color:#2d4a3a; font-weight:800;">3) Track your order</h4>
+                <p>We’ll update you as your order moves from <b>Pending</b> to <b>Preparing</b> to <b>Ready</b>. You’ll see notifications here and can view your status in <b>Order History</b>.</p>
+                <ul style="padding-left:18px; margin:8px 0;">
+                    <li>Find Order History in your profile menu</li>
+                    <li>We’ll notify you at the top of the page when status changes</li>
+                    <li>Pickup when it’s marked <b>Ready</b></li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:0.95em; color:#374151;">
+                <input type="checkbox" id="onboardingDontShow"> Don’t show this again
+            </label>
+            <div style="display:flex; gap:8px;">
+                <button id="onboardingBackBtn" class="auth-btn" style="background:#e5e7eb;color:#111827; border:none; display:none;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button id="onboardingSkipBtn" class="auth-btn" style="background:#f59e0b; border:none;">
+                    Skip
+                </button>
+                <button id="onboardingNextBtn" class="auth-btn" style="background:#10B981; border:none;">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button id="onboardingDoneBtn" class="auth-btn" style="background:#10B981; border:none; display:none;">
+                    <i class="fas fa-check"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Lightweight stepper controls bound inline to avoid extra file edits
+        (function(){
+            const modal = document.getElementById('onboardingModal');
+            if (!modal) return;
+            const steps = Array.from(modal.querySelectorAll('.onboarding-step'));
+            const backBtn = modal.querySelector('#onboardingBackBtn');
+            const nextBtn = modal.querySelector('#onboardingNextBtn');
+            const skipBtn = modal.querySelector('#onboardingSkipBtn');
+            const doneBtn = modal.querySelector('#onboardingDoneBtn');
+            let current = 0;
+
+            function render(){
+                steps.forEach((s, i)=>{ s.style.display = (i === current) ? 'block' : 'none'; });
+                backBtn.style.display = current > 0 ? 'inline-flex' : 'none';
+                nextBtn.style.display = current < steps.length - 1 ? 'inline-flex' : 'none';
+                doneBtn.style.display = current === steps.length - 1 ? 'inline-flex' : 'none';
+            }
+            function open(){
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                current = 0; render();
+            }
+            function close(persist = false){
+                if (persist) { try{ localStorage.setItem('hasSeenOnboarding','1'); }catch(e){} }
+                try{ localStorage.removeItem('showOnboarding'); }catch(e){}
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+            backBtn.addEventListener('click', function(){ if (current>0){ current--; render(); } });
+            nextBtn.addEventListener('click', function(){ if (current<steps.length-1){ current++; render(); } });
+            skipBtn.addEventListener('click', function(){
+                const cb = document.getElementById('onboardingDontShow');
+                close(!!(cb && cb.checked));
+            });
+            doneBtn.addEventListener('click', function(){
+                const cb = document.getElementById('onboardingDontShow');
+                close(true || !!(cb && cb.checked));
+            });
+            // Expose opener for external scripts
+            window.openOnboardingModal = open;
+        })();
+    </script>
+</div>

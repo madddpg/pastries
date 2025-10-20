@@ -1184,6 +1184,7 @@ function handleLogin(event) {
         setTimeout(() => {
           closeAuthModal();
           if (data.redirect) {
+            try { if (!data.is_admin) { localStorage.setItem('showOnboarding','1'); } } catch(e) {}
             window.location.href = data.redirect;
           }
         }, 1000);
@@ -1397,6 +1398,58 @@ document.addEventListener('click', function (e) {
     }
   }
 });
+
+// Fallback onboarding opener: defines window.openOnboardingModal if not already defined by inline script
+if (typeof window.openOnboardingModal !== 'function') {
+  window.openOnboardingModal = function() {
+    const modal = document.getElementById('onboardingModal');
+    if (!modal) return;
+    const steps = Array.from(modal.querySelectorAll('.onboarding-step'));
+    const backBtn = modal.querySelector('#onboardingBackBtn');
+    const nextBtn = modal.querySelector('#onboardingNextBtn');
+    const skipBtn = modal.querySelector('#onboardingSkipBtn');
+    const doneBtn = modal.querySelector('#onboardingDoneBtn');
+    let current = 0;
+
+    function render(){
+      steps.forEach((s, i)=>{ s.style.display = (i === current) ? 'block' : 'none'; });
+      if (backBtn) backBtn.style.display = current > 0 ? 'inline-flex' : 'none';
+      if (nextBtn) nextBtn.style.display = current < steps.length - 1 ? 'inline-flex' : 'none';
+      if (doneBtn) doneBtn.style.display = current === steps.length - 1 ? 'inline-flex' : 'none';
+    }
+    function close(persist){
+      try { if (persist) localStorage.setItem('hasSeenOnboarding','1'); } catch(e) {}
+      try { localStorage.removeItem('showOnboarding'); } catch(e) {}
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    if (backBtn && !backBtn.dataset.bound) {
+      backBtn.dataset.bound = '1';
+      backBtn.addEventListener('click', function(){ if (current>0){ current--; render(); } });
+    }
+    if (nextBtn && !nextBtn.dataset.bound) {
+      nextBtn.dataset.bound = '1';
+      nextBtn.addEventListener('click', function(){ if (current<steps.length-1){ current++; render(); } });
+    }
+    if (skipBtn && !skipBtn.dataset.bound) {
+      skipBtn.dataset.bound = '1';
+      skipBtn.addEventListener('click', function(){
+        const cb = document.getElementById('onboardingDontShow');
+        close(!!(cb && cb.checked));
+      });
+    }
+    if (doneBtn && !doneBtn.dataset.bound) {
+      doneBtn.dataset.bound = '1';
+      doneBtn.addEventListener('click', function(){
+        const cb = document.getElementById('onboardingDontShow');
+        close(true || !!(cb && cb.checked));
+      });
+    }
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    current = 0; render();
+  };
+}
 
 
 // Safe modal open helper — sets aria-hidden correctly and focuses dialog
@@ -1742,6 +1795,7 @@ async function verifyOTP() {
 
         // redirect if backend provides, else fallback
         if (data.redirect) {
+          try { localStorage.setItem('showOnboarding','1'); } catch(e) {}
           window.location.href = data.redirect;
         } else {
           window.location.reload();
@@ -2034,6 +2088,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof filterDrinks === 'function') {
     filterDrinks('cold');
   }
+
+  // Show onboarding after redirect from login/registration if requested
+  try {
+    const want = localStorage.getItem('showOnboarding');
+    const seen = localStorage.getItem('hasSeenOnboarding');
+    if (want === '1' && seen !== '1' && typeof window.openOnboardingModal === 'function') {
+      // Clear the trigger before opening to avoid loops on reload
+      localStorage.removeItem('showOnboarding');
+      setTimeout(() => window.openOnboardingModal(), 400);
+    }
+  } catch (e) { /* ignore storage errors */ }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
