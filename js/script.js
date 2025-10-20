@@ -2727,16 +2727,18 @@ function handleEditProfile(event) {
 // ===================== Inspirations Module =====================
 (function(){
   let inspState = {
-    order: 'liked',
+    order: 'newest',
     page: 1,
     items: [],
     likedMap: {},
-    idx: 0
+    idx: 0,
+    timer: null,
+    intervalMs: 3000
   };
 
   function qs(id){ return document.getElementById(id); }
 
-  async function fetchInspirations(order='liked', page=1){
+  async function fetchInspirations(order='newest', page=1){
     const url = new URL('AJAX/fetch_inspirations.php', window.location.href);
     url.searchParams.set('order', order);
     url.searchParams.set('page', String(page));
@@ -2805,7 +2807,7 @@ function handleEditProfile(event) {
     }
     // load next page when we reach end
     const nextPage = inspState.page + 1;
-    const { items, liked } = await fetchInspirations('liked', nextPage);
+    const { items, liked } = await fetchInspirations(inspState.order || 'newest', nextPage);
     if (items.length){
       inspState.page = nextPage;
       inspState.items = inspState.items.concat(items);
@@ -2819,6 +2821,17 @@ function handleEditProfile(event) {
     }
   }
 
+  function prevInspiration(){
+    if (!inspState.items.length) return;
+    if (inspState.idx > 0){
+      inspState.idx -= 1;
+    } else {
+      // go to last of current loaded set
+      inspState.idx = Math.max(0, inspState.items.length - 1);
+    }
+    renderCurrent();
+  }
+
   async function doPost(){
     const btn = qs('inspPostBtn');
     if (!btn) return;
@@ -2826,42 +2839,84 @@ function handleEditProfile(event) {
     const content = (qs('inspContent')?.value || '').trim();
     const author = (qs('inspAuthor')?.value || '').trim();
     if (!content){ showNotification('Please enter your quote or message.', 'error'); return; }
-    btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting';
-    try{
-      const res = await fetch('AJAX/add_inspiration.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ content, author })
-      });
-      const data = await res.json();
-      if (data && data.success){
-        qs('inspContent').value = '';
-        showNotification('Posted!', 'success');
-        // reload first page liked
-        const fresh = await fetchInspirations('liked', 1);
-        inspState.order = 'liked';
-        inspState.page = 1;
-        inspState.items = fresh.items;
-        inspState.likedMap = fresh.liked || {};
-        inspState.idx = 0;
-        renderCurrent();
-      } else {
-        showNotification(data.message || 'Failed to post.', 'error');
+
+    // Show confirmation modal
+    const modal = qs('inspConfirmModal');
+    const cText = qs('inspConfirmContent');
+    const cAuth = qs('inspConfirmAuthor');
+    const yesBtn = qs('inspConfirmYes');
+    const cancelBtn = qs('inspConfirmCancel');
+    const closeBtn = qs('inspConfirmCloseBtn');
+    if (modal && cText && cAuth && yesBtn && cancelBtn && closeBtn){
+      cText.textContent = content;
+      cAuth.textContent = author ? `— ${author}` : '';
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      const hide = () => { modal.classList.remove('active'); document.body.style.overflow = 'auto'; };
+      const onCancel = () => { hide(); cleanup(); };
+      const onClose = () => { hide(); cleanup(); };
+      const onYes = async () => {
+        yesBtn.disabled = true;
+        yesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting';
+        try{
+          const res = await fetch('AJAX/add_inspiration.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ content, author })
+          });
+          const data = await res.json();
+          if (data && data.success){
+            qs('inspContent').value = '';
+            showNotification('Posted!', 'success');
+            // refresh current order first page
+            const ord = inspState.order || 'newest';
+            const fresh = await fetchInspirations(ord, 1);
+            inspState.order = ord;
+            inspState.page = 1;
+            inspState.items = fresh.items;
+            inspState.likedMap = fresh.liked || {};
+            inspState.idx = 0;
+            renderCurrent();
+          } else {
+            showNotification(data.message || 'Failed to post.', 'error');
+          }
+        } catch(err){
+          showNotification('Network error. Please try again.', 'error');
+        } finally {
+          yesBtn.disabled = false;
+          yesBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Post';
+          hide();
+          cleanup();
+        }
+      };
+      function cleanup(){
+        yesBtn.removeEventListener('click', onYes);
+        cancelBtn.removeEventListener('click', onCancel);
+        closeBtn.removeEventListener('click', onClose);
       }
-    }catch(err){
-      showNotification('Network error. Please try again.', 'error');
-    } finally {
-      btn.disabled = false; btn.innerHTML = old;
+      yesBtn.addEventListener('click', onYes);
+      cancelBtn.addEventListener('click', onCancel);
+      closeBtn.addEventListener('click', onClose);
+      return; // don't proceed until confirmed
     }
   }
 
   async function loadInspirationsSection(){
     const orderSel = qs('inspOrder');
-    if (orderSel) orderSel.value = 'liked';
-    const { items, liked } = await fetchInspirations('liked', 1);
-    inspState = { order:'liked', page:1, items, likedMap: liked||{}, idx:0 };
+    if (orderSel) orderSel.value = 'newest';
+    const { items, liked } = await fetchInspirations('newest', 1);
+    inspState = { order:'newest', page:1, items, likedMap: liked||{}, idx:0, timer:null, intervalMs:3000 };
     renderCurrent();
+    startAuto();
+  }
+
+  function startAuto(){
+    stopAuto();
+    inspState.timer = setInterval(nextInspiration, inspState.intervalMs);
+  }
+  function stopAuto(){
+    if (inspState.timer){ clearInterval(inspState.timer); inspState.timer = null; }
   }
 
   window.initInspirations = function(){
@@ -2876,24 +2931,37 @@ function handleEditProfile(event) {
 
     const likeBtn = qs('inspLikeBtn');
     if (likeBtn && !likeBtn._bound){ likeBtn._bound = true; likeBtn.addEventListener('click', likeCurrent); }
-    const nextBtn = qs('inspNextBtn');
-    if (nextBtn && !nextBtn._bound){ nextBtn._bound = true; nextBtn.addEventListener('click', nextInspiration); }
-    const postBtn = qs('inspPostBtn');
-    if (postBtn && !postBtn._bound){ postBtn._bound = true; postBtn.addEventListener('click', doPost); }
+  const nextBtn = qs('inspNextBtn');
+  if (nextBtn && !nextBtn._bound){ nextBtn._bound = true; nextBtn.addEventListener('click', () => { stopAuto(); nextInspiration(); startAuto(); }); }
+  const prevBtn = qs('inspPrevBtn');
+  if (prevBtn && !prevBtn._bound){ prevBtn._bound = true; prevBtn.addEventListener('click', () => { stopAuto(); prevInspiration(); startAuto(); }); }
+  const postBtn = qs('inspPostBtn');
+  if (postBtn && !postBtn._bound){ postBtn._bound = true; postBtn.addEventListener('click', doPost); }
     const orderSel = qs('inspOrder');
     if (orderSel && !orderSel._bound){
       orderSel._bound = true;
       orderSel.addEventListener('change', async () => {
         const ord = orderSel.value === 'newest' ? 'newest' : 'liked';
         const { items, liked } = await fetchInspirations(ord, 1);
-        inspState = { order: ord, page: 1, items, likedMap: liked||{}, idx: 0 };
+        inspState = { order: ord, page: 1, items, likedMap: liked||{}, idx: 0, timer: inspState.timer, intervalMs: inspState.intervalMs };
         renderCurrent();
+        startAuto();
       });
     }
 
     // If section is visible on load, fetch immediately
     const sec = document.getElementById('inspirations');
     if (sec && (sec.style.display !== 'none')) loadInspirationsSection();
+
+    // Pause auto on hover/focus in viewer
+    const viewer = document.getElementById('inspViewer');
+    if (viewer && !viewer._bound){
+      viewer._bound = true;
+      viewer.addEventListener('mouseenter', stopAuto);
+      viewer.addEventListener('mouseleave', startAuto);
+      viewer.addEventListener('focusin', stopAuto);
+      viewer.addEventListener('focusout', startAuto);
+    }
 
     // Hook into showSection to lazy-load when navigated
     const _origShow = window.showSection;

@@ -1213,8 +1213,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                                 <i class="fas fa-heart text-danger me-1"></i> Sort by
                             </label>
                             <select class="form-select" id="inspOrder" style="max-width:160px;background:#fff;border-color:#f1e7c7;">
-                                <option value="liked" selected>Most Liked</option>
-                                <option value="newest">Newest</option>
+                                <option value="liked">Most Liked</option>
+                                <option value="newest" selected>Newest</option>
                             </select>
                         </div>
                     </div>
@@ -1229,12 +1229,40 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </div>
                     </div>
 
-                    <div class="text-center mb-5">
+                    <div class="text-center mb-5 d-flex justify-content-center gap-2">
+                        <button class="btn" id="inspPrevBtn" style="background:#e5e7eb;color:#111827;border:none;border-radius:10px;padding:10px 16px;">
+                            <i class="fas fa-arrow-left"></i> Prev
+                        </button>
                         <button class="btn" id="inspNextBtn" style="background:#6b3b2a;color:#fff;border:none;border-radius:10px;padding:10px 16px;">
-                            Next · <i class="fas fa-heart text-danger"></i> Most Liked
+                            Next <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inspirations Confirm Modal -->
+    <div id="inspConfirmModal" class="auth-modal" style="z-index:3500;">
+        <div class="auth-content" style="max-width:520px;">
+            <button class="close-auth" id="inspConfirmCloseBtn">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="auth-header">
+                <h3>Post this inspiration?</h3>
+                <p>Please confirm before sharing your message.</p>
+            </div>
+            <div style="background:#fffbe9;border:1px solid #f1e7c7;border-radius:12px;padding:14px;">
+                <div id="inspConfirmContent" style="white-space:pre-wrap;color:#374151;font-size:1.05rem;min-height:60px;"></div>
+                <div id="inspConfirmAuthor" style="margin-top:8px;color:#6b7280;font-weight:700;text-align:right;"></div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;">
+                <button type="button" class="auth-btn" id="inspConfirmCancel" style="background:#e5e7eb;color:#111827;">
+                    Cancel
+                </button>
+                <button type="button" class="auth-btn" id="inspConfirmYes">
+                    <i class="fas fa-paper-plane"></i> Post
+                </button>
             </div>
         </div>
     </div>
