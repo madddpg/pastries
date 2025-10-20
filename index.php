@@ -160,6 +160,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <a href="#" class="nav-item" onclick="showSection('about')">About </a>
                 <a href="#" class="nav-item" onclick="showSection('products')">Shop</a>
                 <a href="#" class="nav-item" onclick="showSection('locations')">Locations</a>
+                <a href="#" class="nav-item" onclick="showSection('inspirations')">Inspirations</a>
 
 
                 <div class="profile-dropdown">
