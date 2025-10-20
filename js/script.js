@@ -1388,7 +1388,8 @@ document.addEventListener('click', function (e) {
     products: 'products',
     locations: 'locations',
     promos: 'promos',
-    contact: 'contact'
+    contact: 'contact',
+    inspirations: 'inspirations'
   };
   const target = map[section] || section;
   if (typeof showSection === 'function') {
@@ -1460,6 +1461,120 @@ if (typeof window.openOnboardingModal !== 'function') {
     current = 0; render();
   };
 }
+
+// Inspirations feature
+(function(){
+  let inspPage = 1;
+  let inspOrder = 'newest';
+  let inspTotal = 0;
+  const feed = () => document.getElementById('inspFeed');
+  const moreWrap = () => document.getElementById('inspMoreWrap');
+  const moreBtn = () => document.getElementById('inspLoadMore');
+  const sortSel = () => document.getElementById('inspSort');
+
+  function fmtDate(s){
+    try { const d = new Date(s.replace(' ', 'T')); return d.toLocaleString(); } catch { return s; }
+  }
+  function cardHTML(it, liked){
+    const heart = liked ? '❤️' : '🤍';
+    return `
+      <div class="card" style="background:#fff;border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-weight:700;color:#2d4a3a;">${(it.author_name||'Anonymous').replace(/</g,'&lt;')}</div>
+          <div style="color:#6b7280;font-size:0.9em;">${fmtDate(it.created_at)}</div>
+        </div>
+        <div style="color:#374151;white-space:pre-wrap;">${(it.content||'').replace(/</g,'&lt;')}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+          <button class="insp-like" data-id="${it.inspiration_id}" style="background:none;border:none;cursor:pointer;font-size:1.1em;">${heart}</button>
+          <span class="insp-count" data-id="${it.inspiration_id}" style="color:#374151;">${it.like_count||0}</span>
+        </div>
+      </div>`;
+  }
+
+  async function load(reset=false){
+    const f = feed(); if (!f) return;
+    if (reset) { inspPage = 1; f.innerHTML = ''; }
+    const res = await fetch(`AJAX/fetch_inspirations.php?order=${encodeURIComponent(inspOrder)}&page=${inspPage}`, { credentials:'same-origin' });
+    const data = await res.json().catch(()=>({success:false}));
+    if (!data.success) return;
+    inspTotal = data.total||0;
+    const likedMap = data.liked||{};
+    (data.items||[]).forEach(it => {
+      f.insertAdjacentHTML('beforeend', cardHTML(it, !!likedMap[it.inspiration_id]));
+    });
+    const shown = f.children.length;
+    const wrap = moreWrap(); if (wrap) wrap.style.display = shown < inspTotal ? '' : 'none';
+  }
+
+  document.addEventListener('change', (e)=>{
+    if (e.target && e.target.id === 'inspSort') {
+      inspOrder = e.target.value === 'liked' ? 'liked' : 'newest';
+      load(true);
+    }
+  });
+
+  document.addEventListener('click', async (e)=>{
+    if (e.target && e.target.id === 'inspLoadMore') {
+      inspPage += 1; await load(false);
+    }
+    const likeBtn = e.target && e.target.closest('.insp-like');
+    if (likeBtn) {
+      const id = parseInt(likeBtn.dataset.id,10);
+      try {
+        const r = await fetch('AJAX/like_inspiration.php', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id})});
+        const d = await r.json();
+        if (d.success) {
+          const cntEl = document.querySelector(`.insp-count[data-id="${id}"]`);
+          if (cntEl) {
+            let cur = parseInt(cntEl.textContent||'0',10)||0;
+            cur = d.liked ? cur+1 : Math.max(0, cur-1);
+            cntEl.textContent = String(cur);
+          }
+          likeBtn.textContent = d.liked ? '❤️' : '🤍';
+        } else if (d.message) {
+          showNotification(d.message, 'error');
+        }
+      } catch {}
+    }
+  });
+
+  async function postInspiration(){
+    const contentEl = document.getElementById('inspirationContent');
+    const authorEl = document.getElementById('inspirationAuthor');
+    if (!contentEl) return;
+    const content = (contentEl.value||'').trim();
+    if (!content) { showNotification('Please write something first.', 'error'); return; }
+    const author = (authorEl && authorEl.value) ? authorEl.value.trim() : '';
+    const btn = document.getElementById('inspirationPostBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...'; }
+    try {
+      const r = await fetch('AJAX/add_inspiration.php', { method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content, author })});
+      const d = await r.json();
+      if (d.success) {
+        contentEl.value='';
+        inspPage = 1; inspOrder = sortSel() ? sortSel().value : 'newest';
+        await load(true);
+        showNotification('Posted!', 'success');
+      } else {
+        showNotification(d.message||'Failed to post.', 'error');
+      }
+    } catch { showNotification('Network error.', 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.innerHTML = 'Post'; } }
+  }
+
+  document.addEventListener('click', (e)=>{
+    if (e.target && e.target.id === 'inspirationPostBtn') {
+      e.preventDefault(); postInspiration();
+    }
+  });
+
+  // When Inspirations section is shown, load
+  const origShowSection = window.showSection;
+  window.showSection = function(name){
+    origShowSection(name);
+    if (name === 'inspirations') { load(true); }
+  }
+})();
 
 
 // Safe modal open helper — sets aria-hidden correctly and focuses dialog

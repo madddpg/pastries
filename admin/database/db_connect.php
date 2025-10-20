@@ -29,6 +29,7 @@ class Database
     try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePasswordResetSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureInspirationsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
     }
 
@@ -63,7 +64,40 @@ class Database
         try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePasswordResetSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureInspirationsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
+    }
+
+    /** Create inspirations (quotes) tables and indexes. */
+    private function ensureInspirationsSchema(PDO $pdo): void
+    {
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS inspirations (
+                    inspiration_id INT NOT NULL AUTO_INCREMENT,
+                    user_id INT NULL,
+                    author_name VARCHAR(120) NOT NULL,
+                    content TEXT NOT NULL,
+                    like_count INT NOT NULL DEFAULT 0,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (inspiration_id),
+                    KEY idx_insp_created (created_at),
+                    KEY idx_insp_likes (like_count)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $_) { /* ignore */ }
+
+        try {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS inspiration_likes (
+                    inspiration_id INT NOT NULL,
+                    user_id INT NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (inspiration_id, user_id),
+                    KEY idx_insp_likes_user (user_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+        } catch (Throwable $_) { /* ignore */ }
     }
 
     /** Ensure users table has onboarding seen columns. */
