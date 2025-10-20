@@ -56,7 +56,7 @@ if (count($orders) > 0) {
                 <button class="profile-btn" id="profileDropdownBtn" onclick="toggleProfileDropdown(event)" type="button" aria-haspopup="true" aria-expanded="false">
                     <span class="profile-initials">
                         <?php if ($isLoggedIn): ?>
-                            <?php echo htmlspecialchars(mb_substr($userFirstName ?: 'U', 0, 1)); ?>
+                            <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); ?>
                         <?php else: ?>
                             <i class="fas fa-user"></i>
                         <?php endif; ?>
