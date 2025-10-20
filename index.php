@@ -1439,8 +1439,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
     </div>
 
-    <!-- Inspirations Section (top-level for nav switching) -->
-    <section id="inspirations" class="section-content" style="display:none;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
+    <!-- Inspirations Section (visible above Inquire Now) -->
+    <section id="inspirations" class="section-content" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
         <!-- Section Header Banner -->
         <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
             <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
@@ -1652,6 +1652,47 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
 
     <script>
+        // Lightweight section navigation helper
+        window.showSection = function(id) {
+            try {
+                document.querySelectorAll('.section-content').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = 'block';
+                    el.classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                if (id === 'products') {
+                    // default to Cold Drinks when opening Shop
+                    if (typeof window.filterDrinks === 'function') {
+                        window.filterDrinks('cold');
+                    } else {
+                        // best-effort toggle button states if JS not loaded yet
+                        const hotBtn = document.getElementById('hotDrinksBtn');
+                        const coldBtn = document.getElementById('coldDrinksBtn');
+                        const pasBtn = document.getElementById('pastriesBtn');
+                        hotBtn && hotBtn.classList.remove('active');
+                        pasBtn && pasBtn.classList.remove('active');
+                        coldBtn && coldBtn.classList.add('active');
+                    }
+                }
+                if (id === 'inspirations') {
+                    // ensure inspirations content loads if there is an initializer
+                    if (typeof window.loadInspirations === 'function') {
+                        window.loadInspirations();
+                    }
+                }
+            } catch (e) { /* no-op */ }
+        };
+
+        // If user lands directly with #products, ensure cold is active after DOM ready
+        document.addEventListener('DOMContentLoaded', function() {
+            if (location.hash === '#products') {
+                if (typeof window.filterDrinks === 'function') {
+                    window.filterDrinks('cold');
+                }
+            }
+        });
         window.PHP_IS_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
         window.PHP_USER_ID = <?php echo $isLoggedIn ? json_encode((int)($_SESSION['user']['user_id'] ?? 0)) : 'null'; ?>;
         window.PHP_USER_FN = "<?php echo addslashes($_SESSION['user']['user_FN'] ?? ''); ?>";
