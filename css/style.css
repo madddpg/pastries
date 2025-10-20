@@ -1238,7 +1238,7 @@ html.no-scroll, body.no-scroll {
   height: 100%;
   object-fit: cover;
   /* Focus lower area where the cup and hands are */
-  object-position: center 70%;
+  object-position: center 85%;
   position: absolute;
   top: 0;
   left: 0;
