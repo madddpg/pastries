@@ -23,6 +23,7 @@ class Database
     try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+    try { $this->ensureUsersOnboardingSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureToppingsScopeSchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
@@ -57,11 +58,28 @@ class Database
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
+        try { $this->ensureUsersOnboardingSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureToppingsPriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePromosSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureTransactionReceiptSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePasswordResetSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         return $pdo;
+    }
+
+    /** Ensure users table has onboarding seen columns. */
+    private function ensureUsersOnboardingSchema(PDO $pdo): void
+    {
+        try {
+            $q = $pdo->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'");
+            $cols = array_map(static function($r){return strtolower($r['COLUMN_NAME']);}, $q->fetchAll(PDO::FETCH_ASSOC));
+            if (!in_array('has_seen_onboarding', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE users ADD COLUMN has_seen_onboarding TINYINT(1) NOT NULL DEFAULT 0 AFTER blocked_at"); } catch (Throwable $_) {}
+            }
+            if (!in_array('onboarding_seen_at', $cols, true)) {
+                try { $pdo->exec("ALTER TABLE users ADD COLUMN onboarding_seen_at DATETIME NULL AFTER has_seen_onboarding"); } catch (Throwable $_) {}
+            }
+        } catch (Throwable $_) { /* ignore */ }
+        try { $pdo->exec("ALTER TABLE users ADD INDEX idx_users_onboarding (has_seen_onboarding, user_id)"); } catch (Throwable $_) {}
     }
 
     /** Ensure password_resets table exists for secure reset tokens. */

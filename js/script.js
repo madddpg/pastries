@@ -2109,8 +2109,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const keyShow = 'showOnboarding:' + uid;
     const keySeen = 'hasSeenOnboarding:' + uid;
     const want = localStorage.getItem(keyShow) || sessionStorage.getItem('onboardingTrigger:' + uid);
-    const seen = localStorage.getItem(keySeen);
-    if (want === '1' && seen !== '1' && typeof window.openOnboardingModal === 'function') {
+    const seenLocal = localStorage.getItem(keySeen);
+    const seenServer = (typeof window.PHP_HAS_SEEN_ONBOARDING !== 'undefined') ? !!window.PHP_HAS_SEEN_ONBOARDING : false;
+    if (want === '1' && !seenServer && seenLocal !== '1' && typeof window.openOnboardingModal === 'function') {
       // Clear the trigger before opening to avoid loops on reload
       localStorage.removeItem(keyShow);
       try { sessionStorage.removeItem('onboardingTrigger:' + uid); } catch(e) {}

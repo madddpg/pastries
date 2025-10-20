@@ -9,6 +9,17 @@ $userFullName  = trim(($userFirstName . ' ' . $userLastName));
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
 $pdo = $db->opencon();
+$hasSeenOnboarding = false;
+if ($isLoggedIn) {
+    try {
+        $uid = (int)($_SESSION['user']['user_id'] ?? 0);
+        if ($uid > 0) {
+            $st = $pdo->prepare("SELECT has_seen_onboarding FROM users WHERE user_id = ? LIMIT 1");
+            $st->execute([$uid]);
+            $hasSeenOnboarding = (bool)$st->fetchColumn();
+        }
+    } catch (Throwable $_) { $hasSeenOnboarding = false; }
+}
 $productStatuses = [];
 $allProducts = [];
 $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
@@ -1501,6 +1512,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         window.PHP_USER_LN = "<?php echo addslashes($_SESSION['user']['user_LN'] ?? ''); ?>";
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
         window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? addslashes($_SESSION['user']['profile_image']) : 'img/default-avatar.png'; ?>";
+        window.PHP_HAS_SEEN_ONBOARDING = <?php echo $hasSeenOnboarding ? 'true' : 'false'; ?>;
     </script>
     <script>
         // expose super-admin flag to admin UI JS (used to show force-delete)
@@ -1859,7 +1871,7 @@ function handleForgotPassword(e){
 <!-- Onboarding / Tutorial Modal -->
 <div id="onboardingModal" class="auth-modal" style="z-index:5000;">
     <div class="auth-content" style="max-width:640px;">
-        <button class="close-auth" onclick="(function(){ const uid=(window.PHP_USER_ID||''); const keySeen='hasSeenOnboarding:'+uid; const keyShow='showOnboarding:'+uid; const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem(keySeen,'1'); }catch(e){} } try{ localStorage.removeItem(keyShow); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
+        <button class="close-auth" onclick="(function(){ const uid=(window.PHP_USER_ID||''); const keySeen='hasSeenOnboarding:'+uid; const keyShow='showOnboarding:'+uid; const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem(keySeen,'1'); }catch(e){} try{ fetch('AJAX/update_onboarding_seen.php',{method:'POST',credentials:'same-origin'}); }catch(e){} } try{ localStorage.removeItem(keyShow); }catch(e){} try{ sessionStorage.removeItem('onboardingTrigger:'+uid); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
             <i class="fas fa-times"></i>
         </button>
         <div class="auth-header" style="margin-bottom:10px;">
@@ -1942,12 +1954,13 @@ function handleForgotPassword(e){
                 document.body.style.overflow = 'hidden';
                 current = 0; render();
             }
-            function close(persist = false){
+            async function close(persist = false){
                 const uid=(window.PHP_USER_ID||'');
                 const keySeen='hasSeenOnboarding:'+uid;
                 const keyShow='showOnboarding:'+uid;
                 if (persist) { try{ localStorage.setItem(keySeen,'1'); }catch(e){} }
                 try{ localStorage.removeItem(keyShow); }catch(e){}
+                if (persist) { try { await fetch('AJAX/update_onboarding_seen.php', { method:'POST', credentials:'same-origin' }); } catch(e) {} }
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
             }
