@@ -2118,6 +2118,17 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => window.openOnboardingModal(), 400);
     }
   } catch (e) { /* ignore storage errors */ }
+
+  // Fallback: if user is logged in and server indicates not seen, show once per session
+  try {
+    const uid = (window.PHP_USER_ID || '').toString();
+    const seenServer = (typeof window.PHP_HAS_SEEN_ONBOARDING !== 'undefined') ? !!window.PHP_HAS_SEEN_ONBOARDING : false;
+    const sessionOnceKey = 'onboardingShownOnce:' + uid;
+    if (window.PHP_IS_LOGGED_IN && !seenServer && !sessionStorage.getItem(sessionOnceKey) && typeof window.openOnboardingModal === 'function') {
+      sessionStorage.setItem(sessionOnceKey, '1');
+      setTimeout(() => window.openOnboardingModal(), 450);
+    }
+  } catch (e) { /* ignore */ }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
