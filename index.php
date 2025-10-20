@@ -9,21 +9,6 @@ $userFullName  = trim(($userFirstName . ' ' . $userLastName));
 require_once __DIR__ . '/admin/database/db_connect.php';
 $db = new Database();
 $pdo = $db->opencon();
-$siteCfg = [];
-$cfgPath = __DIR__ . '/config/site.php';
-if (file_exists($cfgPath)) { $siteCfg = require $cfgPath; }
-$allowGuestInspirations = isset($siteCfg['allowGuestInspirations']) ? (bool)$siteCfg['allowGuestInspirations'] : true;
-$hasSeenOnboarding = false;
-if ($isLoggedIn) {
-    try {
-        $uid = (int)($_SESSION['user']['user_id'] ?? 0);
-        if ($uid > 0) {
-            $st = $pdo->prepare("SELECT has_seen_onboarding FROM users WHERE user_id = ? LIMIT 1");
-            $st->execute([$uid]);
-            $hasSeenOnboarding = (bool)$st->fetchColumn();
-        }
-    } catch (Throwable $_) { $hasSeenOnboarding = false; }
-}
 $productStatuses = [];
 $allProducts = [];
 $stmt = $pdo->prepare("SELECT * FROM products WHERE status = 'active'");
@@ -164,7 +149,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <a href="#" class="nav-item" onclick="showSection('about')">About </a>
                 <a href="#" class="nav-item" onclick="showSection('products')">Shop</a>
                 <a href="#" class="nav-item" onclick="showSection('locations')">Locations</a>
-                <a href="#" class="nav-item" onclick="showSection('inspirations')">Inspirations</a>
 
 
                 <div class="profile-dropdown">
@@ -363,16 +347,14 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
         </section>
 
-        
-
 
         <section class="cards-section">
             <div class="cards-grid">
                 <div class="card card-orange">
                     <img src="img/pic1.jpg" alt="Delicious Pastry">
                 </div>
-                <div class="card card-green position-relative overflow-hidden">
-                    <img src="img/blend.jpg" alt="Signature Blend" class="img-fluid w-100 h-auto">
+                <div class="card card-green">
+                    <img src="img/blend.jpg" alt="Delicious Pastry">
                 </div>
             </div>
         </section>
@@ -399,8 +381,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     </div>
                 </div>
 
-                <div class="card card-green2 position-relative overflow-hidden">
-                    <img src="img/pic2.jpg" alt="Cups & Cuddles Coffee" class="img-fluid w-100 h-auto">
+                <div class="card card-green2">
+                    <img src="img/pic2.jpg" alt="Delicious Pastry">
                 </div>
             </div>
         </section>
@@ -1439,118 +1421,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
     </div>
 
-    <!-- Inspirations Section (hidden from home, accessible via nav) -->
-    <div id="inspirations-wrapper" style="display:none;background-color:#f3ebd3; padding: 40px 0; margin: 20px 0; border-radius: 20px;">
-        <div class="container">
-            <section id="inspirations" class="section-content" style="display:block;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:auto;padding:1rem;border-radius:15px;">
-                <!-- Section Header Banner -->
-                <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
-            <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
-            <h2 style="font-weight:900;font-size:clamp(1.8rem, 4vw, 2.5rem);margin-bottom:0.5rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);color:#fff;">☕ Community Inspirations</h2>
-            <p style="font-size:clamp(0.9rem, 2.5vw, 1.1rem);color:#d7ccc8;margin:0;font-weight:500;">Share wisdom over coffee • Inspire hearts with words</p>
-        </div>
-
-        <?php if ($isLoggedIn || $allowGuestInspirations): ?>
-        <div class="inspirations-post-card" style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.15);position:relative;">
-            <div style="position:absolute;top:12px;right:12px;color:#8b795d;opacity:0.4;font-size:1.2rem;">✍️</div>
-            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:1;min-width:200px;max-width:240px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;transition:all 0.3s ease;outline:none;<?php echo ($isLoggedIn || !$allowGuestInspirations) ? 'background:#f1ede6;cursor:not-allowed;' : '';?>" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'" <?php echo ($isLoggedIn || !$allowGuestInspirations) ? 'readonly aria-readonly="true"' : '';?> />
-                <textarea id="inspirationContent" placeholder="Share your inspiration..." rows="2" style="flex:1;min-width:260px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;resize:vertical;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'"></textarea>
-                <button id="inspirationPostBtn" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;box-shadow:0 4px 12px rgba(93,64,55,0.3);flex-shrink:0;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">📝 Post</button>
-            </div>
-            <div style="margin-top:12px;color:#8b795d;font-size:0.9rem;font-weight:500;">
-                <?php if ($isLoggedIn): ?>
-                    ☕ Posting as <strong style="color:#6d4c41;"><?php echo htmlspecialchars($userFullName ?: $userFirstName); ?></strong>
-                <?php else: ?>
-                    <?php if ($allowGuestInspirations): ?>
-                        💭 Not signed in — enter your name above to post as a guest.
-                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
-                    <?php else: ?>
-                        🔒 Posting is available to signed-in users only.
-                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php else: ?>
-        <div style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:2rem;text-align:center;box-shadow:0 8px 24px rgba(139,121,93,0.15);">
-            <div style="font-size:1.1rem;color:#6d4c41;margin-bottom:1rem;font-weight:600;">🔒 Posting is available to signed-in users only</div>
-            <button onclick="showLoginModal()" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(93,64,55,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">☕ Sign In</button>
-        </div>
-        <?php endif; ?>
-
-        <!-- Feed Controls -->
-        <div style="max-width:800px;margin:0 auto 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-            <div style="font-weight:700;color:#6d4c41;font-size:clamp(1.1rem, 3vw, 1.3rem);display:flex;align-items:center;gap:8px;">
-                📚 Latest Posts
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <label for="inspSort" style="color:#8b795d;font-weight:600;font-size:0.95rem;">Sort by:</label>
-                <select id="inspSort" style="padding:8px 12px;border-radius:10px;border:2px solid #d4c4a8;background:#fff;color:#5d4037;font-weight:500;cursor:pointer;transition:border-color 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63'" onblur="this.style.borderColor='#d4c4a8'">
-                    <option value="newest">🕒 Newest</option>
-                    <option value="liked" selected>❤️ Most Liked</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Single-quote Viewer -->
-        <div class="inspirations-single-wrapper" style="max-width:900px;margin:0 auto;position:relative;">
-            <div id="inspSingleCard" style="border-radius:20px;box-shadow:0 12px 40px rgba(139,121,93,0.2);background:linear-gradient(145deg, #faf7f2 0%, #f5f1ec 100%);padding:24px;min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;color:#5d4037;">
-                <span>Loading inspirations…</span>
-            </div>
-            <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;">
-                <button id="inspNextBtn" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(109,76,65,0.3);">Next • ❤️ Most Liked</button>
-            </div>
-            <!-- Auto-scroll strip: latest 3 posts -->
-            <div id="inspAutoStrip" style="margin-top:18px;overflow:hidden;">
-                <div id="inspStripTrack" style="display:flex;gap:10px;transition:transform .45s ease;will-change:transform;"></div>
-            </div>
-            <!-- Empty State -->
-            <div id="inspEmptyState" style="display:none;text-align:center;padding:3rem 1.5rem;color:#8b795d;">
-                <div style="font-size:3rem;margin-bottom:1rem;">☕</div>
-                <h3 style="color:#6d4c41;margin-bottom:0.5rem;font-weight:600;">No inspirations yet</h3>
-                <p style="margin:0;">Be the first to share some wisdom!</p>
-            </div>
-        </div>
-        
-        <!-- Load More (hidden, but kept for progressive loading) -->
-        <div id="inspMoreWrap" style="text-align:center;margin-top:2rem;display:none;">
-            <button id="inspLoadMore" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(109,76,65,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(109,76,65,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(109,76,65,0.3)'">☕ Load more inspirations</button>
-        </div>
-
-        <!-- Mobile-specific styles -->
-        <style>
-        @media (max-width: 768px) {
-            .inspirations-post-card > div:first-of-type {
-                flex-direction: column !important;
-            }
-            .inspirations-post-card input, .inspirations-post-card textarea {
-                flex: 1 1 100% !important;
-                min-width: unset !important;
-                max-width: unset !important;
-            }
-            .inspirations-post-card button {
-                align-self: stretch !important;
-            }
-            
-            /* Single viewer mobile adjustments */
-            #inspSingleCard { padding: 1rem !important; min-height: 180px !important; }
-            #inspSingleCard blockquote { font-size: 1.05rem !important; margin: 0.5rem 0 !important; }
-        }
-        
-        @media (max-width: 480px) {
-            .inspirations-single-wrapper {
-                margin: 0 -1rem !important;
-            }
-            #inspSingleCard { padding: 0.75rem !important; min-height: 160px !important; }
-            #inspSingleCard blockquote { font-size: 1rem !important; }
-        }
-        </style>
-            </section>
-        </div>
-    </div>
-
     <!-- ORDER ONLINE -->
     <section class="food-order-section py-5 text-center" style="background-color:#f3ebd3; color: #2d4a3a; border-radius: 20px; margin: 20px;">
         <div class="container">
@@ -1625,62 +1495,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
 
     <script>
-        // Lightweight section navigation helper
-        window.showSection = function(id) {
-            try {
-                document.querySelectorAll('.section-content').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
-                const el = document.getElementById(id);
-                if (el) {
-                    el.style.display = 'block';
-                    el.classList.add('active');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-                if (id === 'products') {
-                    // default to Cold Drinks when opening Shop
-                    if (typeof window.filterDrinks === 'function') {
-                        window.filterDrinks('cold');
-                    } else {
-                        // best-effort toggle button states if JS not loaded yet
-                        const hotBtn = document.getElementById('hotDrinksBtn');
-                        const coldBtn = document.getElementById('coldDrinksBtn');
-                        const pasBtn = document.getElementById('pastriesBtn');
-                        hotBtn && hotBtn.classList.remove('active');
-                        pasBtn && pasBtn.classList.remove('active');
-                        coldBtn && coldBtn.classList.add('active');
-                    }
-                }
-                if (id === 'inspirations') {
-                    // show the inspirations wrapper when navigating to inspirations
-                    const wrapper = document.getElementById('inspirations-wrapper');
-                    if (wrapper) wrapper.style.display = 'block';
-                    // ensure inspirations content loads if there is an initializer
-                    if (typeof window.loadInspirations === 'function') {
-                        window.loadInspirations();
-                    }
-                } else {
-                    // hide inspirations wrapper when navigating to other sections
-                    const wrapper = document.getElementById('inspirations-wrapper');
-                    if (wrapper) wrapper.style.display = 'none';
-                }
-            } catch (e) { /* no-op */ }
-        };
-
-        // If user lands directly with #products, ensure cold is active after DOM ready
-        document.addEventListener('DOMContentLoaded', function() {
-            if (location.hash === '#products') {
-                if (typeof window.filterDrinks === 'function') {
-                    window.filterDrinks('cold');
-                }
-            }
-        });
         window.PHP_IS_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
-        window.PHP_USER_ID = <?php echo $isLoggedIn ? json_encode((int)($_SESSION['user']['user_id'] ?? 0)) : 'null'; ?>;
         window.PHP_USER_FN = "<?php echo addslashes($_SESSION['user']['user_FN'] ?? ''); ?>";
         window.PHP_USER_LN = "<?php echo addslashes($_SESSION['user']['user_LN'] ?? ''); ?>";
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
         window.PHP_USER_IMAGE = "<?php echo isset($_SESSION['user']['profile_image']) ? addslashes($_SESSION['user']['profile_image']) : 'img/default-avatar.png'; ?>";
-        window.PHP_HAS_SEEN_ONBOARDING = <?php echo $hasSeenOnboarding ? 'true' : 'false'; ?>;
-        window.PHP_ONBOARDING_TRIGGER = <?php echo (isset($_GET['onboarding']) && $_GET['onboarding'] === '1') ? 'true' : 'false'; ?>;
     </script>
     <script>
         // expose super-admin flag to admin UI JS (used to show force-delete)
@@ -2034,116 +1853,4 @@ function handleForgotPassword(e){
         <div id="editProfileSuccess" class="success-message" style="display:none;"></div>
         <div id="editProfileError" class="error-message" style="display:none;color:#dc2626;margin-top:10px;"></div>
     </div>
-</div>
-
-<!-- Onboarding / Tutorial Modal -->
-<div id="onboardingModal" class="auth-modal" style="z-index:5000;">
-    <div class="auth-content" style="max-width:640px;">
-        <button class="close-auth" onclick="(function(){ const uid=(window.PHP_USER_ID||''); const keySeen='hasSeenOnboarding:'+uid; const keyShow='showOnboarding:'+uid; const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem(keySeen,'1'); }catch(e){} try{ fetch('AJAX/update_onboarding_seen.php',{method:'POST',credentials:'same-origin'}); }catch(e){} } try{ localStorage.removeItem(keyShow); }catch(e){} try{ sessionStorage.removeItem('onboardingTrigger:'+uid); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
-            <i class="fas fa-times"></i>
-        </button>
-        <div class="auth-header" style="margin-bottom:10px;">
-            <h3>Welcome to Cups & Cuddles</h3>
-            <p>Quick tips to help you get the most out of your experience</p>
-        </div>
-
-        <div id="onboardingSteps">
-            <div class="onboarding-step" data-step="1" style="display:block; text-align:left; color:#374151;">
-                <h4 style="color:#2d4a3a; font-weight:800;">1) Browse and choose</h4>
-                <p>Explore our menu: cold drinks, hot drinks, and pastries. Tap <b>View</b> to see sizes, toppings, and details.</p>
-                <ul style="padding-left:18px; margin:8px 0;">
-                    <li>Use the filter at the top to switch between categories</li>
-                    <li>Pick your size and sugar level (for drinks)</li>
-                    <li>Add optional toppings before adding to cart</li>
-                </ul>
-            </div>
-
-            <div class="onboarding-step" data-step="2" style="display:none; text-align:left; color:#374151;">
-                <h4 style="color:#2d4a3a; font-weight:800;">2) Checkout and pay</h4>
-                <p>Open your cart and proceed to checkout. Choose your pickup location and time, then select your payment method.</p>
-                <ul style="padding-left:18px; margin:8px 0;">
-                    <li>Review items and quantities in your cart</li>
-                    <li>Provide special instructions if needed</li>
-                    <li>Confirm your order to receive a reference number</li>
-                </ul>
-            </div>
-
-            <div class="onboarding-step" data-step="3" style="display:none; text-align:left; color:#374151;">
-                <h4 style="color:#2d4a3a; font-weight:800;">3) Track your order</h4>
-                <p>We’ll update you as your order moves from <b>Pending</b> to <b>Preparing</b> to <b>Ready</b>. You’ll see notifications here and can view your status in <b>Order History</b>.</p>
-                <ul style="padding-left:18px; margin:8px 0;">
-                    <li>Find Order History in your profile menu</li>
-                    <li>We’ll notify you at the top of the page when status changes</li>
-                    <li>Pickup when it’s marked <b>Ready</b></li>
-                </ul>
-            </div>
-        </div>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
-            <label style="display:flex; align-items:center; gap:8px; font-size:0.95em; color:#374151;">
-                <input type="checkbox" id="onboardingDontShow"> Don’t show this again
-            </label>
-            <div style="display:flex; gap:8px;">
-                <button id="onboardingBackBtn" class="auth-btn" style="background:#e5e7eb;color:#111827; border:none; display:none;">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
-                <button id="onboardingSkipBtn" class="auth-btn" style="background:#f59e0b; border:none;">
-                    Skip
-                </button>
-                <button id="onboardingNextBtn" class="auth-btn" style="background:#10B981; border:none;">
-                    Next <i class="fas fa-arrow-right"></i>
-                </button>
-                <button id="onboardingDoneBtn" class="auth-btn" style="background:#10B981; border:none; display:none;">
-                    <i class="fas fa-check"></i> Done
-                </button>
-            </div>
-        </div>
-    </div>
-    <script>
-        // Lightweight stepper controls bound inline to avoid extra file edits
-        (function(){
-            const modal = document.getElementById('onboardingModal');
-            if (!modal) return;
-            const steps = Array.from(modal.querySelectorAll('.onboarding-step'));
-            const backBtn = modal.querySelector('#onboardingBackBtn');
-            const nextBtn = modal.querySelector('#onboardingNextBtn');
-            const skipBtn = modal.querySelector('#onboardingSkipBtn');
-            const doneBtn = modal.querySelector('#onboardingDoneBtn');
-            let current = 0;
-
-            function render(){
-                steps.forEach((s, i)=>{ s.style.display = (i === current) ? 'block' : 'none'; });
-                backBtn.style.display = current > 0 ? 'inline-flex' : 'none';
-                nextBtn.style.display = current < steps.length - 1 ? 'inline-flex' : 'none';
-                doneBtn.style.display = current === steps.length - 1 ? 'inline-flex' : 'none';
-            }
-            function open(){
-                modal.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                current = 0; render();
-            }
-            async function close(persist = false){
-                const uid=(window.PHP_USER_ID||'');
-                const keySeen='hasSeenOnboarding:'+uid;
-                const keyShow='showOnboarding:'+uid;
-                if (persist) { try{ localStorage.setItem(keySeen,'1'); }catch(e){} }
-                try{ localStorage.removeItem(keyShow); }catch(e){}
-                if (persist) { try { await fetch('AJAX/update_onboarding_seen.php', { method:'POST', credentials:'same-origin' }); } catch(e) {} }
-                modal.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-            backBtn.addEventListener('click', function(){ if (current>0){ current--; render(); } });
-            nextBtn.addEventListener('click', function(){ if (current<steps.length-1){ current++; render(); } });
-            skipBtn.addEventListener('click', function(){
-                const cb = document.getElementById('onboardingDontShow');
-                close(!!(cb && cb.checked));
-            });
-            doneBtn.addEventListener('click', function(){
-                const cb = document.getElementById('onboardingDontShow');
-                close(true || !!(cb && cb.checked));
-            });
-            // Expose opener for external scripts
-            window.openOnboardingModal = open;
-        })();
-    </script>
 </div>
