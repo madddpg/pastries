@@ -37,7 +37,7 @@ if (count($orders) > 0) {
     <link rel="stylesheet" href="css/style.css?v=20251012">
     <link rel="shortcut icon" href="img/logo.png" type="image/png">
 </head>
-<body>
+<body class="oh-page">
 <!-- Site Header (reused design from index.php) -->
 <header class="header">
     <div class="header-content">
@@ -45,7 +45,7 @@ if (count($orders) > 0) {
         <button class="hamburger-menu" aria-label="Open menu">
             <i class="fas fa-bars"></i>
         </button>
-    <nav class="nav-menu" style="background:#a7ddcb;border-radius:40px;padding:8px 20px;">
+    <nav class="nav-menu">
             <a href="index.php#home" class="nav-item">Home</a>
             <a href="index.php#about" class="nav-item">About</a>
             <a href="index.php#products" class="nav-item">Shop</a>
