@@ -1462,56 +1462,206 @@ if (typeof window.openOnboardingModal !== 'function') {
   };
 }
 
-// Inspirations feature
+// Inspirations feature with carousel
 (function(){
   let inspPage = 1;
   let inspOrder = 'newest';
   let inspTotal = 0;
+  let allItems = []; // Store all loaded items
+  let currentSlide = 0;
+  let autoSlideInterval = null;
+  
   const feed = () => document.getElementById('inspFeed');
   const moreWrap = () => document.getElementById('inspMoreWrap');
   const moreBtn = () => document.getElementById('inspLoadMore');
   const sortSel = () => document.getElementById('inspSort');
+  const emptyState = () => document.getElementById('inspEmptyState');
+  const indicators = () => document.querySelector('.carousel-indicators');
 
   function fmtDate(s){
-    try { const d = new Date(s.replace(' ', 'T')); return d.toLocaleString(); } catch { return s; }
+    try { 
+      const d = new Date(s.replace(' ', 'T')); 
+      const now = new Date();
+      const diff = now - d;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      if (days === 0) return 'Today';
+      if (days === 1) return 'Yesterday';
+      if (days < 7) return `${days} days ago`;
+      return d.toLocaleDateString();
+    } catch { return s; }
   }
+  
   function cardHTML(it, liked){
     const heart = liked ? '💕' : '🤍';
     const heartColor = liked ? '#e57373' : '#bcaaa4';
     return `
-      <div class="inspiration-card" style="background:linear-gradient(145deg, #ffffff 0%, #faf7f2 100%);border:2px solid #e6d7c3;border-radius:16px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.12);transition:all 0.3s ease;position:relative;overflow:hidden;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px rgba(139,121,93,0.18)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 24px rgba(139,121,93,0.12)'">
-        <div style="position:absolute;top:-20px;right:-20px;width:60px;height:60px;background:rgba(141,110,99,0.05);border-radius:50%;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;position:relative;z-index:1;">
-          <div style="font-weight:700;color:#6d4c41;font-size:1.1rem;display:flex;align-items:center;gap:6px;">
-            ☕ ${(it.author_name||'Anonymous').replace(/</g,'&lt;')}
+      <div class="carousel-slide" style="min-width:100%;padding:2rem;box-sizing:border-box;" data-id="${it.inspiration_id}">
+        <div class="inspiration-card" style="background:linear-gradient(145deg, #ffffff 0%, #faf7f2 100%);border:2px solid #e6d7c3;border-radius:20px;padding:2.5rem;box-shadow:0 12px 32px rgba(139,121,93,0.15);position:relative;overflow:hidden;max-width:600px;margin:0 auto;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;">
+          <!-- Decorative Elements -->
+          <div style="position:absolute;top:-30px;right:-30px;width:80px;height:80px;background:rgba(141,110,99,0.08);border-radius:50%;"></div>
+          <div style="position:absolute;bottom:-20px;left:-20px;width:60px;height:60px;background:rgba(141,110,99,0.05);border-radius:50%;"></div>
+          
+          <!-- Header -->
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;position:relative;z-index:1;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:12px;height:12px;background:#d7a86e;border-radius:50%;"></div>
+              <div style="font-weight:700;color:#6d4c41;font-size:1.2rem;">
+                ${(it.author_name||'Anonymous').replace(/</g,'&lt;')}
+              </div>
+            </div>
+            <div style="color:#8b795d;font-size:0.9rem;font-weight:500;background:rgba(243,237,228,0.8);padding:6px 12px;border-radius:12px;backdrop-filter:blur(10px);">
+              ${fmtDate(it.created_at)}
+            </div>
           </div>
-          <div style="color:#8b795d;font-size:0.85rem;font-weight:500;background:#f3ede4;padding:4px 8px;border-radius:8px;">${fmtDate(it.created_at)}</div>
-        </div>
-        <div style="color:#5d4037;font-size:1.05rem;line-height:1.6;white-space:pre-wrap;margin-bottom:16px;font-weight:400;letter-spacing:0.2px;">"${(it.content||'').replace(/</g,'&lt;')}"</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #e6d7c3;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="insp-like" data-id="${it.inspiration_id}" style="background:none;border:none;cursor:pointer;font-size:1.2rem;padding:4px 8px;border-radius:8px;transition:all 0.3s ease;color:${heartColor};" onmouseover="this.style.background='#f3ede4';this.style.transform='scale(1.1)'" onmouseout="this.style.background='none';this.style.transform='scale(1)'">${heart}</button>
-            <span class="insp-count" data-id="${it.inspiration_id}" style="color:#6d4c41;font-weight:600;font-size:0.95rem;">${it.like_count||0}</span>
-            <span style="color:#8b795d;font-size:0.85rem;font-weight:500;">${(it.like_count||0) === 1 ? 'like' : 'likes'}</span>
+          
+          <!-- Quote Content -->
+          <div style="flex:1;display:flex;align-items:center;margin:2rem 0;">
+            <blockquote style="margin:0;color:#5d4037;font-size:1.4rem;line-height:1.6;font-weight:500;font-style:italic;text-align:center;position:relative;padding:0 1rem;">
+              <span style="position:absolute;top:-10px;left:-10px;font-size:2rem;color:#d7a86e;opacity:0.5;">"</span>
+              ${(it.content||'').replace(/</g,'&lt;')}
+              <span style="position:absolute;bottom:-20px;right:-10px;font-size:2rem;color:#d7a86e;opacity:0.5;">"</span>
+            </blockquote>
           </div>
-          <div style="color:#8b795d;font-size:0.8rem;opacity:0.7;">💬 Shared with love</div>
+          
+          <!-- Footer -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding-top:1.5rem;border-top:2px solid rgba(230,215,195,0.5);position:relative;z-index:1;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button class="insp-like" data-id="${it.inspiration_id}" style="background:rgba(255,255,255,0.8);border:2px solid ${heartColor};cursor:pointer;font-size:1.3rem;padding:8px 12px;border-radius:12px;transition:all 0.3s ease;color:${heartColor};backdrop-filter:blur(10px);" onmouseover="this.style.background='${heartColor}';this.style.color='white';this.style.transform='scale(1.1)'" onmouseout="this.style.background='rgba(255,255,255,0.8)';this.style.color='${heartColor}';this.style.transform='scale(1)'">${heart}</button>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;">
+                <span class="insp-count" data-id="${it.inspiration_id}" style="color:#6d4c41;font-weight:700;font-size:1.1rem;">${it.like_count||0}</span>
+                <span style="color:#8b795d;font-size:0.8rem;font-weight:500;">${(it.like_count||0) === 1 ? 'like' : 'likes'}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;color:#8b795d;font-size:0.85rem;font-weight:500;opacity:0.8;">
+              <span>�</span>
+              <span>Shared with love</span>
+            </div>
+          </div>
         </div>
       </div>`;
   }
 
+  // Carousel navigation functions
+  function updateCarousel() {
+    const f = feed();
+    if (!f || allItems.length === 0) return;
+    
+    const translateX = -currentSlide * 100;
+    f.style.transform = `translateX(${translateX}%)`;
+    updateIndicators();
+  }
+  
+  function createIndicators() {
+    const indicatorContainer = indicators();
+    if (!indicatorContainer) return;
+    
+    indicatorContainer.innerHTML = '';
+    for (let i = 0; i < allItems.length; i++) {
+      const dot = document.createElement('button');
+      dot.style.cssText = `
+        width: 12px; height: 12px; border-radius: 50%; border: none; cursor: pointer;
+        background: ${i === currentSlide ? '#6d4c41' : 'rgba(139,121,93,0.3)'};
+        transition: all 0.3s ease;
+      `;
+      dot.addEventListener('click', () => goToSlide(i));
+      dot.addEventListener('mouseover', () => {
+        if (i !== currentSlide) dot.style.background = 'rgba(139,121,93,0.6)';
+      });
+      dot.addEventListener('mouseout', () => {
+        if (i !== currentSlide) dot.style.background = 'rgba(139,121,93,0.3)';
+      });
+      indicatorContainer.appendChild(dot);
+    }
+  }
+  
+  function updateIndicators() {
+    const dots = indicators()?.children || [];
+    for (let i = 0; i < dots.length; i++) {
+      dots[i].style.background = i === currentSlide ? '#6d4c41' : 'rgba(139,121,93,0.3)';
+    }
+  }
+  
+  function goToSlide(index) {
+    if (index < 0) index = allItems.length - 1;
+    if (index >= allItems.length) index = 0;
+    currentSlide = index;
+    updateCarousel();
+    resetAutoSlide();
+  }
+  
+  function nextSlide() { goToSlide(currentSlide + 1); }
+  function prevSlide() { goToSlide(currentSlide - 1); }
+  
+  function startAutoSlide() {
+    if (allItems.length <= 1) return;
+    autoSlideInterval = setInterval(() => {
+      nextSlide();
+    }, 5000); // 5 seconds
+  }
+  
+  function stopAutoSlide() {
+    if (autoSlideInterval) {
+      clearInterval(autoSlideInterval);
+      autoSlideInterval = null;
+    }
+  }
+  
+  function resetAutoSlide() {
+    stopAutoSlide();
+    startAutoSlide();
+  }
+
   async function load(reset=false){
     const f = feed(); if (!f) return;
-    if (reset) { inspPage = 1; f.innerHTML = ''; }
+    const emptyEl = emptyState();
+    
+    if (reset) { 
+      inspPage = 1; 
+      allItems = [];
+      currentSlide = 0;
+      f.innerHTML = '';
+      stopAutoSlide();
+    }
+    
     const res = await fetch(`AJAX/fetch_inspirations.php?order=${encodeURIComponent(inspOrder)}&page=${inspPage}`, { credentials:'same-origin' });
     const data = await res.json().catch(()=>({success:false}));
     if (!data.success) return;
+    
     inspTotal = data.total||0;
     const likedMap = data.liked||{};
-    (data.items||[]).forEach(it => {
-      f.insertAdjacentHTML('beforeend', cardHTML(it, !!likedMap[it.inspiration_id]));
+    const newItems = data.items || [];
+    
+    // Add new items to our collection
+    newItems.forEach(it => {
+      if (!allItems.find(existing => existing.inspiration_id === it.inspiration_id)) {
+        allItems.push(it);
+        f.insertAdjacentHTML('beforeend', cardHTML(it, !!likedMap[it.inspiration_id]));
+      }
     });
-    const shown = f.children.length;
-    const wrap = moreWrap(); if (wrap) wrap.style.display = shown < inspTotal ? '' : 'none';
+    
+    // Show/hide empty state
+    if (emptyEl) {
+      emptyEl.style.display = allItems.length === 0 ? 'block' : 'none';
+    }
+    
+    // Update carousel if we have items
+    if (allItems.length > 0) {
+      createIndicators();
+      updateCarousel();
+      startAutoSlide();
+      
+      // Show/hide navigation arrows
+      const prevBtn = document.querySelector('.carousel-prev');
+      const nextBtn = document.querySelector('.carousel-next');
+      const showNav = allItems.length > 1;
+      if (prevBtn) prevBtn.style.display = showNav ? 'flex' : 'none';
+      if (nextBtn) nextBtn.style.display = showNav ? 'flex' : 'none';
+    }
+    
+    // Handle "Load more" button
+    const shown = allItems.length;
+    const wrap = moreWrap(); 
+    if (wrap) wrap.style.display = shown < inspTotal ? '' : 'none';
   }
 
   document.addEventListener('change', (e)=>{
@@ -1522,9 +1672,18 @@ if (typeof window.openOnboardingModal !== 'function') {
   });
 
   document.addEventListener('click', async (e)=>{
+    // Carousel navigation
+    if (e.target && e.target.classList.contains('carousel-prev')) {
+      prevSlide();
+    }
+    if (e.target && e.target.classList.contains('carousel-next')) {
+      nextSlide();
+    }
+    
     if (e.target && e.target.id === 'inspLoadMore') {
       inspPage += 1; await load(false);
     }
+    
     const likeBtn = e.target && e.target.closest('.insp-like');
     if (likeBtn) {
       const id = parseInt(likeBtn.dataset.id,10);
@@ -1537,15 +1696,65 @@ if (typeof window.openOnboardingModal !== 'function') {
             let cur = parseInt(cntEl.textContent||'0',10)||0;
             cur = d.liked ? cur+1 : Math.max(0, cur-1);
             cntEl.textContent = String(cur);
+            
+            // Update the like count display text
+            const nextSibling = cntEl.nextElementSibling;
+            if (nextSibling) {
+              nextSibling.textContent = cur === 1 ? 'like' : 'likes';
+            }
           }
           likeBtn.textContent = d.liked ? '💕' : '🤍';
           likeBtn.style.color = d.liked ? '#e57373' : '#bcaaa4';
+          likeBtn.style.borderColor = d.liked ? '#e57373' : '#bcaaa4';
         } else if (d.message) {
           showNotification(d.message, 'error');
         }
       } catch {}
     }
   });
+  
+  // Pause auto-slide on hover
+  document.addEventListener('mouseenter', (e) => {
+    if (e.target && e.target.closest('.inspirations-carousel')) {
+      stopAutoSlide();
+    }
+  }, true);
+  
+  document.addEventListener('mouseleave', (e) => {
+    if (e.target && e.target.closest('.inspirations-carousel')) {
+      startAutoSlide();
+    }
+  }, true);
+  
+  // Touch/swipe support for mobile
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  document.addEventListener('touchstart', (e) => {
+    if (e.target && e.target.closest('.inspirations-carousel')) {
+      touchStartX = e.changedTouches[0].screenX;
+    }
+  });
+  
+  document.addEventListener('touchend', (e) => {
+    if (e.target && e.target.closest('.inspirations-carousel')) {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }
+  });
+  
+  function handleSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+    
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        nextSlide(); // Swiped left, go to next
+      } else {
+        prevSlide(); // Swiped right, go to previous
+      }
+    }
+  }
 
   async function postInspiration(){
     const contentEl = document.getElementById('inspirationContent');
@@ -1563,6 +1772,8 @@ if (typeof window.openOnboardingModal !== 'function') {
         contentEl.value='';
         inspPage = 1; inspOrder = sortSel() ? sortSel().value : 'newest';
         await load(true);
+        // Go to the first slide to show the new post
+        goToSlide(0);
         showNotification('Posted!', 'success');
       } else {
         if (r.status === 403) {
