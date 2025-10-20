@@ -407,6 +407,9 @@ img, svg, picture, video {
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px; /* Add some padding for spacing */
+  border-radius: 40px;
+  background: #a7ddcb;
+  gap: 12px;
 }
 
 .header .nav-menu .nav-item {
@@ -2337,7 +2340,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
 /* Order History Hero Section - matching products */
 .order-history-hero-header {
   height: 400px;
-  background: linear-gradient(135deg, #40584e 0%, #163829 50%, #0f2c20 100%);
+  background: linear-gradient(135deg, #18352b 0%, #102a22 50%, #0b211a 100%);
   border-radius: 40px;
   margin: 20px;
 }
@@ -4015,6 +4018,7 @@ label[for="acceptTerms"] { white-space: nowrap; }
 .order-history-page {
   /* Add enough space to clear the fixed header (header ~65px + paddings) */
   padding-top: 140px;
+  background: #fbfaee; /* keep site cream background */
 }
 @media (max-width: 600px) {
   .order-history-page { padding-top: 110px; }

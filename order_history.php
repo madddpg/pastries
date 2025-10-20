@@ -45,10 +45,11 @@ if (count($orders) > 0) {
         <button class="hamburger-menu" aria-label="Open menu">
             <i class="fas fa-bars"></i>
         </button>
-        <nav class="nav-menu" style="background:#a7ddcb;border-radius:40px;padding:8px 20px;margin:10px 20px;">
+    <nav class="nav-menu" style="background:#a7ddcb;border-radius:40px;padding:8px 20px;">
             <a href="index.php#home" class="nav-item">Home</a>
             <a href="index.php#about" class="nav-item">About</a>
             <a href="index.php#products" class="nav-item">Shop</a>
+            <a href="index.php#inspirations" class="nav-item">Inspirations</a>
             <a href="index.php#locations" class="nav-item">Locations</a>
 
             <div class="profile-dropdown">
@@ -76,7 +77,7 @@ if (count($orders) > 0) {
     </div>
 </header>
 
-<main class="order-history-page" style="background:#40584e;min-height:100vh;padding-top:0;">
+<main class="order-history-page" style="min-height:100vh;">
     <!-- Hero banner -->
     <section class="order-history-hero-header position-relative overflow-hidden">
         <div class="order-history-hero-overlay"></div>
