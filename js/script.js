@@ -958,6 +958,7 @@ setPromoActive(14, 0).then(d => console.log(d));
       about: 'about',
       shop: 'products',
       menu: 'products',
+        inspirations: 'inspirations',
       products: 'products',
       locations: 'locations',
       promos: 'promos',
@@ -1378,6 +1379,7 @@ document.addEventListener('click', function (e) {
     about: 'about',
     shop: 'products',
     menu: 'products',
+    inspirations: 'inspirations',
     products: 'products',
     locations: 'locations',
     promos: 'promos',
@@ -2034,6 +2036,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (typeof filterDrinks === 'function') {
     filterDrinks('cold');
   }
+
+  // Inspirations module init
+  try { initInspirations(); } catch (e) { console.warn('Inspirations init error', e); }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -2717,4 +2722,184 @@ function handleEditProfile(event) {
   } catch (e) {
     window.selectSize = _canonicalSelectSize;
   }
+})();
+
+// ===================== Inspirations Module =====================
+(function(){
+  let inspState = {
+    order: 'liked',
+    page: 1,
+    items: [],
+    likedMap: {},
+    idx: 0
+  };
+
+  function qs(id){ return document.getElementById(id); }
+
+  async function fetchInspirations(order='liked', page=1){
+    const url = new URL('AJAX/fetch_inspirations.php', window.location.href);
+    url.searchParams.set('order', order);
+    url.searchParams.set('page', String(page));
+    const res = await fetch(url.toString(), { credentials: 'same-origin', cache: 'no-store' });
+    const data = await res.json().catch(()=>({success:false}));
+    if (!data.success) return { items:[], liked:{}, total:0 };
+    return { items: data.items || [], liked: data.liked || {}, total: data.total || 0 };
+  }
+
+  function renderCurrent(){
+    const viewer = qs('inspViewer');
+    if (!viewer) return;
+    const items = inspState.items || [];
+    if (!items.length){
+      qs('inspText').textContent = 'No posts yet. Be the first to share!';
+      qs('inspAuthorLine').textContent = '';
+      qs('inspLikeCount').textContent = '0';
+      return;
+    }
+    const i = Math.max(0, Math.min(inspState.idx, items.length-1));
+    const it = items[i];
+    qs('inspText').textContent = it.content || '';
+    qs('inspAuthorLine').textContent = it.author_name ? `— ${it.author_name}` : '';
+    qs('inspLikeCount').textContent = Number(it.like_count || 0);
+    const likeBtn = qs('inspLikeBtn');
+    if (likeBtn){
+      likeBtn.dataset.id = it.inspiration_id;
+      const liked = !!inspState.likedMap[it.inspiration_id];
+      likeBtn.classList.toggle('active', liked);
+    }
+  }
+
+  async function likeCurrent(){
+    const btn = qs('inspLikeBtn');
+    if (!btn || !btn.dataset.id) return;
+    if (!window.PHP_IS_LOGGED_IN){ showLoginModal(); return; }
+    const id = Number(btn.dataset.id);
+    try{
+      const res = await fetch('AJAX/like_inspiration.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data && data.success){
+        // adjust local state
+        const cur = inspState.items[inspState.idx];
+        if (cur && cur.inspiration_id === id){
+          const liked = !!data.liked;
+          inspState.likedMap[id] = liked ? 1 : undefined;
+          cur.like_count = Math.max(0, Number(cur.like_count||0) + (liked?1:-1));
+          renderCurrent();
+        }
+      } else if (data && data.message) {
+        showNotification(data.message, 'error');
+      }
+    }catch(err){ console.warn('like error', err); }
+  }
+
+  async function nextInspiration(){
+    if ((inspState.idx + 1) < inspState.items.length){
+      inspState.idx += 1;
+      renderCurrent();
+      return;
+    }
+    // load next page when we reach end
+    const nextPage = inspState.page + 1;
+    const { items, liked } = await fetchInspirations('liked', nextPage);
+    if (items.length){
+      inspState.page = nextPage;
+      inspState.items = inspState.items.concat(items);
+      Object.assign(inspState.likedMap, liked||{});
+      inspState.idx += 1;
+      renderCurrent();
+    } else {
+      // loop back
+      inspState.idx = 0;
+      renderCurrent();
+    }
+  }
+
+  async function doPost(){
+    const btn = qs('inspPostBtn');
+    if (!btn) return;
+    if (!window.PHP_IS_LOGGED_IN){ showLoginModal(); return; }
+    const content = (qs('inspContent')?.value || '').trim();
+    const author = (qs('inspAuthor')?.value || '').trim();
+    if (!content){ showNotification('Please enter your quote or message.', 'error'); return; }
+    btn.disabled = true; const old = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting';
+    try{
+      const res = await fetch('AJAX/add_inspiration.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ content, author })
+      });
+      const data = await res.json();
+      if (data && data.success){
+        qs('inspContent').value = '';
+        showNotification('Posted!', 'success');
+        // reload first page liked
+        const fresh = await fetchInspirations('liked', 1);
+        inspState.order = 'liked';
+        inspState.page = 1;
+        inspState.items = fresh.items;
+        inspState.likedMap = fresh.liked || {};
+        inspState.idx = 0;
+        renderCurrent();
+      } else {
+        showNotification(data.message || 'Failed to post.', 'error');
+      }
+    }catch(err){
+      showNotification('Network error. Please try again.', 'error');
+    } finally {
+      btn.disabled = false; btn.innerHTML = old;
+    }
+  }
+
+  async function loadInspirationsSection(){
+    const orderSel = qs('inspOrder');
+    if (orderSel) orderSel.value = 'liked';
+    const { items, liked } = await fetchInspirations('liked', 1);
+    inspState = { order:'liked', page:1, items, likedMap: liked||{}, idx:0 };
+    renderCurrent();
+  }
+
+  window.initInspirations = function(){
+    // Prefill and lock author field if logged in
+    try {
+      const authorEl = qs('inspAuthor');
+      if (authorEl && window.PHP_IS_LOGGED_IN) {
+        const fullname = `${window.PHP_USER_FN||''} ${window.PHP_USER_LN||''}`.trim();
+        if (fullname) { authorEl.value = fullname; authorEl.readOnly = true; authorEl.setAttribute('aria-readonly','true'); }
+      }
+    } catch {}
+
+    const likeBtn = qs('inspLikeBtn');
+    if (likeBtn && !likeBtn._bound){ likeBtn._bound = true; likeBtn.addEventListener('click', likeCurrent); }
+    const nextBtn = qs('inspNextBtn');
+    if (nextBtn && !nextBtn._bound){ nextBtn._bound = true; nextBtn.addEventListener('click', nextInspiration); }
+    const postBtn = qs('inspPostBtn');
+    if (postBtn && !postBtn._bound){ postBtn._bound = true; postBtn.addEventListener('click', doPost); }
+    const orderSel = qs('inspOrder');
+    if (orderSel && !orderSel._bound){
+      orderSel._bound = true;
+      orderSel.addEventListener('change', async () => {
+        const ord = orderSel.value === 'newest' ? 'newest' : 'liked';
+        const { items, liked } = await fetchInspirations(ord, 1);
+        inspState = { order: ord, page: 1, items, likedMap: liked||{}, idx: 0 };
+        renderCurrent();
+      });
+    }
+
+    // If section is visible on load, fetch immediately
+    const sec = document.getElementById('inspirations');
+    if (sec && (sec.style.display !== 'none')) loadInspirationsSection();
+
+    // Hook into showSection to lazy-load when navigated
+    const _origShow = window.showSection;
+    window.showSection = function(name){
+      _origShow && _origShow(name);
+      if (name === 'inspirations') loadInspirationsSection();
+    };
+  };
 })();

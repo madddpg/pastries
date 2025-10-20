@@ -148,6 +148,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <a href="#" class="nav-item active" onclick="showSection('home')">Home</a>
                 <a href="#" class="nav-item" onclick="showSection('about')">About </a>
                 <a href="#" class="nav-item" onclick="showSection('products')">Shop</a>
+                <a href="#" class="nav-item" onclick="showSection('inspirations')">Inspirations</a>
                 <a href="#" class="nav-item" onclick="showSection('locations')">Locations</a>
 
 
@@ -1168,6 +1169,73 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 }
             }
             ?>
+        </div>
+    </div>
+
+    <!-- Inspirations Section -->
+    <div id="inspirations" class="section-content" style="display:none;">
+        <div class="container py-4">
+            <div class="text-center mb-4">
+                <h2 style="font-weight:800;color:#2d4a3a;">Community Inspirations</h2>
+                <p class="text-muted" style="margin:0;">Share wisdom over coffee • Inspire hearts with words</p>
+            </div>
+
+            <div class="row justify-content-center mb-4">
+                <div class="col-12 col-md-10 col-lg-8">
+                    <div class="p-3 p-md-4 rounded-4 shadow-sm" style="background:#fffbe9;border:1px solid #f1e7c7;">
+                        <div class="mb-2" id="inspPostingAsWrap">
+                            <?php if ($isLoggedIn && $userFullName): ?>
+                                <small class="text-muted">Posting as <strong><?php echo htmlspecialchars($userFullName); ?></strong></small>
+                            <?php else: ?>
+                                <small class="text-muted">Please sign in to post</small>
+                            <?php endif; ?>
+                        </div>
+                        <div class="d-flex gap-2 flex-column flex-md-row">
+                            <input type="text" class="form-control" id="inspAuthor" placeholder="Your name" value="<?php echo htmlspecialchars($userFullName ?: ''); ?>" <?php echo $isLoggedIn && $userFullName !== '' ? 'readonly aria-readonly="true"' : ''; ?> style="max-width:260px;">
+                            <textarea class="form-control" id="inspContent" placeholder="Share your inspiration..." rows="2"></textarea>
+                            <button class="btn btn-brown" id="inspPostBtn" style="min-width:96px;white-space:nowrap;background:#6b3b2a;color:#fff;border:none;border-radius:10px;">
+                                <i class="fas fa-paper-plane me-1"></i> Post
+                            </button>
+                        </div>
+                        <div class="form-text" id="inspPostHelp" style="margin-top:6px;color:#6b7280;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-10 col-lg-8">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="color:#374151;font-weight:700;">Latest Posts</span>
+                        </div>
+                        <div class="input-group" style="width:auto;">
+                            <label class="input-group-text" for="inspOrder" style="background:#fffbe9;border-color:#f1e7c7;">
+                                <i class="fas fa-heart text-danger me-1"></i> Sort by
+                            </label>
+                            <select class="form-select" id="inspOrder" style="max-width:160px;background:#fff;border-color:#f1e7c7;">
+                                <option value="liked" selected>Most Liked</option>
+                                <option value="newest">Newest</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="inspViewer" class="p-4 rounded-4 mb-3" style="background:#ffffff;border:1px solid #e5e7eb;min-height:140px;">
+                        <div id="inspText" class="text-center" style="font-size:1.2rem;color:#374151;white-space:pre-wrap;"></div>
+                        <div id="inspAuthorLine" class="text-center mt-2" style="color:#6b7280;font-weight:700;"></div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-sm" id="inspLikeBtn" style="background:#fff3f3;color:#b91c1c;border:1px solid #fca5a5;border-radius:999px;padding:6px 12px;">
+                                <i class="fas fa-heart"></i> <span id="inspLikeCount">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="text-center mb-5">
+                        <button class="btn" id="inspNextBtn" style="background:#6b3b2a;color:#fff;border:none;border-radius:10px;padding:10px 16px;">
+                            Next · <i class="fas fa-heart text-danger"></i> Most Liked
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Locations Section -->
