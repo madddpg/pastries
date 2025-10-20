@@ -198,145 +198,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
     </header>
 
-    <!-- Inspirations Section (top-level for nav switching) -->
-    <section id="inspirations" class="section-content" style="display:none;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
-        <!-- Section Header Banner -->
-        <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
-            <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
-            <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
-            <h2 style="font-weight:900;font-size:clamp(1.8rem, 4vw, 2.5rem);margin-bottom:0.5rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);color:#fff;">☕ Community Inspirations</h2>
-            <p style="font-size:clamp(0.9rem, 2.5vw, 1.1rem);color:#d7ccc8;margin:0;font-weight:500;">Share wisdom over coffee • Inspire hearts with words</p>
-        </div>
-
-        <?php if ($isLoggedIn || $allowGuestInspirations): ?>
-        <div class="inspirations-post-card" style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.15);position:relative;">
-            <div style="position:absolute;top:12px;right:12px;color:#8b795d;opacity:0.4;font-size:1.2rem;">✍️</div>
-            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:1;min-width:200px;max-width:240px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'" />
-                <textarea id="inspirationContent" placeholder="Share your inspiration..." rows="2" style="flex:1;min-width:260px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;resize:vertical;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'"></textarea>
-                <button id="inspirationPostBtn" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;box-shadow:0 4px 12px rgba(93,64,55,0.3);flex-shrink:0;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">📝 Post</button>
-            </div>
-            <div style="margin-top:12px;color:#8b795d;font-size:0.9rem;font-weight:500;">
-                <?php if ($isLoggedIn): ?>
-                    ☕ Posting as <strong style="color:#6d4c41;"><?php echo htmlspecialchars($userFullName ?: $userFirstName); ?></strong>
-                <?php else: ?>
-                    <?php if ($allowGuestInspirations): ?>
-                        💭 Not signed in — enter your name above to post as a guest.
-                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
-                    <?php else: ?>
-                        🔒 Posting is available to signed-in users only.
-                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
-                    <?php endif; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php else: ?>
-        <div style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:2rem;text-align:center;box-shadow:0 8px 24px rgba(139,121,93,0.15);">
-            <div style="font-size:1.1rem;color:#6d4c41;margin-bottom:1rem;font-weight:600;">🔒 Posting is available to signed-in users only</div>
-            <button onclick="showLoginModal()" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(93,64,55,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">☕ Sign In</button>
-        </div>
-        <?php endif; ?>
-
-        <!-- Feed Controls -->
-        <div style="max-width:800px;margin:0 auto 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-            <div style="font-weight:700;color:#6d4c41;font-size:clamp(1.1rem, 3vw, 1.3rem);display:flex;align-items:center;gap:8px;">
-                📚 Latest Posts
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <label for="inspSort" style="color:#8b795d;font-weight:600;font-size:0.95rem;">Sort by:</label>
-                <select id="inspSort" style="padding:8px 12px;border-radius:10px;border:2px solid #d4c4a8;background:#fff;color:#5d4037;font-weight:500;cursor:pointer;transition:border-color 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63'" onblur="this.style.borderColor='#d4c4a8'">
-                    <option value="newest">🕒 Newest</option>
-                    <option value="liked">❤️ Most Liked</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Carousel Container -->
-        <div class="inspirations-carousel-wrapper" style="max-width:900px;margin:0 auto;position:relative;">
-            <!-- Carousel -->
-            <div class="inspirations-carousel" style="position:relative;overflow:hidden;border-radius:20px;box-shadow:0 12px 40px rgba(139,121,93,0.2);background:linear-gradient(145deg, #faf7f2 0%, #f5f1ec 100%);">
-                <div id="inspFeed" class="carousel-track" style="display:flex;transition:transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
-                
-                <!-- Navigation Arrows -->
-                <button class="carousel-nav carousel-prev" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">‹</button>
-                <button class="carousel-nav carousel-next" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">›</button>
-            </div>
-            
-            <!-- Carousel Indicators -->
-            <div class="carousel-indicators" style="display:flex;justify-content:center;gap:8px;margin-top:20px;"></div>
-            
-            <!-- Empty State -->
-            <div id="inspEmptyState" style="display:none;text-align:center;padding:4rem 2rem;color:#8b795d;">
-                <div style="font-size:3rem;margin-bottom:1rem;">☕</div>
-                <h3 style="color:#6d4c41;margin-bottom:0.5rem;font-weight:600;">No inspirations yet</h3>
-                <p style="margin:0;">Be the first to share some wisdom!</p>
-            </div>
-        </div>
-        
-        <!-- Load More (hidden, but kept for progressive loading) -->
-        <div id="inspMoreWrap" style="text-align:center;margin-top:2rem;display:none;">
-            <button id="inspLoadMore" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(109,76,65,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(109,76,65,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(109,76,65,0.3)'">☕ Load more inspirations</button>
-        </div>
-
-        <!-- Mobile-specific styles -->
-        <style>
-        @media (max-width: 768px) {
-            .inspirations-post-card > div:first-of-type {
-                flex-direction: column !important;
-            }
-            .inspirations-post-card input, .inspirations-post-card textarea {
-                flex: 1 1 100% !important;
-                min-width: unset !important;
-                max-width: unset !important;
-            }
-            .inspirations-post-card button {
-                align-self: stretch !important;
-            }
-            
-            /* Carousel mobile adjustments */
-            .carousel-slide {
-                padding: 1rem !important;
-            }
-            .inspiration-card {
-                padding: 1.5rem !important;
-                min-height: 250px !important;
-            }
-            .inspiration-card blockquote {
-                font-size: 1.1rem !important;
-                padding: 0 0.5rem !important;
-            }
-            .carousel-nav {
-                width: 40px !important;
-                height: 40px !important;
-                font-size: 1rem !important;
-            }
-            .carousel-prev {
-                left: 8px !important;
-            }
-            .carousel-next {
-                right: 8px !important;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .inspirations-carousel-wrapper {
-                margin: 0 -1rem !important;
-            }
-            .carousel-slide {
-                padding: 0.5rem !important;
-            }
-            .inspiration-card {
-                padding: 1rem !important;
-                min-height: 200px !important;
-            }
-            .inspiration-card blockquote {
-                font-size: 1rem !important;
-                margin: 1rem 0 !important;
-            }
-        }
-        </style>
-    </section>
-
     <!-- Login Modal -->
     <div id="loginModal" class="auth-modal">
         <div class="auth-content">
@@ -1577,6 +1438,145 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             </div>
         </div>
     </div>
+
+    <!-- Inspirations Section (top-level for nav switching) -->
+    <section id="inspirations" class="section-content" style="display:none;background:linear-gradient(135deg, #f9f5f0 0%, #f4f0e8 100%);min-height:100vh;padding:1rem;">
+        <!-- Section Header Banner -->
+        <div class="inspirations-header-banner" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;text-align:center;padding:2rem 1rem;margin-bottom:1.5rem;border-radius:20px;box-shadow:0 12px 32px rgba(93,64,55,0.25);position:relative;overflow:hidden;">
+            <div style="position:absolute;top:-50px;right:-50px;width:150px;height:150px;background:rgba(255,255,255,0.1);border-radius:50%;"></div>
+            <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;background:rgba(255,255,255,0.08);border-radius:50%;"></div>
+            <h2 style="font-weight:900;font-size:clamp(1.8rem, 4vw, 2.5rem);margin-bottom:0.5rem;text-shadow:0 2px 4px rgba(0,0,0,0.3);color:#fff;">☕ Community Inspirations</h2>
+            <p style="font-size:clamp(0.9rem, 2.5vw, 1.1rem);color:#d7ccc8;margin:0;font-weight:500;">Share wisdom over coffee • Inspire hearts with words</p>
+        </div>
+
+        <?php if ($isLoggedIn || $allowGuestInspirations): ?>
+        <div class="inspirations-post-card" style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.15);position:relative;">
+            <div style="position:absolute;top:12px;right:12px;color:#8b795d;opacity:0.4;font-size:1.2rem;">✍️</div>
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:1;min-width:200px;max-width:240px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'" />
+                <textarea id="inspirationContent" placeholder="Share your inspiration..." rows="2" style="flex:1;min-width:260px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;resize:vertical;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'"></textarea>
+                <button id="inspirationPostBtn" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;box-shadow:0 4px 12px rgba(93,64,55,0.3);flex-shrink:0;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">📝 Post</button>
+            </div>
+            <div style="margin-top:12px;color:#8b795d;font-size:0.9rem;font-weight:500;">
+                <?php if ($isLoggedIn): ?>
+                    ☕ Posting as <strong style="color:#6d4c41;"><?php echo htmlspecialchars($userFullName ?: $userFirstName); ?></strong>
+                <?php else: ?>
+                    <?php if ($allowGuestInspirations): ?>
+                        💭 Not signed in — enter your name above to post as a guest.
+                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
+                    <?php else: ?>
+                        🔒 Posting is available to signed-in users only.
+                        <button onclick="showLoginModal()" style="background:#8d6e63;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:0.85rem;margin-left:8px;cursor:pointer;transition:background 0.3s ease;" onmouseover="this.style.background='#6d4c41'" onmouseout="this.style.background='#8d6e63'">Sign In</button>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php else: ?>
+        <div style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:2rem;text-align:center;box-shadow:0 8px 24px rgba(139,121,93,0.15);">
+            <div style="font-size:1.1rem;color:#6d4c41;margin-bottom:1rem;font-weight:600;">🔒 Posting is available to signed-in users only</div>
+            <button onclick="showLoginModal()" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(93,64,55,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">☕ Sign In</button>
+        </div>
+        <?php endif; ?>
+
+        <!-- Feed Controls -->
+        <div style="max-width:800px;margin:0 auto 1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div style="font-weight:700;color:#6d4c41;font-size:clamp(1.1rem, 3vw, 1.3rem);display:flex;align-items:center;gap:8px;">
+                📚 Latest Posts
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <label for="inspSort" style="color:#8b795d;font-weight:600;font-size:0.95rem;">Sort by:</label>
+                <select id="inspSort" style="padding:8px 12px;border-radius:10px;border:2px solid #d4c4a8;background:#fff;color:#5d4037;font-weight:500;cursor:pointer;transition:border-color 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63'" onblur="this.style.borderColor='#d4c4a8'">
+                    <option value="newest">🕒 Newest</option>
+                    <option value="liked">❤️ Most Liked</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Carousel Container -->
+        <div class="inspirations-carousel-wrapper" style="max-width:900px;margin:0 auto;position:relative;">
+            <!-- Carousel -->
+            <div class="inspirations-carousel" style="position:relative;overflow:hidden;border-radius:20px;box-shadow:0 12px 40px rgba(139,121,93,0.2);background:linear-gradient(145deg, #faf7f2 0%, #f5f1ec 100%);">
+                <div id="inspFeed" class="carousel-track" style="display:flex;transition:transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);"></div>
+                
+                <!-- Navigation Arrows -->
+                <button class="carousel-nav carousel-prev" style="position:absolute;left:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">‹</button>
+                <button class="carousel-nav carousel-next" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);background:rgba(109,76,65,0.9);color:#fff;border:none;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;transition:all 0.3s ease;z-index:10;box-shadow:0 4px 16px rgba(109,76,65,0.3);" onmouseover="this.style.background='rgba(93,64,55,1)';this.style.transform='translateY(-50%) scale(1.1)'" onmouseout="this.style.background='rgba(109,76,65,0.9)';this.style.transform='translateY(-50%) scale(1)'">›</button>
+            </div>
+            
+            <!-- Carousel Indicators -->
+            <div class="carousel-indicators" style="display:flex;justify-content:center;gap:8px;margin-top:20px;"></div>
+            
+            <!-- Empty State -->
+            <div id="inspEmptyState" style="display:none;text-align:center;padding:4rem 2rem;color:#8b795d;">
+                <div style="font-size:3rem;margin-bottom:1rem;">☕</div>
+                <h3 style="color:#6d4c41;margin-bottom:0.5rem;font-weight:600;">No inspirations yet</h3>
+                <p style="margin:0;">Be the first to share some wisdom!</p>
+            </div>
+        </div>
+        
+        <!-- Load More (hidden, but kept for progressive loading) -->
+        <div id="inspMoreWrap" style="text-align:center;margin-top:2rem;display:none;">
+            <button id="inspLoadMore" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 32px;border-radius:12px;font-weight:600;cursor:pointer;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(109,76,65,0.3);" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(109,76,65,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(109,76,65,0.3)'">☕ Load more inspirations</button>
+        </div>
+
+        <!-- Mobile-specific styles -->
+        <style>
+        @media (max-width: 768px) {
+            .inspirations-post-card > div:first-of-type {
+                flex-direction: column !important;
+            }
+            .inspirations-post-card input, .inspirations-post-card textarea {
+                flex: 1 1 100% !important;
+                min-width: unset !important;
+                max-width: unset !important;
+            }
+            .inspirations-post-card button {
+                align-self: stretch !important;
+            }
+            
+            /* Carousel mobile adjustments */
+            .carousel-slide {
+                padding: 1rem !important;
+            }
+            .inspiration-card {
+                padding: 1.5rem !important;
+                min-height: 250px !important;
+            }
+            .inspiration-card blockquote {
+                font-size: 1.1rem !important;
+                padding: 0 0.5rem !important;
+            }
+            .carousel-nav {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 1rem !important;
+            }
+            .carousel-prev {
+                left: 8px !important;
+            }
+            .carousel-next {
+                right: 8px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .inspirations-carousel-wrapper {
+                margin: 0 -1rem !important;
+            }
+            .carousel-slide {
+                padding: 0.5rem !important;
+            }
+            .inspiration-card {
+                padding: 1rem !important;
+                min-height: 200px !important;
+            }
+            .inspiration-card blockquote {
+                font-size: 1rem !important;
+                margin: 1rem 0 !important;
+            }
+        }
+        </style>
+    </section>
 
     <!-- ORDER ONLINE -->
     <section class="food-order-section py-5 text-center" style="background-color:#f3ebd3; color: #2d4a3a; border-radius: 20px; margin: 20px;">
