@@ -243,11 +243,11 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
 // Close modal helper
 function closeProductModal() {
   const modal = document.getElementById('productModal');
-  if (modal) {
-    modal.style.display = 'none';
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
-  }
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
 }
 
 // close modal on backdrop click
@@ -1795,7 +1795,10 @@ async function verifyOTP() {
 
         // redirect if backend provides, else fallback
         if (data.redirect) {
-          try { localStorage.setItem('showOnboarding','1'); } catch(e) {}
+          try {
+            const uid = (data.user_id || window.PHP_USER_ID || '').toString();
+            localStorage.setItem('showOnboarding:' + uid, '1');
+          } catch(e) {}
           window.location.href = data.redirect;
         } else {
           window.location.reload();
@@ -2089,13 +2092,16 @@ document.addEventListener("DOMContentLoaded", () => {
     filterDrinks('cold');
   }
 
-  // Show onboarding after redirect from login/registration if requested
+  // Show onboarding after redirect from login/registration if requested, per user
   try {
-    const want = localStorage.getItem('showOnboarding');
-    const seen = localStorage.getItem('hasSeenOnboarding');
+    const uid = (window.PHP_USER_ID || '').toString();
+    const keyShow = 'showOnboarding:' + uid;
+    const keySeen = 'hasSeenOnboarding:' + uid;
+    const want = localStorage.getItem(keyShow);
+    const seen = localStorage.getItem(keySeen);
     if (want === '1' && seen !== '1' && typeof window.openOnboardingModal === 'function') {
       // Clear the trigger before opening to avoid loops on reload
-      localStorage.removeItem('showOnboarding');
+      localStorage.removeItem(keyShow);
       setTimeout(() => window.openOnboardingModal(), 400);
     }
   } catch (e) { /* ignore storage errors */ }

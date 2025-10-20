@@ -1496,6 +1496,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
     <script>
         window.PHP_IS_LOGGED_IN = <?php echo $isLoggedIn ? 'true' : 'false'; ?>;
+        window.PHP_USER_ID = <?php echo $isLoggedIn ? json_encode((int)($_SESSION['user']['user_id'] ?? 0)) : 'null'; ?>;
         window.PHP_USER_FN = "<?php echo addslashes($_SESSION['user']['user_FN'] ?? ''); ?>";
         window.PHP_USER_LN = "<?php echo addslashes($_SESSION['user']['user_LN'] ?? ''); ?>";
         window.PHP_USER_EMAIL = "<?php echo addslashes($_SESSION['user']['user_email'] ?? ''); ?>";
@@ -1858,7 +1859,7 @@ function handleForgotPassword(e){
 <!-- Onboarding / Tutorial Modal -->
 <div id="onboardingModal" class="auth-modal" style="z-index:5000;">
     <div class="auth-content" style="max-width:640px;">
-        <button class="close-auth" onclick="(function(){ const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem('hasSeenOnboarding','1'); }catch(e){} } try{ localStorage.removeItem('showOnboarding'); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
+        <button class="close-auth" onclick="(function(){ const uid=(window.PHP_USER_ID||''); const keySeen='hasSeenOnboarding:'+uid; const keyShow='showOnboarding:'+uid; const cb=document.getElementById('onboardingDontShow'); if(cb && cb.checked){ try{ localStorage.setItem(keySeen,'1'); }catch(e){} } try{ localStorage.removeItem(keyShow); }catch(e){} document.getElementById('onboardingModal').classList.remove('active'); document.body.style.overflow=''; })()">
             <i class="fas fa-times"></i>
         </button>
         <div class="auth-header" style="margin-bottom:10px;">
@@ -1942,8 +1943,11 @@ function handleForgotPassword(e){
                 current = 0; render();
             }
             function close(persist = false){
-                if (persist) { try{ localStorage.setItem('hasSeenOnboarding','1'); }catch(e){} }
-                try{ localStorage.removeItem('showOnboarding'); }catch(e){}
+                const uid=(window.PHP_USER_ID||'');
+                const keySeen='hasSeenOnboarding:'+uid;
+                const keyShow='showOnboarding:'+uid;
+                if (persist) { try{ localStorage.setItem(keySeen,'1'); }catch(e){} }
+                try{ localStorage.removeItem(keyShow); }catch(e){}
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
             }
