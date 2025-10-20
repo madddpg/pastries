@@ -371,8 +371,12 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 <div class="card card-orange">
                     <img src="img/pic1.jpg" alt="Delicious Pastry">
                 </div>
-                <div class="card card-green">
-                    <img src="img/blend.jpg" alt="Delicious Pastry">
+                <div class="card card-green position-relative overflow-hidden">
+                    <img src="img/blend.jpg" alt="Signature Blend" class="img-fluid w-100 h-auto">
+                    <div class="text-overlay position-absolute" style="top: 20px; left: 20px; color: #2d4a3a; font-weight: bold;">
+                        <h3 style="margin: 0; font-size: 1.5rem; color: #2d4a3a;">Signature Blend</h3>
+                        <p style="margin: 0; font-size: 0.9rem; color: #666;">finest Arabica and Robusta beans</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -399,8 +403,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     </div>
                 </div>
 
-                <div class="card card-green2">
-                    <img src="img/pic2.jpg" alt="Delicious Pastry">
+                <div class="card card-green2 position-relative overflow-hidden">
+                    <img src="img/pic2.jpg" alt="Cups & Cuddles Coffee" class="img-fluid w-100 h-auto">
                 </div>
             </div>
         </section>
