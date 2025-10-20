@@ -308,9 +308,20 @@ img, svg, picture, video {
     object-fit: contain;
   }
   .coffee-image {
-    left: 50%;
-    transform: translate(-50%, -75%);
-    width: min(75vw, 640px);
+    position: absolute !important;
+    left: 50% !important;
+    transform: translate(-50%, -75%) !important;
+    width: min(75vw, 640px) !important;
+    height: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .coffee-image img {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
   }
 }
 
@@ -323,7 +334,22 @@ img, svg, picture, video {
   .hero-content { gap: 12px; }
   .hero-content h1 { font-size: 4.5rem; }
   .hero-content h3 { font-size: 3rem; }
-  .coffee-image { width: 70vw; transform: translate(-50%, -70%); }
+  .coffee-image { 
+    position: absolute !important;
+    width: 70vw !important; 
+    transform: translate(-50%, -70%) !important; 
+    left: 50% !important;
+    height: auto !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .coffee-image img {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
   .product-modal-grid { grid-template-columns: 1fr; gap: 32px; }
   .product-modal-image img { max-width: 260px; }
   .product-item { width: 280px; margin: 12px; }
@@ -337,7 +363,22 @@ img, svg, picture, video {
   /* From @media (max-width: 1200px) */
   .hero-content h1 { font-size: 6rem; }
   .hero-content h3 { font-size: 4.5rem; }
-  .coffee-image { width: 60vw; height: auto; transform: translate(-50%, -70%); }
+  .coffee-image { 
+    position: absolute !important;
+    width: 60vw !important; 
+    height: auto !important; 
+    transform: translate(-50%, -70%) !important; 
+    left: 50% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .coffee-image img {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
   .products-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .product-image { height: 220px; }
   .footer-brand-text h1 { font-size: 6rem; }
@@ -929,10 +970,25 @@ html.no-scroll, body.no-scroll {
   .footer-brand-text h1 { font-size: clamp(2.2rem, 12vw, 6rem); }
 }
 
-/* Ensure hero coffee image doesn't overflow on narrow screens */
+/* Ensure hero coffee image doesn't overflow on narrow screens and is perfectly centered */
 @media (max-width: 900px) {
-  .coffee-image { left: 50%; transform: translate(-50%, -75%); width: min(80vw, 680px); height: auto; top: 75%; }
-  .coffee-image img { width: 100%; height: auto; }
+  .coffee-image { 
+    position: absolute !important;
+    left: 50% !important; 
+    transform: translate(-50%, -75%) !important; 
+    width: min(80vw, 680px) !important; 
+    height: auto !important; 
+    top: 75% !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .coffee-image img { 
+    width: 100% !important; 
+    height: auto !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
 }
 
 /* Accessibility: reduce motion if user prefers reduced motion */
@@ -987,14 +1043,18 @@ html.no-scroll, body.no-scroll {
     object-fit: contain !important;
   }
 
-  /* Hero coffee image: center horizontally on narrow viewports */
+  /* Hero coffee image: perfectly centered horizontally on narrow viewports */
   .coffee-image {
+    position: absolute !important;
     left: 50% !important;
     transform: translate(-50%, -78%) !important;
     top: 78% !important;
     width: 82vw !important;
     height: auto !important;
-    max-width: 420px;
+    max-width: 420px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
   }
   .coffee-image img {
     display: block !important;
