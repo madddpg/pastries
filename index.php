@@ -1453,7 +1453,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         <div class="inspirations-post-card" style="max-width:800px;margin:0 auto 2rem;background:#faf7f2;border:2px solid #e6d7c3;border-radius:18px;padding:1.5rem;box-shadow:0 8px 24px rgba(139,121,93,0.15);position:relative;">
             <div style="position:absolute;top:12px;right:12px;color:#8b795d;opacity:0.4;font-size:1.2rem;">✍️</div>
             <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:1;min-width:200px;max-width:240px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'" />
+                <input id="inspirationAuthor" placeholder="Your name<?php echo $isLoggedIn ? ' (optional)' : ' (required if not signed in)'; ?>" value="<?php echo htmlspecialchars($userFullName ?: $userFirstName); ?>" style="flex:1;min-width:200px;max-width:240px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;transition:all 0.3s ease;outline:none;<?php echo ($isLoggedIn || !$allowGuestInspirations) ? 'background:#f1ede6;cursor:not-allowed;' : '';?>" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'" <?php echo ($isLoggedIn || !$allowGuestInspirations) ? 'readonly aria-readonly="true"' : '';?> />
                 <textarea id="inspirationContent" placeholder="Share your inspiration..." rows="2" style="flex:1;min-width:260px;padding:12px 16px;border:2px solid #d4c4a8;border-radius:12px;background:#fff;font-size:0.95rem;color:#5d4037;resize:vertical;transition:all 0.3s ease;outline:none;" onfocus="this.style.borderColor='#8d6e63';this.style.boxShadow='0 0 0 3px rgba(141,110,99,0.1)'" onblur="this.style.borderColor='#d4c4a8';this.style.boxShadow='none'"></textarea>
                 <button id="inspirationPostBtn" style="background:linear-gradient(145deg, #6d4c41 0%, #5d4037 100%);color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:600;font-size:0.95rem;cursor:pointer;transition:all 0.3s ease;white-space:nowrap;box-shadow:0 4px 12px rgba(93,64,55,0.3);flex-shrink:0;" onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(93,64,55,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(93,64,55,0.3)'">📝 Post</button>
             </div>
@@ -1499,6 +1499,10 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             </div>
             <div style="display:flex;justify-content:center;gap:10px;margin-top:16px;">
                 <button id="inspNextBtn" style="background:linear-gradient(145deg, #8d6e63 0%, #6d4c41 100%);color:#fff;border:none;padding:12px 20px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(109,76,65,0.3);">Next • ❤️ Most Liked</button>
+            </div>
+            <!-- Auto-scroll strip: latest 3 posts -->
+            <div id="inspAutoStrip" style="margin-top:18px;overflow:hidden;">
+                <div id="inspStripTrack" style="display:flex;gap:10px;transition:transform .45s ease;will-change:transform;"></div>
             </div>
             <!-- Empty State -->
             <div id="inspEmptyState" style="display:none;text-align:center;padding:3rem 1.5rem;color:#8b795d;">

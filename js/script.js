@@ -2741,6 +2741,79 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 100);
 });
 
+// ===== Auto-scroll latest 3 quotes every 3 seconds =====
+async function refreshLatestStrip() {
+  try {
+    const url = new URL('AJAX/fetch_inspirations.php', window.location.href);
+    url.searchParams.set('order', 'newest');
+    url.searchParams.set('page', '1');
+    const res = await fetch(url.toString(), { credentials: 'same-origin', cache: 'no-store' });
+    const data = await res.json().catch(() => ({}));
+    const items = Array.isArray(data.items) ? data.items.slice(0, 3) : [];
+
+    const track = document.getElementById('inspStripTrack');
+    const wrap = document.getElementById('inspAutoStrip');
+    if (!track || !wrap) return;
+
+    const safe = (s) => String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    track.innerHTML = items.map(it => {
+      return `<div class="insp-strip-item" style="flex:0 0 100%;background:#f9f5f0;border:1px solid #e6d7c3;border-radius:12px;padding:10px;text-align:center;color:#5d4037;">
+                <div style="font-weight:600;">“${safe(it.content)}”</div>
+                <div style="font-size:.95rem;color:#8b795d;margin-top:4px;">— ${safe(it.author_name || 'Anonymous')}</div>
+              </div>`;
+    }).join('');
+
+    // Ensure width so that each item is viewport width of the strip
+    const kids = track.children;
+    for (let i = 0; i < kids.length; i++) kids[i].style.minWidth = wrap.clientWidth + 'px';
+
+    let idx = 0;
+    if (wrap._timer) clearInterval(wrap._timer);
+    wrap._timer = setInterval(() => {
+      if (!track.children.length) return;
+      idx = (idx + 1) % track.children.length;
+      const offset = idx * wrap.clientWidth;
+      track.style.transform = `translateX(-${offset}px)`;
+    }, 3000);
+
+    // Recompute widths on resize
+    if (!wrap._resizeBound) {
+      wrap._resizeBound = true;
+      window.addEventListener('resize', () => {
+        for (let i = 0; i < track.children.length; i++) {
+          track.children[i].style.minWidth = wrap.clientWidth + 'px';
+        }
+        // snap to current idx
+        const t = (idx || 0) * wrap.clientWidth;
+        track.style.transform = `translateX(-${t}px)`;
+      });
+    }
+  } catch (e) {
+    console.error('refreshLatestStrip error', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // initialize the latest strip
+  setTimeout(refreshLatestStrip, 150);
+  // periodic refresh to keep it fresh
+  setInterval(refreshLatestStrip, 30000);
+});
+
+// Force Next button to use most liked regardless of dropdown state
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('#inspNextBtn');
+  if (!btn) return;
+  // reset order to liked and ensure we have a buffer; then advance
+  (async () => {
+    if (INSP_STATE.order !== 'liked' || !Array.isArray(INSP_STATE.items) || INSP_STATE.items.length === 0) {
+      await fetchInspirations('liked', 1);
+      INSP_STATE.idx = 0;
+    }
+    nextInspiration();
+  })();
+});
+
 
 
 
