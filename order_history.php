@@ -77,7 +77,6 @@ if (count($orders) > 0) {
 </header>
 
 <main class="order-history-page" style="background:#40584e;min-height:100vh;padding-top:0;">
-<div class="container mb-5" style="margin-top:0;background:#40584e;border-radius:40px;">
     <!-- Hero banner -->
     <section class="order-history-hero-header position-relative overflow-hidden">
         <div class="order-history-hero-overlay"></div>
@@ -96,7 +95,7 @@ if (count($orders) > 0) {
         <div class="order-history-floating-bean order-history-bean-3"></div>
     </section>
     
-    <div class="container py-4" style="background:#fbfaee;border-radius:40px;margin-top:20px;">
+    <div class="oh-container">
         <?php if ($latest_ready): ?>
             <div class="alert alert-success" style="font-weight:bold;">
                 Your latest order is <span style="color:#388e3c;">READY</span> for pickup!
@@ -187,16 +186,13 @@ if (count($orders) > 0) {
             </ul>
         </nav>
         <?php endif; ?>
-    <?php endif; ?>
-    
-    <div class="text-center mt-4">
-        <a href="index.php" class="btn btn-primary" style="background:#40584e;border:none;border-radius:10px;padding:10px 20px;">
-            Back to Home
-        </a>
-    </div>
-    
-    </div> <!-- end container py-4 -->
-</div> <!-- end outer container -->
+            <div class="text-center mt-4">
+                <a href="index.php" class="btn btn-primary" style="background:#40584e;border:none;border-radius:10px;padding:10px 20px;">
+                    Back to Home
+                </a>
+            </div>
+        <?php endif; ?>
+    </div> <!-- end oh-container -->
 </main>
 
 

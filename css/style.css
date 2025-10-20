@@ -41,6 +41,21 @@ body {
   min-height: 100vh;
 }
 
+/* Order History layout wrapper to match header width and centering */
+.oh-container {
+  background: #fbfaee;
+  border-radius: 40px;
+  padding: 24px 20px;
+  width: 90%;
+  max-width: 1100px;
+  margin: 20px auto 60px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Make inner lists breathe */
+.oh-list { gap: 12px; display: grid; }
+.oh-list .oh-order { text-decoration: none; }
+
 /* Order History: cancel button */
 .order-history-page .oh-order-bottom {
   display: flex;
