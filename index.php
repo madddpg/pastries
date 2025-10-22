@@ -973,7 +973,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         <!-- Chocolate Overload Section -->
         <?php $hp2 = computeCategoryHeader($allProducts, 2, 150, 180); ?>
         <div class="products-header">
-            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Chocolate Overload</h3>
+            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Overload<span>16 oz</span></h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
                 <span>Grande - Php <?= htmlspecialchars($hp2['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp2['supreme']) ?></span>
             </div>
