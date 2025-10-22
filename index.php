@@ -671,11 +671,12 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         <div id="topProductsContainer"></div>
         <!-- End Top Products Section -->
 
-        <?php $hp5 = computeCategoryHeader($allProducts, 5, 140, 150); ?>
+          <?php $hp5 = computeCategoryHeader($allProducts, 5, 140, 150); ?>
         <div class="products-header">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Premium Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp5['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp5['supreme']) ?></span>
+                <!-- Single-size display (removed Supreme) -->
+                <span>16 oz | ₱<?= htmlspecialchars($hp5['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -915,11 +916,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
 
         <!-- Specialty Coffee Section -->
-        <?php $hp6 = computeCategoryHeader($allProducts, 6, 150, 180); ?>
+          <?php $hp6 = computeCategoryHeader($allProducts, 6, 150, 180); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Specialty Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp6['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp6['supreme']) ?></span>
+                <span>16 oz | ₱<?= htmlspecialchars($hp6['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -971,11 +972,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
 
         <!-- Chocolate Overload Section -->
-        <?php $hp2 = computeCategoryHeader($allProducts, 2, 150, 180); ?>
+         <?php $hp2 = computeCategoryHeader($allProducts, 2, 150, 180); ?>
         <div class="products-header">
-            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Overload<span>16 oz</span></h3>
+            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Overload</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp2['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp2['supreme']) ?></span>
+                <span>16 oz | ₱<?= htmlspecialchars($hp2['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -1026,7 +1027,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Matcha Series</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp3['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp3['supreme']) ?></span>
+                <span>16 oz | ₱<?= htmlspecialchars($hp3['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -1072,11 +1073,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
 
         <!-- Milk Based Section -->
-        <?php $hp4 = computeCategoryHeader($allProducts, 4, 99, 120); ?>
+         <?php $hp4 = computeCategoryHeader($allProducts, 4, 99, 120); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Milk Based</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp4['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp4['supreme']) ?></span>
+                <span>16 oz | ₱<?= htmlspecialchars($hp4['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
@@ -1122,11 +1123,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
 
         <!-- All Time Fave Section -->
-        <?php $hp1 = computeCategoryHeader($allProducts, 1, 120, 170); ?>
+         <?php $hp1 = computeCategoryHeader($allProducts, 1, 120, 170); ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">All Time Fave</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
-                <span>Grande - Php <?= htmlspecialchars($hp1['grande']) ?></span> &nbsp;|&nbsp; <span>Supreme - Php <?= htmlspecialchars($hp1['supreme']) ?></span>
+                <span>16 oz | ₱<?= htmlspecialchars($hp1['grande']) ?></span>
             </div>
         </div>
         <div class="product-list">
