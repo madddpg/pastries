@@ -705,65 +705,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     $premiumIndex++;
                 }
             }
-         
-            foreach ($premiumProducts as $p) {
-                if (!in_array($p['product_id'], $shownIds) && (!isset($productStatuses[$p['product_id']]) || $productStatuses[$p['product_id']] === 'active')) {
-                ?>
-                    <div class="product-item" data-type="cold" data-category="5">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($p['cold_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
-                        </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Signature Coffee</span>
-                            <p><?= htmlspecialchars($p['cold_desc']) ?></p>
-                            <div class="product-footer">
-                                <?php
-                                    $pid2 = $p['product_id'];
-                                    $base2 = isset($productPrices[$pid2]) ? (float)$productPrices[$pid2] : 120;
-                                    $gr2 = isset($sizePriceMap[$pid2]['grande']) ? (float)$sizePriceMap[$pid2]['grande'] : $base2;
-                                ?>
-                                <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
-                                    data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars($base2, ENT_QUOTES) ?>"
-                                    data-grande="<?= htmlspecialchars(number_format($gr2, 2, '.', ''), ENT_QUOTES) ?>"
-                                    data-desc="<?= htmlspecialchars($p['cold_desc'], ENT_QUOTES) ?>"
-                                    data-image="<?= htmlspecialchars($p['cold_img'], ENT_QUOTES) ?>"
-                                    data-type="cold">View</button>
-                            </div>
-                        </div>
-                    </div>
-                    <?php
-                    ?>
-
-                    <div class="product-item" data-type="hot" data-category="5">
-                        <div class="product-image">
-                            <img src="<?= htmlspecialchars($p['hot_img']) ?>" alt="<?= htmlspecialchars($p['name']) ?>">
-                        </div>
-                        <div class="product-info">
-                            <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Signature Coffee</span>
-                            <p><?= htmlspecialchars($p['hot_desc']) ?></p>
-                            <div class="product-footer">
-                                <?php
-                                    $base3 = isset($productPrices[$pid2]) ? (float)$productPrices[$pid2] : 120;
-                                    $gr3 = isset($sizePriceMap[$pid2]['grande']) ? (float)$sizePriceMap[$pid2]['grande'] : $base3;
-                                ?>
-                                <button class="view-btn"
-                                    data-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>" data-product-id="<?= htmlspecialchars($p['product_id'], ENT_QUOTES) ?>"
-                                    data-name="<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>"
-                                    data-price="<?= htmlspecialchars($base3, ENT_QUOTES) ?>"
-                                    data-grande="<?= htmlspecialchars(number_format($gr3, 2, '.', ''), ENT_QUOTES) ?>"
-                                    data-desc="<?= htmlspecialchars($p['hot_desc'], ENT_QUOTES) ?>"
-                                    data-image="<?= htmlspecialchars($p['hot_img'], ENT_QUOTES) ?>"
-                                    data-type="hot">View</button>
-                            </div>
-                        </div>
-                    </div>
-            <?php
-                }
-            }
+    
             ?>
         </div>
 
