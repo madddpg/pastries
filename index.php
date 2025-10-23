@@ -997,8 +997,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             ?>
         </div>
 
-        <!-- Matcha Series Section -->
-        <?php $hp3 = computeCategoryHeader($allProducts, 3, 160, 190); ?>
+    <!-- Matcha Series Section -->
+    <?php $hp3 = ['grande' => 160, 'supreme' => 160]; ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Matcha Series</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
@@ -1047,8 +1047,8 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             ?>
         </div>
 
-        <!-- Milk Based Section -->
-         <?php $hp4 = computeCategoryHeader($allProducts, 4, 99, 120); ?>
+    <!-- Milk Based Section -->
+     <?php $hp4 = ['grande' => 99, 'supreme' => 99]; ?>
         <div class="products-header" style="margin-top:2em;">
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Milk Based</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
