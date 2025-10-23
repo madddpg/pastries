@@ -705,27 +705,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     $premiumIndex++;
                 }
             }
-            $premiumProducts = [
-                [
-                    'product_id' => 'ameri',
-                    'name' => 'Americano',
-                    'cold_img' => 'img/ameri.jpg',
-                    'hot_img' => 'img/HOT MARI.jpg',
-                    'pastries_img' => 'img/egg pie.jpg',
-                    'cold_desc' => 'A bold and simple espresso diluted with hot water for a smooth, black coffee.',
-                    'hot_desc' => 'A strong espresso-based drink diluted with hot water; bold and smooth.',
-                    'pastries_desc' => 'A delicious egg pie pastry, perfect for pairing with your coffee.',
-                ],
-                [
-                    'product_id' => 'caramel-macchiato',
-                    'name' => 'Caramel Macchiato',
-                    'cold_img' => 'img/caramel.jpg',
-                    'hot_img' => 'img/HOT MARI.jpg',
-                    'cold_desc' => 'A layered espresso drink with milk and rich caramel drizzle.',
-                    'hot_desc' => 'Steamed milk with espresso and a swirl of rich caramel sauce.',
-                ],
-
-            ];
+         
             foreach ($premiumProducts as $p) {
                 if (!in_array($p['product_id'], $shownIds) && (!isset($productStatuses[$p['product_id']]) || $productStatuses[$p['product_id']] === 'active')) {
                 ?>
