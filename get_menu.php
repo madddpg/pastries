@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 
 // Example menu data
 $menu = [
-    ['name' => 'Premium Coffee', 'category' => 'premium'],
+    ['name' => 'Signature Coffee', 'category' => 'premium'],
     ['name' => 'Specialty Coffee', 'category' => 'specialty'],
     ['name' => 'Milk Based', 'category' => 'milk'],
     ['name' => 'Chocolate Overload', 'category' => 'chocolate'],

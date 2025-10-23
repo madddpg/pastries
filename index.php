@@ -654,7 +654,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 
           <?php $hp5 = computeCategoryHeader($allProducts, 5, 140, 150); ?>
         <div class="products-header">
-            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Premium Coffee</h3>
+            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Signature Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
                 <!-- Single-size display (removed Supreme) -->
                 <span>16 oz | ₱<?= htmlspecialchars($hp5['grande']) ?></span>
@@ -666,7 +666,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             $premiumIndex = 0;
             foreach ($allProducts as $product) {
                 if (
-                    isset($product['category_id']) && $product['category_id'] == 5 // Premium Coffee category_id
+                    isset($product['category_id']) && $product['category_id'] == 5 // Signature Coffee category_id
                     && $product['status'] === 'active'
                 ) {
                     $shownIds[] = $product['product_id'];
@@ -682,7 +682,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </div>
                         <div class="product-info">
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Premium Coffee</span>
+                            <span class="badge bg-success mb-2">Signature Coffee</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <?php
                                 $pid = $product['product_id'];
@@ -735,7 +735,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </div>
                         <div class="product-info">
                             <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Premium Coffee</span>
+                            <span class="badge bg-success mb-2">Signature Coffee</span>
                             <p><?= htmlspecialchars($p['cold_desc']) ?></p>
                             <div class="product-footer">
                                 <?php
@@ -763,7 +763,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </div>
                         <div class="product-info">
                             <h3><?= htmlspecialchars($p['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Premium Coffee</span>
+                            <span class="badge bg-success mb-2">Signature Coffee</span>
                             <p><?= htmlspecialchars($p['hot_desc']) ?></p>
                             <div class="product-footer">
                                 <?php
