@@ -1277,11 +1277,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     var currentStatus = (row.getAttribute('data-product-status') || '').toLowerCase();
                     var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
 
-                    // Warn admin when deactivating a product
-                    if (newStatus === 'inactive') {
-                        var confirmMsg = 'This product will be inactive and removed from the menu until reactivated. Continue?';
-                        if (!confirm(confirmMsg)) return;
-                    }
+                    // Confirm for both activating and deactivating a product
+                    var confirmMsg = (newStatus === 'inactive')
+                        ? 'This product will be inactive and removed from the menu until reactivated. Continue?'
+                        : 'Activate this product and make it visible on the menu?';
+                    if (!confirm(confirmMsg)) return;
 
                     fetch('update_product_status.php', {
                         method: 'POST',
@@ -1395,55 +1395,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             });
 
             // Product management functionality
-            document.querySelectorAll('.toggle-location-status-btn').forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    var row = btn.closest('tr');
-                    if (!row) return;
-                    var id = row.getAttribute('data-location-id');
-                    var currentStatus = (row.getAttribute('data-location-status') || '').toLowerCase();
-                    var newStatus = currentStatus === 'open' ? 'closed' : 'open';
-                    if (!id) return;
-
-                    // Warn admin when closing a location
-                    if (newStatus === 'closed') {
-                        var confirmMsg = 'This location will be removed from the pickup options until reopened. Continue?';
-                        if (!confirm(confirmMsg)) return;
-                    }
-
-                    fetch('locations.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/x-www-form-urlencoded'
-                            },
-                            body: 'action=toggle_status&location_id=' + encodeURIComponent(id) + '&status=' + encodeURIComponent(newStatus)
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success) {
-                                // update attribute and visible badge/button text without reloading
-                                row.setAttribute('data-location-status', newStatus);
-                                var badge = row.querySelector('.status-badge');
-                                if (badge) {
-                                    badge.textContent = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-                                    badge.classList.toggle('active', newStatus === 'open');
-                                    badge.classList.toggle('inactive', newStatus !== 'open');
-                                }
-                                // update the menu button text to reflect next action
-                                btn.textContent = 'Set ' + (newStatus === 'open' ? 'Closed' : 'Open');
-                                // close dropdown if open
-                                var dropdown = btn.closest('.dropdown-menu');
-                                if (dropdown) dropdown.style.display = 'none';
-                            } else {
-                                alert(data.message || 'Failed to update status');
-                            }
-                        })
-                        .catch(() => {
-                            alert('Request failed');
-                        });
-                });
-            });
+            // Note: location status toggle handler consolidated later to avoid duplicate bindings
 
             // Edit product modal logic
             const editModal = document.getElementById('editProductModal');
@@ -1533,6 +1485,9 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     if (hidden) hidden.value = newPrice;
                     const newCat = formData.get('new_category');
 
+                    const confirmMsg = `Save product changes?\nID: ${id}\nName: ${newName}\nCategory: ${newCat}\nGrande Price: ${hasG ? '₱'+g.toFixed(2) : '(unchanged)'}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) return;
+
                     fetch('update_product.php', {
                             method: 'POST',
                             body: new URLSearchParams(formData)
@@ -1596,6 +1551,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         const price = parseFloat(tr.querySelector('.pv-price')?.value || '0');
                         return { label, price };
                     }).filter(v => v.label && !isNaN(v.price));
+
+                    const summary = variants.slice(0,3).map(v => `• ${v.label} — ₱${v.price.toFixed(2)}`).join('\n');
+                    const more = variants.length > 3 ? `\n…and ${variants.length-3} more` : '';
+                    const confirmMsg = `Save pastry variants for Product ID ${pid}?\n${summary}${more}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) return;
 
                     savePastryResult.textContent = '';
                     fetch('AJAX/pastry_variants.php', {
@@ -1748,6 +1708,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     e.preventDefault();
                     if (addProductResult) addProductResult.textContent = '';
                     const formData = new FormData(addProductForm);
+                    const name = (formData.get('name') || '').toString().trim();
+                    const type = (formData.get('data_type') || '').toString().trim();
+                    const cat = (formData.get('category') || '').toString().trim();
+                    const confirmMsg = `Add this product?\nName: ${name || '(no name)'}\nType: ${type || '(unspecified)'}\nCategory: ${cat || '(unspecified)'}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) { return; }
                     fetch('add_products.php', {
                             method: 'POST',
                             body: formData
@@ -1806,6 +1771,10 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     e.preventDefault();
                     if (addLocationResult) addLocationResult.textContent = '';
                     const formData = new FormData(addLocationForm);
+                    const lname = (formData.get('name') || '').toString().trim();
+                    const lstatus = (formData.get('status') || '').toString().trim();
+                    const confirmMsg = `Add this location?\nName: ${lname || '(no name)'}\nStatus: ${lstatus || '(unspecified)'}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) { return; }
                     fetch('locations.php', {
                             method: 'POST',
                             body: formData
@@ -1873,6 +1842,10 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         formData.append('location_id', formData.get('id') || document.getElementById('editLocationId').value);
                         formData.delete('id');
                     }
+                    const lname = (formData.get('name') || '').toString().trim();
+                    const lstatus = (formData.get('status') || '').toString().trim();
+                    const confirmMsg = `Save changes to this location?\nName: ${lname || '(no name)'}\nStatus: ${lstatus || '(unspecified)'}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) { return; }
                     fetch('locations.php', {
                             method: 'POST',
                             body: formData
@@ -1936,11 +1909,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     var newStatus = currentStatus === 'open' ? 'closed' : 'open';
                     if (!id) return;
 
-                    // Warn admin when closing a location
-                    if (newStatus === 'closed') {
-                        var confirmMsg = 'Closing this location will remove it from the pickup options until reopened. Continue?';
-                        if (!confirm(confirmMsg)) return;
-                    }
+                    // Confirm for both opening and closing
+                    var confirmMsg = newStatus === 'closed'
+                        ? 'Closing this location will remove it from the pickup options until reopened. Continue?'
+                        : 'Open this location and make it available for pickup?';
+                    if (!confirm(confirmMsg)) return;
 
                     fetch('locations.php', {
                             method: 'POST',
@@ -1994,6 +1967,11 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             if (addAdminForm) {
                 addAdminForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
+                    const fn = (addAdminForm.querySelector('[name="first_name"]')?.value || '').trim();
+                    const ln = (addAdminForm.querySelector('[name="last_name"]')?.value || '').trim();
+                    const em = (addAdminForm.querySelector('[name="email"]')?.value || '').trim();
+                    const confirmMsg = `Add this admin account?\nName: ${fn} ${ln}\nEmail: ${em}\n\nProceed?`;
+                    if (!window.confirm(confirmMsg)) return;
                     if (addAdminResult) { addAdminResult.textContent = ''; addAdminResult.style.color = '#dc2626'; }
                     const formData = new FormData(addAdminForm);
                     try {

@@ -649,12 +649,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = target.getAttribute('data-topping-id');
       const current = target.getAttribute('data-status') === 'active' ? 1 : 0;
       const next = current === 1 ? 0 : 1;
-      // Warn admin when deactivating a topping
-      if (next === 0) {
-        const name = (document.querySelector(`#toppingsTable tr[data-topping-id="${id}"] td:nth-child(2)`)?.textContent || '').trim() || `ID ${id}`;
-        const confirmMsg = `The "${name}" will be inactive and removed from customers' menu options until reactivated. Continue?`;
-        if (!confirm(confirmMsg)) return;
-      }
+      // Confirm for both directions
+      const name = (document.querySelector(`#toppingsTable tr[data-topping-id="${id}"] td:nth-child(2)`)?.textContent || '').trim() || `ID ${id}`;
+      const confirmMsg = next === 0
+        ? `The "${name}" will be inactive and removed from customers' menu options until reactivated. Continue?`
+        : `Activate topping "${name}" and make it selectable by customers?`;
+      if (!confirm(confirmMsg)) return;
       const body = new URLSearchParams();
       body.append('action', 'toggle_status');
       body.append('topping_id', id);
@@ -710,6 +710,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const name = document.getElementById('toppingName').value.trim();
       const price = document.getElementById('toppingPrice').value;
       if (!name) { if (resultEl) resultEl.textContent = 'Name required'; return; }
+      const confirmMsg = id
+        ? `Save changes to topping?\nName: ${name}\nPrice: ₱${Number(price||0).toFixed(2)}\n\nProceed?`
+        : `Add this topping?\nName: ${name}\nPrice: ₱${Number(price||0).toFixed(2)}\n\nProceed?`;
+      if (!window.confirm(confirmMsg)) return;
       const body = new URLSearchParams();
       body.append('name', name);
       body.append('price', price);
@@ -951,14 +955,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const nextStatus = map[cls];
     console.info('[admin] live action:', { id: orderId, status: nextStatus });
 
-    // For Accept only, show a modal confirmation
-    if (cls === 'btn-accept') {
-      const ok = window.confirm('Accept order? This will move the order to Preparing.');
-      if (ok) performUpdate(btn, orderId, nextStatus);
-      return;
-    }
-
-    // Others proceed immediately
+    // Require confirmation for all order actions
+    const messages = {
+      'btn-accept': 'Accept this order? This will move the order to Preparing.',
+      'btn-ready': 'Mark this order Ready for Pickup?',
+      'btn-complete': 'Mark this order as Picked Up and complete it?',
+      'btn-reject': 'Cancel this order? This cannot be undone.'
+    };
+    const ok = window.confirm(messages[cls] || 'Proceed with this action?');
+    if (!ok) return;
     performUpdate(btn, orderId, nextStatus);
   }, true); // capture to block inline onclicks if any
 
@@ -1277,6 +1282,14 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error('[admin] Unable to determine order ID for action', selector);
             return;
           }
+          // Ask for confirmation before changing order status
+          let actionLabel = status;
+          if (status === 'preparing') actionLabel = 'accept and set to Preparing';
+          else if (status === 'ready') actionLabel = 'mark as Ready';
+          else if (status === 'picked up') actionLabel = 'complete and mark as Picked up';
+          else if (status === 'cancelled') actionLabel = 'reject/cancel';
+          const msg = `Are you sure you want to ${actionLabel} order #${id}?`;
+          if (!window.confirm(msg)) return;
           const prevDisabled = btn.disabled;
           btn.disabled = true;
           updateOrderStatus(id, status)
