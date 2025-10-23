@@ -665,7 +665,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
             <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Signature Coffee</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
                 <!-- Single-size display (removed Supreme) -->
-                <span>16 oz | ₱<?= htmlspecialchars($hp5['grande']) ?></span>
+                <span>16 oz | ₱100 - ₱150</span>
             </div>
         </div>
         <div class="product-list">
