@@ -4,6 +4,13 @@ $isLoggedIn = isset($_SESSION['user']);
 $userFirstName = $isLoggedIn ? ($_SESSION['user']['user_FN'] ?? '') : '';
 $userLastName  = $isLoggedIn ? ($_SESSION['user']['user_LN'] ?? '') : '';
 $userFullName  = trim(($userFirstName . ' ' . $userLastName));
+// Compute initials for profile avatar when logged in
+$userInitials = '';
+if ($isLoggedIn) {
+    $fi = $userFirstName !== '' ? mb_substr($userFirstName, 0, 1) : '';
+    $li = $userLastName  !== '' ? mb_substr($userLastName, 0, 1)  : '';
+    $userInitials = mb_strtoupper(trim($fi . $li));
+}
 
 // Connection
 require_once __DIR__ . '/admin/database/db_connect.php';
@@ -79,7 +86,6 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
 ?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     
     <meta charset="UTF-8">
@@ -107,9 +113,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         $safeMap = [];
         if (!empty($sizePriceMap)) {
             foreach ($sizePriceMap as $pid => $sizes) {
+                $gr = isset($sizes['grande']) ? (float)$sizes['grande'] : null;
+                $su = isset($sizes['supreme']) ? (float)$sizes['supreme'] : $gr; // mirror grande if supreme absent
                 $safeMap[$pid] = [
-                    'grande' => isset($sizes['grande']) ? (float)$sizes['grande'] : null,
-                    'supreme' => isset($sizes['supreme']) ? (float)$sizes['supreme'] : null,
+                    'grande' => $gr,
+                    'supreme' => $su,
                 ];
             }
         }
@@ -137,7 +145,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     <button class="profile-btn" id="profileDropdownBtn" onclick="toggleProfileDropdown(event)">
                         <span class="profile-initials">
                             <?php if ($isLoggedIn): ?>
-                                <?php echo htmlspecialchars(mb_substr($userFirstName, 0, 1)); ?>
+                                <?php echo htmlspecialchars($userInitials ?: ''); ?>
                             <?php else: ?>
                                 <i class="fas fa-user"></i>
                             <?php endif; ?>
@@ -157,7 +165,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 </div>
                 <?php if ($isLoggedIn): ?>
                     <span class="navbar-username" style="margin-left:10px;font-weight:600;">
-                        <?php echo htmlspecialchars($userFirstName); ?>
+                        <?php echo htmlspecialchars($userFullName); ?>
                     </span>
                 <?php endif; ?>
             </nav>
