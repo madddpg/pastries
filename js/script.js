@@ -78,9 +78,8 @@ function recalcModalTotal() {
   // determine base price for the currently selected size/variant
   let base = Number(currentProduct.price || 0);
   if (currentProduct.dataType !== 'pastries') {
-    base = selectedSize === 'Grande'
-      ? Number(currentProduct.grandePrice ?? base)
-      : Number(currentProduct.supremePrice ?? base);
+    // Drinks: single size (Grande) only
+    base = Number(currentProduct.grandePrice ?? base);
   } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
     base = Number(currentProduct.price ?? base);
   }
@@ -108,7 +107,7 @@ function recalcModalTotal() {
 }
 
 // Centralized product view handler using DB-driven size prices.
-// Robust: supports both (event) and (id, name, price, description, image, dataType, variants, grande, supreme)
+// Robust: supports both (event) and (id, name, price, description, image, dataType, variants, grande)
 function handleViewProduct(id, name, price, description, image, dataType, variants, grandeFromBtn, supremeFromBtn, categoryId) {
   try {
     // If called as an event handler, extract dataset from the clicked .view-btn
@@ -125,7 +124,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       dataType = ds.type || 'cold';
       variants = (ds.variants && ds.variants !== 'null') ? (() => { try { return JSON.parse(ds.variants); } catch { return null; } })() : null;
       grandeFromBtn = Number(ds.grande || ds.price || 0) || 0;
-      supremeFromBtn = Number(ds.supreme || 0) || grandeFromBtn || 0;
+  // Supreme no longer used
     }
 
     if (!isLoggedIn) { showLoginModal(); return; }
@@ -143,8 +142,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
     const sizeButtons = modal.querySelector('.size-buttons');
 
     // Use prices coming from dataset (derived from product_size_prices). No hardcoded defaults.
-    const grandePrice = Number(grandeFromBtn || 0);
-    const supremePrice = Number(supremeFromBtn || 0);
+  const grandePrice = Number(grandeFromBtn || 0);
 
     // Build product object baseline
     currentProduct = {
@@ -154,8 +152,7 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
       image: image || '',
       dataType,
       price: (typeof price === 'number' && price > 0) ? price : grandePrice,
-      grandePrice,
-      supremePrice,
+  grandePrice,
       variants: null,
   sugar: window.selectedSugar || 'Regular',
       category_id: categoryId || ''
@@ -191,13 +188,12 @@ function handleViewProduct(id, name, price, description, image, dataType, varian
         });
       }
     } else {
-      // Drinks: standard two sizes
+      // Drinks: single size (Grande) only
       selectedSize = 'Grande';
       if (sizeTitleEl) sizeTitleEl.textContent = 'Size';
       if (sizeButtons) {
         sizeButtons.innerHTML = `
           <button class="size-btn active">Grande</button>
-          <button class="size-btn">Supreme</button>
         `;
         sizeButtons.querySelectorAll('.size-btn').forEach(btn => {
           const text = btn.textContent.trim();
@@ -311,9 +307,7 @@ function addProductToCart() {
 
   let base = Number(currentProduct.price || 0);
   if (currentProduct.dataType !== 'pastries') {
-    base = selectedSize === 'Grande'
-      ? Number(currentProduct.grandePrice || base)
-      : Number(currentProduct.supremePrice || base);
+    base = Number(currentProduct.grandePrice || base);
   } else if (currentProduct.dataType === 'pastries' && currentProduct.variants) {
     base = Number(currentProduct.price || base);
   }
@@ -1339,9 +1333,6 @@ document.addEventListener('click', function (e) {
     const grande = (btn.dataset.grande !== undefined && btn.dataset.grande !== '')
       ? Number(btn.dataset.grande)
       : Number(sizeMap.grande ?? 0);
-    const supreme = (btn.dataset.supreme !== undefined && btn.dataset.supreme !== '')
-      ? Number(btn.dataset.supreme)
-      : Number(sizeMap.supreme ?? grande ?? 0);
     const price = (btn.dataset.price !== undefined && btn.dataset.price !== '')
       ? Number(btn.dataset.price)
       : Number((sizeMap && sizeMap.grande != null) ? sizeMap.grande : 0);
@@ -1358,7 +1349,7 @@ document.addEventListener('click', function (e) {
       }
     }
     // Call product view handler
-    handleViewProduct(id, name, price, description, image, dataType, variants, grande, supreme, categoryId);
+  handleViewProduct(id, name, price, description, image, dataType, variants, grande, 0, categoryId);
   } catch (err) {
     console.error('Error handling view button click:', err);
   }
@@ -2234,10 +2225,6 @@ function selectSize(size) {
       currentProduct.price = currentProduct.grandePrice ?? currentProduct.price;
       const priceEl = document.getElementById("modalProductPrice");
       if (priceEl) priceEl.textContent = `Php ${currentProduct.grandePrice ?? currentProduct.price} (Grande)`;
-    } else {
-      currentProduct.price = currentProduct.supremePrice ?? currentProduct.price;
-      const priceEl = document.getElementById("modalProductPrice");
-      if (priceEl) priceEl.textContent = `Php ${currentProduct.supremePrice ?? currentProduct.price} (Supreme)`;
     }
   }
 
@@ -2692,10 +2679,6 @@ function handleEditProfile(event) {
         currentProduct.price = currentProduct.grandePrice ?? currentProduct.price;
         const priceEl = document.getElementById("modalProductPrice");
         if (priceEl) priceEl.textContent = `Php ${currentProduct.grandePrice ?? currentProduct.price} (Grande)`;
-      } else {
-        currentProduct.price = currentProduct.supremePrice ?? currentProduct.price;
-        const priceEl = document.getElementById("modalProductPrice");
-        if (priceEl) priceEl.textContent = `Php ${currentProduct.supremePrice ?? currentProduct.price} (Supreme)`;
       }
     }
 

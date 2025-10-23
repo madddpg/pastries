@@ -292,13 +292,13 @@ document.addEventListener("DOMContentLoaded", () => {
           table?.classList.remove('mode-drinks');
         } else if (filter === 'hot' || filter === 'cold') {
           hA.textContent = 'Grande';
-          hB.textContent = 'Supreme';
-          hC.textContent = '';
+          hB.textContent = '—';
+          hC.textContent = '—';
           table?.classList.add('mode-drinks');
         } else {
           // All: default to generic labels
           hA.textContent = 'Per piece / Grande';
-          hB.textContent = 'Box of 4 / Supreme';
+          hB.textContent = 'Box of 4 / —';
           hC.textContent = 'Box of 6 / —';
           table?.classList.remove('mode-drinks');
         }

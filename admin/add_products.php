@@ -97,21 +97,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, category_id, image, status, data_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $result = $stmt->execute([$id, $name, $description, $category_id, $imagePath, $status, $data_type]);
 
-        // Optionally store explicit size prices if provided
+        // Optionally store explicit size prices if provided (Grande only)
         if ($result) {
             $products_pk = (int)$pdo->lastInsertId();
             $price_grande  = isset($_POST['price_grande']) && $_POST['price_grande'] !== '' ? round((float)$_POST['price_grande'], 2) : null;
-            $price_supreme = isset($_POST['price_supreme']) && $_POST['price_supreme'] !== '' ? round((float)$_POST['price_supreme'], 2) : null;
-            if ($products_pk > 0 && ($price_grande !== null || $price_supreme !== null)) {
+            if ($products_pk > 0 && $price_grande !== null) {
                 $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
-                if ($price_grande !== null) {
-                    $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())")
-                        ->execute([$products_pk, $price_grande]);
-                }
-                if ($price_supreme !== null) {
-                    $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'supreme', ?, CURRENT_DATE, NULL, NOW(), NOW())")
-                        ->execute([$products_pk, $price_supreme]);
-                }
+                $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())")
+                    ->execute([$products_pk, $price_grande]);
             }
         }
 
@@ -125,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => $name,
                     'id' => $id,
                     'category' => $category,
-                    'price' => isset($price_grande) && $price_grande !== null ? number_format($price_grande, 2) : (isset($price_supreme) && $price_supreme !== null ? number_format($price_supreme, 2) : '0.00')
+                    'price' => isset($price_grande) && $price_grande !== null ? number_format($price_grande, 2) : '0.00'
                 ]
             ]);
         } else {

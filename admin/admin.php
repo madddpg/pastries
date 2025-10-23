@@ -620,7 +620,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
                     <div class="table-container">
                         <div style="font-size:12px;color:#64748b;margin:6px 0 10px;">
-                            For pastries: columns show Per piece, Box of 4, Box of 6. For drinks: Grande and Supreme appear in the first two columns.
+                            For pastries: columns show Per piece, Box of 4, Box of 6. For drinks: only Grande pricing is used; other columns are not applicable.
                         </div>
                         <table id="products-table" class="products-table">
                             <thead>
@@ -652,7 +652,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                         data-product-type="<?= htmlspecialchars(strtolower($product['data_type'] ?? '')) ?>"
                                         data-product-price="<?= htmlspecialchars($product['price']) ?>"
                                         data-price-grande="<?= isset($sizePriceMap[$product['product_id']]['grande']) ? htmlspecialchars($sizePriceMap[$product['product_id']]['grande']) : '' ?>"
-                                        data-price-supreme="<?= isset($sizePriceMap[$product['product_id']]['supreme']) ? htmlspecialchars($sizePriceMap[$product['product_id']]['supreme']) : '' ?>"
+                                        
                                         data-product-status="<?= htmlspecialchars($product['status']) ?>">
                                         <td><?= htmlspecialchars($product['product_id']) ?></td>
                                         <td>
@@ -693,9 +693,8 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                                 echo '<td>' . ($p6 !== null ? '₱' . number_format($p6,2) : '<span style="color:#64748b">—</span>') . '</td>';
                                             } else {
                                                 $gPrice = isset($sizePriceMap[$pid]['grande']) ? (float)$sizePriceMap[$pid]['grande'] : 0.0;
-                                                $sPrice = isset($sizePriceMap[$pid]['supreme']) ? (float)$sizePriceMap[$pid]['supreme'] : 0.0;
                                                 echo '<td><div>₱' . number_format($gPrice,2) . '</div><span class="price-sub">Grande</span></td>';
-                                                echo '<td><div>₱' . number_format($sPrice,2) . '</div><span class="price-sub">Supreme</span></td>';
+                                                echo '<td><span style="color:#64748b">—</span></td>';
                                                 echo '<td><span style="color:#64748b">—</span></td>';
                                             }
                                         ?>
@@ -826,10 +825,6 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                     <div>
                                         <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Grande Price</label>
                                         <input type="number" name="new_grande_price" id="editGrandePrice" step="0.01" class="form-control" placeholder="e.g. 140.00" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
-                                    </div>
-                                    <div>
-                                        <label style="display:block;margin-bottom:6px;font-size:0.95rem;color:#555;">Supreme Price</label>
-                                        <input type="number" name="new_supreme_price" id="editSupremePrice" step="0.01" class="form-control" placeholder="e.g. 190.00" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                     </div>
                                 </div>
                                 <div class="form-group" style="margin-bottom:14px;">
@@ -1454,7 +1449,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
             const editModal = document.getElementById('editProductModal');
             const editForm = document.getElementById('editProductForm');
             const editGrandePrice = document.getElementById('editGrandePrice');
-            const editSupremePrice = document.getElementById('editSupremePrice');
+            
             const closeEditModalBtn = document.getElementById('closeEditProductModal');
             // Pastry modal elements
             const pastryModal = document.getElementById('editPastryModal');
@@ -1507,11 +1502,9 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                         }
                         document.getElementById('editProductId').value = pid;
                         document.getElementById('editProductName').value = row.getAttribute('data-product-name');
-                        // Prefill grande/supreme prices (if available)
+                        // Prefill grande price (if available)
                         const g = row.getAttribute('data-price-grande') || '';
-                        const s = row.getAttribute('data-price-supreme') || '';
                         if (editGrandePrice) editGrandePrice.value = g;
-                        if (editSupremePrice) editSupremePrice.value = s;
                         document.getElementById('editProductCategory').value = row.getAttribute('data-product-category');
                         editModal.style.display = 'flex';
                     });
@@ -1532,12 +1525,10 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     const formData = new FormData(editForm);
                     const id = formData.get('product_id');
                     const newName = formData.get('new_name');
-                    // Compute a base price to keep the table's single Price column (prefer grande, else supreme)
+                    // Compute a base price to keep the table's single Price column (use grande if provided)
                     const g = parseFloat((formData.get('new_grande_price')||'').toString());
-                    const s = parseFloat((formData.get('new_supreme_price')||'').toString());
                     const hasG = !isNaN(g);
-                    const hasS = !isNaN(s);
-                    const newPrice = (hasG ? g : (hasS ? s : 0)).toFixed(2);
+                    const newPrice = (hasG ? g : 0).toFixed(2);
                     const hidden = document.getElementById('editHiddenBasePrice');
                     if (hidden) hidden.value = newPrice;
                     const newCat = formData.get('new_category');
@@ -1558,16 +1549,13 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                 row.setAttribute('data-product-name', newName);
                                 row.setAttribute('data-product-price', newPrice);
                                 row.setAttribute('data-product-category', newCat);
-                                // Also update stored grande/supreme for next edits
+                                // Also update stored grande for next edits
                                 if (hasG) row.setAttribute('data-price-grande', g.toFixed(2));
-                                if (hasS) row.setAttribute('data-price-supreme', s.toFixed(2));
-                                // cells: [Product(ID), Category, Grande, Supreme, Stock, Status, Sales, Action]
+                                // cells: [Product(ID), Category, Price A, Price B, Price C, Stock, Status, Sales, Action]
                                 const cells = row.querySelectorAll('td');
                                 if (cells[1]) cells[1].textContent = newCat;
                                 // Grande
                                 if (cells[2] && hasG) cells[2].textContent = '₱' + g.toFixed(2);
-                                // Supreme
-                                if (cells[3] && hasS) cells[3].textContent = '₱' + s.toFixed(2);
                             }
                             editModal.style.display = 'none';
                         })
