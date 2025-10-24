@@ -181,8 +181,20 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
 <body>
     <div class="dashboard">
+        <!-- Mobile Header with Hamburger -->
+        <div class="mobile-header">
+            <div class="mobile-logo">
+                <span>Cups&Cuddles</span>
+            </div>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo">
                 <span>Cups&Cuddles</span>
             </div>
@@ -1150,6 +1162,9 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 </div>
             </div>
         </main>
+        
+        <!-- Mobile sidebar overlay -->
+        <div class="sidebar-overlay"></div>
     </div>
     <script>
         // Navigation functionality

@@ -2,6 +2,9 @@ console.info('[admin] main.js loaded');
 
 document.addEventListener("DOMContentLoaded", () => {
   console.info('[admin] DOMContentLoaded fired');
+  
+  // Mobile Navigation Setup
+  initializeMobileNavigation();
   // Products pagination page size (must be defined before initial apply)
   const PRODUCTS_PER_PAGE = 8;
   // Products search state
@@ -1740,4 +1743,74 @@ function getOrderIdFrom(el) {
     if (container.dataset && container.dataset.id) return container.dataset.id;
   }
   return null;
+}
+
+// Mobile Navigation Functions
+function initializeMobileNavigation() {
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const sidebar = document.getElementById('sidebar');
+  const body = document.body;
+  
+  if (!hamburgerBtn || !sidebar) return;
+  
+  // Create overlay for mobile
+  let overlay = document.querySelector('.sidebar-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    body.appendChild(overlay);
+  }
+  
+  // Toggle mobile menu
+  function toggleMobileMenu() {
+    const isOpen = sidebar.classList.contains('open');
+    
+    if (isOpen) {
+      closeMobileMenu();
+    } else {
+      openMobileMenu();
+    }
+  }
+  
+  function openMobileMenu() {
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    hamburgerBtn.classList.add('active');
+    body.style.overflow = 'hidden'; // Prevent background scrolling
+  }
+  
+  function closeMobileMenu() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    hamburgerBtn.classList.remove('active');
+    body.style.overflow = ''; // Restore scrolling
+  }
+  
+  // Event listeners
+  hamburgerBtn.addEventListener('click', toggleMobileMenu);
+  overlay.addEventListener('click', closeMobileMenu);
+  
+  // Close menu when nav item is clicked (mobile)
+  const navItems = sidebar.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 992) {
+        setTimeout(closeMobileMenu, 100); // Small delay for better UX
+      }
+    });
+  });
+  
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 992) {
+      closeMobileMenu();
+    }
+  });
+  
+  // Handle escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+      closeMobileMenu();
+    }
+  });
 }

@@ -128,33 +128,279 @@
 }
 
 
-/* Make sidebar collapse to top navigation on small screens */
-@media (max-width: 992px) {
-  .sidebar {
-    width: 100%;
-    height: auto;
-    border-radius: 0 0 12px 12px;
-    padding: 8px;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    justify-content: space-between;
-  }
-
-  .logo span { font-size: 18px; }
-  .nav-menu {
-    flex-direction: row;
-    gap: 8px;
-    overflow-x: auto;
-    padding: 6px;
-    margin-left: 0;
-  }
-  .nav-item { padding: 8px 10px; margin-left: 8px; white-space: nowrap; }
-  .page-content { padding: 16px; }
+/* Mobile Header and Navigation */
+.mobile-header {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #176340;
+  color: white;
+  position: relative;
+  z-index: 1001;
 }
 
-/* Tables: keep scroll on narrow devices and collapse rows into card view */
-.table-container { overflow-x: auto; }
+.mobile-logo span {
+  font-weight: 600;
+  font-size: 18px;
+  color: #ffffff;
+}
+
+.hamburger-btn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.hamburger-btn span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background: white;
+  margin: 3px 0;
+  transition: 0.3s;
+  border-radius: 2px;
+}
+
+.hamburger-btn.active span:nth-child(1) {
+  transform: rotate(-45deg) translate(-5px, 6px);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+  transform: rotate(45deg) translate(-5px, -6px);
+}
+
+/* Enhanced responsive design for sidebar */
+@media (max-width: 992px) {
+  .mobile-header {
+    display: flex;
+  }
+  
+  .dashboard {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100vh;
+    background: #176340;
+    transition: left 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    border-radius: 0;
+  }
+  
+  .sidebar.open {
+    left: 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sidebar .logo {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .main-content {
+    width: 100%;
+    margin-left: 0;
+    padding-top: 0;
+  }
+  
+  .page-content {
+    padding: 16px;
+  }
+  
+  /* Overlay for mobile menu */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease;
+  }
+  
+  .sidebar-overlay.active {
+    display: block;
+  }
+  
+  /* Hide desktop logo when mobile header is shown */
+  .sidebar .logo {
+    display: block;
+  }
+}
+
+/* Enhanced Table Responsiveness */
+.table-container { 
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+}
+
+/* Horizontal scroll indicators for tables */
+.table-container::before,
+.table-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.table-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+.table-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));
+}
+
+/* Mobile table improvements */
+@media (max-width: 768px) {
+  .products-table {
+    font-size: 14px;
+  }
+  
+  .products-table th,
+  .products-table td {
+    padding: 8px 6px;
+    min-width: 80px;
+  }
+  
+  .products-table th:first-child,
+  .products-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 10;
+  }
+  
+  .products-table thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 11;
+  }
+  
+  /* Make action buttons smaller on mobile */
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 80px;
+  }
+  
+  .btn-group .btn {
+    font-size: 11px;
+    padding: 6px 8px;
+    white-space: nowrap;
+    border-radius: 4px;
+    line-height: 1.2;
+  }
+  
+  /* Smaller icons in mobile buttons */
+  .btn-group .btn i {
+    font-size: 10px;
+  }
+  
+  /* Stack buttons vertically in very narrow tables */
+  @media (max-width: 600px) {
+    .btn-group {
+      min-width: 60px;
+    }
+    
+    .btn-group .btn {
+      font-size: 10px;
+      padding: 4px 6px;
+    }
+  }
+}
+
+/* Card layout for very small screens */
+@media (max-width: 480px) {
+  .table-responsive-cards .products-table {
+    display: none;
+  }
+  
+  .mobile-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .mobile-card-header {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+    font-size: 16px;
+  }
+  
+  .mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .mobile-card-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  
+  .mobile-card-label {
+    font-weight: 500;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  
+  .mobile-card-value {
+    color: #374151;
+    font-size: 14px;
+    text-align: right;
+  }
+  
+  .mobile-card-actions {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f3f4f6;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .mobile-card-actions .btn {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+}
 /* Pagination unified styles */
 #pickedup-pagination {
   display:flex;
@@ -292,6 +538,115 @@
   right: 12px;
 }
 
+/* Touch-friendly improvements for mobile */
+@media (max-width: 768px) {
+  /* Larger tap targets */
+  button, .btn, input[type="button"], input[type="submit"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  /* Form improvements */
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+    border-radius: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Form groups */
+  .form-group, .form-row {
+    margin-bottom: 16px;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  /* Labels */
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  /* Better spacing for form sections */
+  .section-card {
+    padding: 20px;
+  }
+  
+  .section-card h2, .section-card h3 {
+    margin-bottom: 16px;
+  }
+  
+  /* Modal improvements */
+  .modal-content, .auth-content {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+  }
+  
+  /* Dropdown improvements */
+  .dropdown-menu {
+    position: fixed !important;
+    max-width: calc(100vw - 20px);
+    left: 10px !important;
+    right: 10px !important;
+    top: auto !important;
+  }
+  
+  /* Admin profile dropdown specific */
+  .admin-header-user-menu .dropdown-menu {
+    position: absolute !important;
+    right: 0 !important;
+    left: auto !important;
+    width: 200px;
+    max-width: calc(100vw - 20px);
+  }
+  
+  /* Improved scrollable areas */
+  .table-container {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  
+  /* Content section responsive */
+  .content-section {
+    padding: 16px;
+  }
+  
+  .content-section h1 {
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+  }
+  
+  /* Tab improvements */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tabs .tab {
+    white-space: nowrap;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  
+  /* Button improvements */
+  .btn-primary, .btn-secondary, .btn-danger {
+    font-size: 14px;
+    padding: 10px 16px;
+    border-radius: 6px;
+  }
+}
+
 /* Compact spacing for admin panels on small screens */
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr; gap: 12px; }
@@ -300,8 +655,7 @@
   .page-content { padding: 12px; }
   .product-cell img, .name-cell img { width: 40px; height: 40px; }
   .order-card { padding: 12px; }
-  .nav-item { font-size: 13px; padding: 8px; }
-  .sidebar { padding: 8px; border-radius: 0; }
+  .nav-item { font-size: 14px; padding: 12px 16px; }
 }
 
 /* Ensure admin charts and progress components scale */
@@ -964,23 +1318,74 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .bottom-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .dashboard-overview {
     padding: 1rem;
   }
   
+  .stat-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .stat-card h3 {
+    font-size: 2rem;
+  }
+  
+  .dashboard-card {
+    padding: 1.5rem;
+  }
+  
   .progress-circle {
     width: 150px;
     height: 150px;
+    margin: 1rem auto;
   }
   
   .progress-text .number {
     font-size: 2rem;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 1rem;
+    text-align: left;
+  }
+  
+  .stat-card .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    margin: 0 auto 0.5rem;
+  }
+  
+  .stat-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .dashboard-card {
+    padding: 1rem;
+  }
+  
+  .progress-circle {
+    width: 120px;
+    height: 120px;
   }
 }
 
@@ -1534,6 +1939,7 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  position: relative;
 }
 
 .sidebar {
@@ -1543,6 +1949,13 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
   flex-direction: column;
   padding: 20px 0;
   border-radius: 0px 20px 20px 0px;
+  position: relative;
+  z-index: 100;
+}
+
+.main-content {
+  flex: 1;
+  overflow-x: hidden;
 }
 
 .logo {

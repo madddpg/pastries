@@ -820,10 +820,10 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
         </div>
 
 
-        <!-- Specialty Coffee Section -->
+    <!-- Special Blend Section -->
           <?php $hp6 = computeCategoryHeader($allProducts, 6, 150, 180); ?>
         <div class="products-header" style="margin-top:2em;">
-            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Specialty Coffee</h3>
+            <h3 style="font-size:2rem;font-weight:700;margin-bottom:0.5em;">Special Blend</h3>
             <div style="font-size:1.1rem;font-weight:500;margin-bottom:1.5em;">
                 <span>16 oz | ₱<?= htmlspecialchars($hp6['grande']) ?></span>
             </div>
@@ -850,7 +850,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                         </div>
                         <div class="product-info">
                             <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            <span class="badge bg-success mb-2">Specialty Coffee</span>
+                            <span class="badge bg-success mb-2">Special Blend</span>
                             <p><?= htmlspecialchars($product['description']) ?></p>
                             <?php
                                 $pid = $product['product_id'];
