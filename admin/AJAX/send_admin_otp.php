@@ -135,9 +135,13 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
         ],
     ];
 
-    // Gmail credentials (App Password recommended)
-    $mail->Username = 'cupsandcuddles@gmail.com';
-    $mail->Password = 'ngjo tavi sdsn zpwq';
+    // Gmail credentials (App Password recommended). You can also set via env vars SMTP_USERNAME / SMTP_PASSWORD.
+    $smtpUser = getenv('SMTP_USERNAME') ?: 'cupsandcuddles@gmail.com';
+    $smtpPassRaw = getenv('SMTP_PASSWORD') ?: 'ngjo tavi sdsn zpwq';
+    // App passwords from Google are shown with spaces; remove any whitespace before use
+    $smtpPass = preg_replace('/\s+/', '', $smtpPassRaw);
+    $mail->Username = $smtpUser;
+    $mail->Password = $smtpPass;
 
     $mail->setFrom($mail->Username, 'Cups & Cuddles Admin');
     $mail->addReplyTo('no-reply@cupscuddles.local', 'Cups & Cuddles');
