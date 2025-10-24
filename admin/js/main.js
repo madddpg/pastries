@@ -510,12 +510,12 @@ document.addEventListener("DOMContentLoaded", () => {
               </span>
             </td>
             <td style="text-align:center;white-space:nowrap;">
-              <button class="btn-edit-topping" data-topping-id="${idVal}">Edit</button>
-              <button class="btn-topping-price-history" data-topping-id="${idVal}" style="margin-left:8px;color:#059669;">Price history</button>
-              <button class="btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:8px;">
+              <button class="btn-secondary btn-edit-topping" data-topping-id="${idVal}">Edit</button>
+              <button class="btn-secondary btn-topping-price-history" data-topping-id="${idVal}" style="margin-left:6px;">Price history</button>
+              <button class="btn-secondary btn-toggle-topping" data-topping-id="${idVal}" data-status="${status}" style="margin-left:6px;">
                 ${status === 'active' ? 'Set Inactive' : 'Set Active'}
               </button>
-              ${isSuper ? `<button class="btn-delete-topping" data-topping-id="${idVal}" style="margin-left:8px;color:#ef4444;">Delete</button>` : ''}
+              ${isSuper ? `<button class="btn-danger btn-delete-topping" data-topping-id="${idVal}" style="margin-left:6px;">Delete</button>` : ''}
             </td>
           </tr>
         `;
