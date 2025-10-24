@@ -450,6 +450,19 @@ h1, h2, h3, h4, h5, h6, p, span, a, li, label, th, td, div {
   cursor: pointer;
 }
 
+/* destructive action button aligned to theme */
+.btn-danger {
+  background: #b91c1c; /* themed red for destructive actions */
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn-danger:hover { background: #991b1b; }
+.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .payment-badge {
     display: inline-block;
     padding: 2px 8px;
