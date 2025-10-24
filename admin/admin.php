@@ -350,7 +350,8 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                 } else {
                                     foreach ($locRows as $lr) {
                                         $lid = (int)$lr['location_id'];
-                                        $lname = htmlspecialchars($lr['name']);
+                                        $lnameRaw = (string)$lr['name'];
+                                        $lname = htmlspecialchars($lnameRaw);
                                         $lstatus = strtolower($lr['status']) === 'open' ? 'open' : 'closed';
                                         $badgeClass = $lstatus === 'open' ? 'active' : 'inactive';
                                         $nextLabel = $lstatus === 'open' ? 'Set Closed' : 'Set Open';
@@ -359,12 +360,19 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                             $rel = htmlspecialchars($lr['image']);
                                             $imgTag = "<img src='../{$rel}' alt='{$lname}' class='location-img' onerror=\"this.style.display='none'\">";
                                         }
-                                        echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}'>".
+                                        $actionsHtml =
+                                            "<div class='btn-group' style=\"display:flex;gap:6px;flex-wrap:wrap;\">".
+                                                "<button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button>".
+                                                "<button class='btn-secondary edit-location-btn'>Edit</button>".
+                                                (Database::isSuperAdmin() ? "<button class='btn-danger delete-location-btn'>Delete</button>" : "").
+                                            "</div>";
+
+                                        echo "<tr data-location-id='{$lid}' data-location-status='{$lstatus}' data-location-name='" . htmlspecialchars($lnameRaw, ENT_QUOTES) . "'>".
                                              "<td>{$lid}</td>".
                                              "<td>{$lname}</td>".
                                              "<td>".($imgTag ?: '<span class=\'no-img\'>No Image</span>')."</td>".
                                              "<td><span class='status-badge {$badgeClass}'>".ucfirst($lstatus)."</span></td>".
-                                             "<td><button class='btn-secondary toggle-location-status-btn locations-toggle-btn'>{$nextLabel}</button></td>".
+                                             "<td>{$actionsHtml}</td>".
                                              "</tr>";
                                     }
                                 }
@@ -1881,28 +1889,47 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (!confirm('Are you sure you want to delete this location?')) return;
                         const row = btn.closest('tr');
                         const id = row && row.getAttribute('data-location-id');
                         if (!id) return;
-                        fetch('locations.php', {
+                        if (!confirm('Delete this location? This may fail if it is referenced by other data.')) return;
+
+                        function postDelete(act) {
+                            return fetch('locations.php', {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: 'action=delete&location_id=' + encodeURIComponent(id)
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.success) {
-                                    if (row) row.remove(); // remove row in-place
-                                } else {
-                                    alert(data.message || 'Delete failed');
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: 'action=' + encodeURIComponent(act) + '&location_id=' + encodeURIComponent(id)
+                            }).then(res => res.text().then(txt => {
+                                let data = {};
+                                try { data = JSON.parse(txt); } catch (_) {}
+                                return { ok: res.ok, status: res.status, data, raw: txt };
+                            }));
+                        }
+
+                        postDelete('delete').then(result => {
+                            const { ok, status, data } = result;
+                            if (ok && data && data.success) {
+                                if (row) row.remove();
+                                alert(data.message || 'Location deleted');
+                                return;
+                            }
+                            if (status === 409) {
+                                if (confirm('Delete failed due to references. Force delete instead? This will dissociate references and cannot be undone.')) {
+                                    return postDelete('force_delete').then(fr => {
+                                        if (fr.ok && fr.data && fr.data.success) {
+                                            if (row) row.remove();
+                                            alert(fr.data.message || 'Force-deleted location');
+                                        } else {
+                                            alert((fr.data && fr.data.message) ? fr.data.message : 'Force delete failed');
+                                        }
+                                    });
                                 }
-                            })
-                            .catch(() => {
-                                alert('Delete request failed');
-                            });
+                                return;
+                            }
+                            alert((data && data.message) ? data.message : 'Delete failed');
+                        }).catch(() => {
+                            alert('Delete request failed');
+                        });
                     });
                 });
             }
