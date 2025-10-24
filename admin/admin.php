@@ -273,7 +273,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
 
         <!-- Main Content -->
         <main class="main-content">
-            <header class="header" style="display:flex;align-items:center;justify-content:flex-end;padding:12px 16px;gap:12px;">
+            <header class="header" style="display:flex;align-items:center;justify-content:flex-end;padding:12px 16px;gap:12px;position:relative;">
                 <?php
                 // Pull admin session info; db_connect::loginAdmin sets these
                 $adminUsername = isset($_SESSION['admin_username']) ? $_SESSION['admin_username'] : '';
@@ -295,11 +295,20 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 if ($adminUsername) {
                     $initial = strtoupper(substr($adminUsername, 0, 1));
                     $roleLabel = $adminRole ? strtoupper($adminRole) : '';
-                    echo '<div class="admin-header-user" style="display:flex;align-items:center;gap:10px;">'
-                       . '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:#059669;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;">' . htmlspecialchars($initial) . '</div>'
-                       . '<div class="meta" style="display:flex;flex-direction:column;line-height:1.2;">'
-                       . '<span style="font-weight:700;color:#111827;">' . htmlspecialchars($adminUsername) . '</span>'
-                       . '<span style="font-size:12px;color:#6b7280;">' . htmlspecialchars($roleLabel) . '</span>'
+                    echo '<div class="admin-header-user-menu" style="position:relative;">'
+                       . '<button id="adminProfileMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;cursor:pointer;">'
+                       .   '<div class="avatar" style="width:36px;height:36px;border-radius:50%;background:#059669;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;">' . htmlspecialchars($initial) . '</div>'
+                       .   '<div class="meta" style="display:flex;flex-direction:column;line-height:1.2;text-align:left;">'
+                       .     '<span id="adminHeaderUsername" style="font-weight:700;color:#111827;">' . htmlspecialchars($adminUsername) . '</span>'
+                       .     '<span style="font-size:12px;color:#6b7280;">' . htmlspecialchars($roleLabel) . '</span>'
+                       .   '</div>'
+                       .   '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-left:6px;color:#6b7280;"><path d="M5 7L10 12L15 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+                       . '</button>'
+                       . '<div id="adminProfileDropdown" class="dropdown-menu" style="display:none;position:absolute;right:0;top:48px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);width:200px;overflow:hidden;">'
+                       .   '<button type="button" id="editProfileBtn" class="menu-item" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;font-size:14px;color:#374151;cursor:pointer;">Edit Profile</button>'
+                       .   '<form action="admin_logout.php" method="post" style="margin:0;">'
+                       .     '<button type="submit" class="menu-item" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;font-size:14px;color:#b91c1c;cursor:pointer;">Logout</button>'
+                       .   '</form>'
                        . '</div>'
                        . '</div>';
                 }
@@ -2285,6 +2294,95 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 window.__openReceipt = open; window.__closeReceipt = close;
                 if (closeBtn) closeBtn.addEventListener('click', close);
                 if (modal) modal.addEventListener('click', function(e){ if (e.target && e.target.getAttribute('data-close')==='backdrop') close(); });
+            })();
+        </script>
+        
+        <!-- Edit Profile Modal -->
+        <div id="editProfileModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,.4);">
+            <div style="background:#fff;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.2);width:95%;max-width:460px;padding:0;overflow:hidden;">
+                <div style="padding:16px 18px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
+                    <h3 style="margin:0;font-size:18px;color:#111827;">Edit Profile</h3>
+                    <button type="button" id="editProfileClose" aria-label="Close" style="background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer;">&times;</button>
+                </div>
+                <form id="editProfileForm" method="post" action="update_admin_profile.php" style="padding:16px 18px;display:block;">
+                    <div style="margin-bottom:12px;">
+                        <label for="ep_username" style="display:block;margin-bottom:6px;font-weight:600;color:#374151;">Username</label>
+                        <input type="text" id="ep_username" name="username" required style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label for="ep_current" style="display:block;margin-bottom:6px;font-weight:600;color:#374151;">Current Password</label>
+                        <input type="password" id="ep_current" name="current_password" required autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;" />
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <label for="ep_new" style="display:block;margin-bottom:6px;font-weight:600;color:#374151;">New Password (optional)</label>
+                        <input type="password" id="ep_new" name="new_password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;" />
+                    </div>
+                    <div style="margin-bottom:16px;">
+                        <label for="ep_confirm" style="display:block;margin-bottom:6px;font-weight:600;color:#374151;">Confirm New Password</label>
+                        <input type="password" id="ep_confirm" name="confirm_password" minlength="8" autocomplete="new-password" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:0.95rem;" />
+                    </div>
+                    <div id="ep_result" style="min-height:18px;color:#b91c1c;margin-bottom:8px;font-weight:600;"></div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button type="button" id="ep_cancel" class="btn-secondary" style="padding:10px 14px;border-radius:8px;">Cancel</button>
+                        <button type="submit" class="btn-primary" style="padding:10px 14px;border-radius:8px;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+            <div id="editProfileBackdrop" data-close="ep-backdrop" style="position:absolute;inset:0;"></div>
+        </div>
+
+        <script>
+            // Header profile dropdown and Edit Profile modal logic
+            (function(){
+                const btn = document.getElementById('adminProfileMenuBtn');
+                const menu = document.getElementById('adminProfileDropdown');
+                const editBtn = document.getElementById('editProfileBtn');
+                const modal = document.getElementById('editProfileModal');
+                const closeBtn = document.getElementById('editProfileClose');
+                const cancelBtn = document.getElementById('ep_cancel');
+                const form = document.getElementById('editProfileForm');
+                const resBox = document.getElementById('ep_result');
+                const usernameInput = document.getElementById('ep_username');
+                const headerName = document.getElementById('adminHeaderUsername');
+
+                function toggleMenu(force){ if(!menu) return; const show = (typeof force==='boolean')? force : (menu.style.display==='none' || menu.style.display===''); menu.style.display = show?'block':'none'; btn && btn.setAttribute('aria-expanded', show? 'true':'false'); }
+                function openModal(){ if(!modal) return; modal.style.display='flex'; if (usernameInput && headerName) usernameInput.value = headerName.textContent || ''; resBox && (resBox.textContent=''); toggleMenu(false); }
+                function closeModal(){ if(!modal) return; modal.style.display='none'; resBox && (resBox.textContent=''); form && form.reset(); if (usernameInput && headerName) usernameInput.value = headerName.textContent || ''; }
+
+                if (btn) btn.addEventListener('click', function(e){ e.stopPropagation(); toggleMenu(); });
+                document.addEventListener('click', function(e){ if (!menu || !btn) return; if (menu.contains(e.target) || btn.contains(e.target)) return; toggleMenu(false); });
+                if (editBtn) editBtn.addEventListener('click', function(){ openModal(); });
+                if (closeBtn) closeBtn.addEventListener('click', function(){ closeModal(); });
+                if (cancelBtn) cancelBtn.addEventListener('click', function(){ closeModal(); });
+                if (modal) modal.addEventListener('click', function(e){ if (e.target && e.target.getAttribute('data-close')==='ep-backdrop') closeModal(); });
+
+                if (form) form.addEventListener('submit', async function(e){
+                    e.preventDefault();
+                    resBox && (resBox.style.color = '#b91c1c');
+                    resBox && (resBox.textContent = 'Saving…');
+                    try {
+                        const fd = new FormData(form);
+                        // client-side check
+                        const np = (fd.get('new_password')||'').toString();
+                        const cp = (fd.get('confirm_password')||'').toString();
+                        if (np || cp) {
+                            if (np.length < 8) { resBox.textContent = 'New password must be at least 8 characters.'; return; }
+                            if (np !== cp) { resBox.textContent = 'Passwords do not match.'; return; }
+                        }
+                        const r = await fetch('update_admin_profile.php', { method:'POST', body: fd, credentials: 'same-origin' });
+                        const j = await r.json().catch(()=>null);
+                        if (j && j.success) {
+                            resBox.style.color = '#059669';
+                            resBox.textContent = 'Profile updated.';
+                            if (headerName && fd.get('username')) headerName.textContent = fd.get('username');
+                            setTimeout(closeModal, 600);
+                        } else {
+                            resBox.textContent = (j && j.message) ? j.message : 'Update failed.';
+                        }
+                    } catch (err) {
+                        if (resBox) resBox.textContent = 'Unexpected error.';
+                    }
+                });
             })();
         </script>
         <!-- Price History Modal -->
