@@ -96,19 +96,20 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail = new PHPMailer;
     $mail->CharSet    = 'UTF-8';
     $mail->isSMTP();
-    // Force IPv4 to avoid IPv6 connectivity issues, but preserve SNI
-    $ipv4 = gethostbyname('smtp.gmail.com');
-    $mail->Host       = $ipv4;
+    // Use hostname to preserve SNI; rely on system DNS to pick IPv4 if needed
+    $mail->Host       = 'smtp.gmail.com';
     $mail->Port       = (int)$port;
     $mail->SMTPAuth   = true;
     $mail->SMTPSecure = $secure; // 'tls' for 587, 'ssl' for 465
     $mail->SMTPAutoTLS = true;
     $mail->SMTPDebug  = 4; // most verbose debug for troubleshooting
-    // Append debug to a local log file and mirror to PHP error_log for easier inspection
-    $mail->Debugoutput = function ($str, $level) use ($debugFile) {
-        $line = date('Y-m-d H:i:s') . " PHPMailer [admin][$level]: " . $str . PHP_EOL;
-        @error_log($line, 3, $debugFile);
-        @error_log($line); // default PHP error_log
+    // Capture debug in memory, append to a local log file, and mirror to PHP error_log
+    $debugLines = [];
+    $mail->Debugoutput = function ($str, $level) use ($debugFile, &$debugLines) {
+        $line = date('Y-m-d H:i:s') . " PHPMailer [admin][$level]: " . $str;
+        $debugLines[] = $line;
+        @error_log($line . PHP_EOL, 3, $debugFile);
+        @error_log($line);
     };
     // Set EHLO/HELO hostname (helps some SMTP servers)
     $mail->Hostname = (string) (gethostname() ?: 'localhost');
@@ -129,8 +130,8 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
             'disable_compression' => true,
         ],
         'socket' => [
-            // Force IPv4 to avoid dual-stack issues
-            'bindto' => '0:0',
+            // Prefer IPv4 by binding to IPv4 wildcard
+            'bindto' => '0.0.0.0:0',
         ],
     ];
 
@@ -178,11 +179,17 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     } catch (Throwable $e) {
         $smtpErr = ['exception' => $e->getMessage()];
     }
-    
+    // Attach last 50 debug lines to help triage
+    $debugTail = [];
+    if (!empty($debugLines)) {
+        $debugTail = array_slice($debugLines, -50);
+    }
+
     return [false, $mail->ErrorInfo, [
         'debug_log' => $debugFile, 
         'smtp_error' => $smtpErr,
-        'retries' => $maxRetries + 1
+        'retries' => $maxRetries + 1,
+        'debug_tail' => $debugTail
     ]];
 }
 
@@ -201,7 +208,9 @@ if ($ok587) {
         'expires_at' => $_SESSION['admin_otp_expires'],
         'cooldown'   => $cooldown,
         'transport'  => 'tls:587',
-        'debug_log'  => isset($meta587['debug_log']) ? basename($meta587['debug_log']) : null
+        'debug_log'  => isset($meta587['debug_log']) ? basename($meta587['debug_log']) : null,
+        'debug_tail' => isset($meta587['debug_tail']) ? $meta587['debug_tail'] : null,
+        'retry'      => isset($meta587['retry']) ? $meta587['retry'] : null
     ]);
     exit;
 }
@@ -217,7 +226,9 @@ if ($ok465) {
         'cooldown'   => $cooldown,
         'transport'  => 'ssl:465',
         'note'       => 'Delivered using SSL:465 fallback',
-        'debug_log'  => isset($meta465['debug_log']) ? basename($meta465['debug_log']) : null
+        'debug_log'  => isset($meta465['debug_log']) ? basename($meta465['debug_log']) : null,
+        'debug_tail' => isset($meta465['debug_tail']) ? $meta465['debug_tail'] : null,
+        'retry'      => isset($meta465['retry']) ? $meta465['retry'] : null
     ]);
     exit;
 }
@@ -233,6 +244,10 @@ echo json_encode([
     'smtp_error' => [
         '587' => isset($meta587['smtp_error']) ? $meta587['smtp_error'] : null,
         '465' => isset($meta465['smtp_error']) ? $meta465['smtp_error'] : null,
+    ],
+    'debug_tail' => [
+        '587' => isset($meta587['debug_tail']) ? $meta587['debug_tail'] : null,
+        '465' => isset($meta465['debug_tail']) ? $meta465['debug_tail'] : null,
     ],
     'env' => [
         'php' => PHP_VERSION,
