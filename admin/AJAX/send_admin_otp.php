@@ -96,8 +96,9 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail = new PHPMailer;
     $mail->CharSet    = 'UTF-8';
     $mail->isSMTP();
-    // Use hostname to preserve SNI; PHPMailer will resolve to IPv4
-    $mail->Host       = 'smtp.gmail.com';
+    // Force IPv4 to avoid IPv6 connectivity issues, but preserve SNI
+    $ipv4 = gethostbyname('smtp.gmail.com');
+    $mail->Host       = $ipv4;
     $mail->Port       = (int)$port;
     $mail->SMTPAuth   = true;
     $mail->SMTPSecure = $secure; // 'tls' for 587, 'ssl' for 465
@@ -112,16 +113,24 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     // Set EHLO/HELO hostname (helps some SMTP servers)
     $mail->Hostname = (string) (gethostname() ?: 'localhost');
     $mail->Helo     = $mail->Hostname;
-    $mail->Timeout  = 20;
+    $mail->Timeout  = 30; // Increase timeout for slow connections
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer'       => false,
             'verify_peer_name'  => false,
             'allow_self_signed' => true,
-            // Prefer TLS 1.2 for Gmail
-            'crypto_method'     => defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT') ? STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT : 0,
-            // Ensure SNI peer name is set
+            // Force TLS 1.2+ and disable weak ciphers
+            'crypto_method'     => STREAM_CRYPTO_METHOD_TLS_CLIENT,
+            'ciphers'          => 'DEFAULT:!DH',
+            // Ensure SNI peer name is set (critical for Gmail)
             'peer_name'         => 'smtp.gmail.com',
+            'SNI_enabled'       => true,
+            // Disable compression to avoid CRIME attacks
+            'disable_compression' => true,
+        ],
+        'socket' => [
+            // Force IPv4 to avoid dual-stack issues
+            'bindto' => '0:0',
         ],
     ];
 
@@ -137,7 +146,29 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail->Body    = '<p>Your admin OTP code is <b>' . htmlspecialchars((string)$otp) . '</b></p><p>This code expires in 5 minutes.</p>';
     $mail->AltBody = 'Your admin OTP code is ' . $otp . '. It expires in 5 minutes.';
 
-    if ($mail->send()) return [true, '', ['debug_log' => $debugFile]];
+    // Attempt to send with retry logic
+    $maxRetries = 2;
+    for ($retry = 0; $retry <= $maxRetries; $retry++) {
+        try {
+            if ($mail->send()) {
+                return [true, '', ['debug_log' => $debugFile, 'retry' => $retry]];
+            }
+        } catch (Throwable $e) {
+            @error_log("PHPMailer send attempt " . ($retry + 1) . " failed: " . $e->getMessage());
+            if ($retry < $maxRetries) {
+                sleep(1); // Brief pause before retry
+                continue;
+            }
+        }
+        
+        // If we reach here, the send failed
+        if ($retry < $maxRetries) {
+            sleep(1);
+            continue;
+        }
+    }
+    
+    // Collect detailed error info after all retries failed
     $smtpErr = null;
     try {
         $smtp = $mail->getSMTPInstance();
@@ -147,7 +178,12 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     } catch (Throwable $e) {
         $smtpErr = ['exception' => $e->getMessage()];
     }
-    return [false, $mail->ErrorInfo, ['debug_log' => $debugFile, 'smtp_error' => $smtpErr]];
+    
+    return [false, $mail->ErrorInfo, [
+        'debug_log' => $debugFile, 
+        'smtp_error' => $smtpErr,
+        'retries' => $maxRetries + 1
+    ]];
 }
 
 // Attempt with STARTTLS 587 first, then fallback to SSL 465
