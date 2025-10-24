@@ -1,6 +1,14 @@
 <?php
 session_start();
 header('Content-Type: application/json');
+// Deprecated endpoint: OTP flow removed
+http_response_code(410);
+echo json_encode([
+    'success' => false,
+    'message' => 'OTP flow has been removed from admin.',
+    'error'   => 'Endpoint deprecated'
+]);
+exit;
 require_once __DIR__ . '/../database/db_connect.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

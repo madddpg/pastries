@@ -41,14 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Add-Admin OTP flow handlers
-  (function initAddAdminOtp() {
-    const sendBtn = document.getElementById('addAdminSendOtpBtn');
-    const verifyBtn = document.getElementById('addAdminVerifyBtn');
+  // Add-Admin direct create (no OTP)
+  (function initAddAdminDirect() {
+    const createBtn = document.getElementById('addAdminCreateBtn');
     const msgEl = document.getElementById('addAdminMsg');
-    const otpBlock = document.getElementById('addAdminOtpBlock');
-
-    if (!sendBtn || !verifyBtn) return;
+    if (!createBtn) return;
 
     function setMsg(text, ok = true) {
       if (!msgEl) return;
@@ -56,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
       msgEl.style.color = ok ? '#059669' : '#b91c1c';
     }
 
-    async function handleSendOtp() {
+    async function handleCreate() {
       setMsg('');
       const username = (document.getElementById('adminUsername')?.value || '').trim();
       const email    = (document.getElementById('adminEmail')?.value || '').trim();
@@ -65,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const confirm  = (document.getElementById('adminPassword2')?.value || '');
 
       if (!username || !email || !password || !confirm) {
-        setMsg('Please complete all fields first.', false);
+        setMsg('Please complete all fields.', false);
         return;
       }
       if (password !== confirm) {
@@ -73,63 +70,30 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      sendBtn.disabled = true; sendBtn.textContent = 'Sending...';
+      createBtn.disabled = true; const old = createBtn.textContent; createBtn.textContent = 'Creating...';
       try {
-        const res = await fetch('AJAX/send_admin_otp.php', {
+        const res = await fetch('AJAX/create_admin.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, role, password, confirm })
         });
         const json = await res.json();
         if (json.success) {
-          setMsg('OTP sent. Please check the email for the code.');
-          otpBlock.style.display = 'block';
-          verifyBtn.disabled = false;
-        } else {
-          setMsg((json.message || 'Failed to send OTP.') + (json.error ? ` (${json.error})` : ''), false);
-        }
-      } catch (e) {
-        setMsg('Network error while sending OTP.', false);
-      } finally {
-        sendBtn.disabled = false; sendBtn.textContent = 'Send OTP';
-      }
-    }
-
-    async function handleVerifyCreate() {
-      setMsg('');
-      const otp = (document.getElementById('addAdminOtp')?.value || '').trim();
-      if (!otp || otp.length !== 6) {
-        setMsg('Enter the 6-digit code.', false);
-        return;
-      }
-      verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying...';
-      try {
-        const res = await fetch('AJAX/verify_admin_otp.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ otp })
-        });
-        const json = await res.json();
-        if (json.success) {
           setMsg('Admin created successfully.');
-          // Reset form
-          ['adminUsername','adminEmail','adminPassword','adminPassword2','addAdminOtp'].forEach(id => {
+          ['adminUsername','adminEmail','adminPassword','adminPassword2'].forEach(id => {
             const el = document.getElementById(id); if (el) el.value = '';
           });
-          verifyBtn.disabled = true;
-          otpBlock.style.display = 'none';
         } else {
-          setMsg(json.message || 'Verification failed.', false);
+          setMsg(json.message || 'Failed to create admin.', false);
         }
       } catch (e) {
-        setMsg('Network error while verifying.', false);
+        setMsg('Network error while creating admin.', false);
       } finally {
-        verifyBtn.disabled = false; verifyBtn.textContent = 'Verify & Create';
+        createBtn.disabled = false; createBtn.textContent = old;
       }
     }
 
-    sendBtn.addEventListener('click', handleSendOtp);
-    verifyBtn.addEventListener('click', handleVerifyCreate);
+    createBtn.addEventListener('click', handleCreate);
   })();
 
 

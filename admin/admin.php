@@ -1139,16 +1139,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                             </div>
 
                             <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
-                                <button id="addAdminSendOtpBtn" type="button" class="btn-primary" style="flex:1;min-width:160px;">Send OTP</button>
-                                <button id="addAdminVerifyBtn" type="button" class="btn-secondary" style="flex:1;min-width:160px;" disabled>Verify & Create</button>
-                            </div>
-
-                            <div id="addAdminOtpBlock" style="display:none;margin-top:14px;">
-                                <label for="addAdminOtp" style="display:block;font-weight:600;margin-bottom:6px;">Enter OTP</label>
-                                <input type="text" id="addAdminOtp" maxlength="6" inputmode="numeric" pattern="[0-9]*"
-                                    class="form-control" placeholder="6-digit code"
-                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
-                                <div class="form-text" id="addAdminOtpHelp" style="margin-top:6px;color:#6b7280;">A code was sent to the email above. It expires in 5 minutes.</div>
+                                <button id="addAdminCreateBtn" type="button" class="btn-primary" style="flex:1;min-width:160px;">Create Admin</button>
                             </div>
 
                             <div id="addAdminMsg" style="margin-top:12px;font-weight:600;color:#374151;"></div>
