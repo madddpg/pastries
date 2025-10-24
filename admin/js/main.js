@@ -86,7 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
           otpBlock.style.display = 'block';
           verifyBtn.disabled = false;
         } else {
-          setMsg(json.message || 'Failed to send OTP.', false);
+          setMsg((json.message || 'Failed to send OTP.') + (json.error ? ` (${json.error})` : ''), false);
         }
       } catch (e) {
         setMsg('Network error while sending OTP.', false);

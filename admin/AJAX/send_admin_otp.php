@@ -80,7 +80,10 @@ $mail->Host       = 'smtp.gmail.com';
 $mail->Port       = 587;
 $mail->SMTPAuth   = true;
 $mail->SMTPSecure = 'tls';
-$mail->SMTPDebug  = 0; // set to 2 to debug
+$mail->SMTPDebug  = 2; // verbose debug for troubleshooting (logs to error_log)
+$mail->Debugoutput = function ($str, $level) {
+    error_log("PHPMailer [admin][$level]: $str");
+};
 $mail->Timeout    = 20;
 $mail->SMTPOptions = [
     'ssl' => [
@@ -112,5 +115,9 @@ if ($mail->send()) {
         'cooldown'   => $cooldown
     ]);
 } else {
-    echo json_encode(['success' => false, 'message' => 'Failed to send verification email. Please try again later.']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Failed to send verification email. Please try again later.',
+        'error'   => $mail->ErrorInfo
+    ]);
 }
