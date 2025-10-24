@@ -73,28 +73,54 @@ $_SESSION['admin_otp_expires'] = $now + 5 * 60; // 5 minutes
 $_SESSION['admin_otp_attempts'] = 0;
 unset($_SESSION['admin_otp_locked_until']);
 
-// Helper to configure and send email; returns [success, error]
+// Simple TCP connectivity probe to provide clearer diagnostics
+function probePort($host, $port, $timeout = 5) {
+    $errno = 0; $errstr = '';
+    $fp = @stream_socket_client("tcp://{$host}:{$port}", $errno, $errstr, $timeout);
+    if ($fp) {
+        @fclose($fp);
+        return [true, 'ok'];
+    }
+    return [false, trim("{$errno} {$errstr}")];
+}
+
+// Helper to configure and send email; returns [success, error, meta]
 function sendAdminOtpMail($email, $otp, $port, $secure) {
+    // Ensure a local log file exists for SMTP debug
+    $logDir = __DIR__ . '/../logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0775, true);
+    }
+    $debugFile = $logDir . '/mail_debug.log';
+
     $mail = new PHPMailer;
     $mail->CharSet    = 'UTF-8';
     $mail->isSMTP();
-    // Force IPv4 to avoid IPv6 connectivity issues on some hosts
-    $mail->Host       = gethostbyname('smtp.gmail.com');
+    // Use hostname to preserve SNI; PHPMailer will resolve to IPv4
+    $mail->Host       = 'smtp.gmail.com';
     $mail->Port       = (int)$port;
     $mail->SMTPAuth   = true;
     $mail->SMTPSecure = $secure; // 'tls' for 587, 'ssl' for 465
     $mail->SMTPAutoTLS = true;
-    $mail->SMTPDebug  = 2; // verbose debug for troubleshooting (logs to error_log)
-    $mail->Debugoutput = function ($str, $level) {
-        error_log("PHPMailer [admin][$level]: $str");
+    $mail->SMTPDebug  = 2; // verbose debug for troubleshooting
+    // Append debug to a local log file for easier inspection
+    $mail->Debugoutput = function ($str, $level) use ($debugFile) {
+        $line = date('Y-m-d H:i:s') . " PHPMailer [admin][$level]: " . $str . PHP_EOL;
+        @error_log($line, 3, $debugFile);
     };
-    $mail->Timeout    = 20;
+    // Set EHLO/HELO hostname (helps some SMTP servers)
+    $mail->Hostname = (string) (gethostname() ?: 'localhost');
+    $mail->Helo     = $mail->Hostname;
+    $mail->Timeout  = 20;
     $mail->SMTPOptions = [
         'ssl' => [
             'verify_peer'       => false,
             'verify_peer_name'  => false,
             'allow_self_signed' => true,
-            'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+            // Prefer TLS 1.2 for Gmail
+            'crypto_method'     => defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT') ? STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT : 0,
+            // Ensure SNI peer name is set
+            'peer_name'         => 'smtp.gmail.com',
         ],
     ];
 
@@ -110,12 +136,16 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail->Body    = '<p>Your admin OTP code is <b>' . htmlspecialchars((string)$otp) . '</b></p><p>This code expires in 5 minutes.</p>';
     $mail->AltBody = 'Your admin OTP code is ' . $otp . '. It expires in 5 minutes.';
 
-    if ($mail->send()) return [true, ''];
-    return [false, $mail->ErrorInfo];
+    if ($mail->send()) return [true, '', ['debug_log' => $debugFile]];
+    return [false, $mail->ErrorInfo, ['debug_log' => $debugFile]];
 }
 
 // Attempt with STARTTLS 587 first, then fallback to SSL 465
-list($ok587, $err587) = sendAdminOtpMail($email, $otp, 587, 'tls');
+// Preflight connectivity probes (to help distinguish auth vs network)
+list($probe587Ok, $probe587Err) = probePort('smtp.gmail.com', 587, 5);
+list($probe465Ok, $probe465Err) = probePort('smtp.gmail.com', 465, 5);
+
+list($ok587, $err587, $meta587) = sendAdminOtpMail($email, $otp, 587, 'tls');
 if ($ok587) {
     $_SESSION['admin_last_otp_sent_at'] = $now;
     echo json_encode([
@@ -124,12 +154,13 @@ if ($ok587) {
         'email'   => $email,
         'expires_at' => $_SESSION['admin_otp_expires'],
         'cooldown'   => $cooldown,
-        'transport'  => 'tls:587'
+        'transport'  => 'tls:587',
+        'debug_log'  => isset($meta587['debug_log']) ? basename($meta587['debug_log']) : null
     ]);
     exit;
 }
 
-list($ok465, $err465) = sendAdminOtpMail($email, $otp, 465, 'ssl');
+list($ok465, $err465, $meta465) = sendAdminOtpMail($email, $otp, 465, 'ssl');
 if ($ok465) {
     $_SESSION['admin_last_otp_sent_at'] = $now;
     echo json_encode([
@@ -139,7 +170,8 @@ if ($ok465) {
         'expires_at' => $_SESSION['admin_otp_expires'],
         'cooldown'   => $cooldown,
         'transport'  => 'ssl:465',
-        'note'       => 'Delivered using SSL:465 fallback'
+        'note'       => 'Delivered using SSL:465 fallback',
+        'debug_log'  => isset($meta465['debug_log']) ? basename($meta465['debug_log']) : null
     ]);
     exit;
 }
@@ -148,5 +180,9 @@ echo json_encode([
     'success' => false,
     'message' => 'Failed to send verification email. Please try again later.',
     'error'   => '587: ' . $err587 . ' | 465: ' . $err465,
-    'hint'    => 'Allow outbound SMTP on ports 587/465, ensure Gmail App Password is correct, and consider disabling IPv6.'
+    'connectivity' => [
+        '587' => $probe587Ok ? 'ok' : $probe587Err,
+        '465' => $probe465Ok ? 'ok' : $probe465Err,
+    ],
+    'hint'    => 'If connectivity is failing, allow outbound SMTP on ports 587/465 in Windows Firewall/AV and your router/ISP. If connectivity is ok but still failing, double-check Gmail account 2FA + App Password, and ensure TLS 1.2 is supported in your PHP/OpenSSL stack.'
 ]);
