@@ -102,11 +102,12 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail->SMTPAuth   = true;
     $mail->SMTPSecure = $secure; // 'tls' for 587, 'ssl' for 465
     $mail->SMTPAutoTLS = true;
-    $mail->SMTPDebug  = 2; // verbose debug for troubleshooting
-    // Append debug to a local log file for easier inspection
+    $mail->SMTPDebug  = 4; // most verbose debug for troubleshooting
+    // Append debug to a local log file and mirror to PHP error_log for easier inspection
     $mail->Debugoutput = function ($str, $level) use ($debugFile) {
         $line = date('Y-m-d H:i:s') . " PHPMailer [admin][$level]: " . $str . PHP_EOL;
         @error_log($line, 3, $debugFile);
+        @error_log($line); // default PHP error_log
     };
     // Set EHLO/HELO hostname (helps some SMTP servers)
     $mail->Hostname = (string) (gethostname() ?: 'localhost');
@@ -137,7 +138,16 @@ function sendAdminOtpMail($email, $otp, $port, $secure) {
     $mail->AltBody = 'Your admin OTP code is ' . $otp . '. It expires in 5 minutes.';
 
     if ($mail->send()) return [true, '', ['debug_log' => $debugFile]];
-    return [false, $mail->ErrorInfo, ['debug_log' => $debugFile]];
+    $smtpErr = null;
+    try {
+        $smtp = $mail->getSMTPInstance();
+        if ($smtp && method_exists($smtp, 'getError')) {
+            $smtpErr = $smtp->getError();
+        }
+    } catch (Throwable $e) {
+        $smtpErr = ['exception' => $e->getMessage()];
+    }
+    return [false, $mail->ErrorInfo, ['debug_log' => $debugFile, 'smtp_error' => $smtpErr]];
 }
 
 // Attempt with STARTTLS 587 first, then fallback to SSL 465
@@ -183,6 +193,14 @@ echo json_encode([
     'connectivity' => [
         '587' => $probe587Ok ? 'ok' : $probe587Err,
         '465' => $probe465Ok ? 'ok' : $probe465Err,
+    ],
+    'smtp_error' => [
+        '587' => isset($meta587['smtp_error']) ? $meta587['smtp_error'] : null,
+        '465' => isset($meta465['smtp_error']) ? $meta465['smtp_error'] : null,
+    ],
+    'env' => [
+        'php' => PHP_VERSION,
+        'openssl' => defined('OPENSSL_VERSION_TEXT') ? OPENSSL_VERSION_TEXT : null,
     ],
     'hint'    => 'If connectivity is failing, allow outbound SMTP on ports 587/465 in Windows Firewall/AV and your router/ISP. If connectivity is ok but still failing, double-check Gmail account 2FA + App Password, and ensure TLS 1.2 is supported in your PHP/OpenSSL stack.'
 ]);
