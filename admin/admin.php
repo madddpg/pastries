@@ -780,8 +780,8 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                                     <textarea name="description" required class="form-control" placeholder="Description" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;resize:vertical;"></textarea>
                                 </div>
                                 <div class="form-group" style="margin-bottom:16px;">
-                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Price</label>
-                                    <input type="number" name="price" step="0.01" required class="form-control" placeholder="Price" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
+                                    <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Price <span style="color:#6b7280;font-weight:400;">(Grande for drinks)</span></label>
+                                    <input type="number" name="price" step="0.01" required class="form-control" placeholder="e.g. 140.00" style="width:100%;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:0.95rem;">
                                 </div>
                                 <div class="form-group" style="margin-bottom:16px;">
                                     <label style="display:block;margin-bottom:6px;font-weight:500;color:#333;">Type of drinks</label>

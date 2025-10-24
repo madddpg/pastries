@@ -10,8 +10,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = trim($_POST['product_id'] ?? ($_POST['id'] ?? ''));
     $name = trim($_POST['name'] ?? '');
     $description = trim($_POST['description'] ?? '');
-    // Base price no longer stored on products; use size-specific prices instead
-    $price = isset($_POST['price']) ? floatval($_POST['price']) : 0; // accepted but ignored
+    // Price provided from modal; treat as Grande for drinks
+    $price = isset($_POST['price']) && $_POST['price'] !== '' ? round((float)$_POST['price'], 2) : null;
     $category = trim($_POST['category'] ?? '');
     $status = $_POST['status'] ?? 'active';
     $data_type = $_POST['data_type'] ?? '';
@@ -97,11 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("INSERT INTO products (product_id, name, description, category_id, image, status, data_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $result = $stmt->execute([$id, $name, $description, $category_id, $imagePath, $status, $data_type]);
 
-        // Optionally store explicit size prices if provided (Grande only)
+        // Optionally store explicit size prices if provided (Grande only). For drinks, map 'price' to Grande.
         if ($result) {
             $products_pk = (int)$pdo->lastInsertId();
-            $price_grande  = isset($_POST['price_grande']) && $_POST['price_grande'] !== '' ? round((float)$_POST['price_grande'], 2) : null;
-            if ($products_pk > 0 && $price_grande !== null) {
+            // Prefer explicit price_grande; otherwise use 'price' field
+            $price_grande  = isset($_POST['price_grande']) && $_POST['price_grande'] !== '' ? round((float)$_POST['price_grande'], 2) : ($price !== null ? $price : null);
+            $is_pastry = strtolower($data_type) === 'pastries';
+            if ($products_pk > 0 && $price_grande !== null && !$is_pastry) {
                 $tbl = method_exists($db, 'getSizePriceTable') ? $db->getSizePriceTable($pdo) : 'product_size_prices';
                 $pdo->prepare("INSERT INTO `{$tbl}` (products_pk, size, price, effective_from, effective_to, created_at, updated_at) VALUES (?, 'grande', ?, CURRENT_DATE, NULL, NOW(), NOW())")
                     ->execute([$products_pk, $price_grande]);
@@ -118,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'name' => $name,
                     'id' => $id,
                     'category' => $category,
-                    'price' => isset($price_grande) && $price_grande !== null ? number_format($price_grande, 2) : '0.00'
+                    'price' => isset($price_grande) && $price_grande !== null ? number_format($price_grande, 2) : (isset($price) && $price !== null ? number_format($price, 2) : '0.00')
                 ]
             ]);
         } else {
