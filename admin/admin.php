@@ -1102,32 +1102,56 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 <!-- Add Admin Section -->
                 <div id="add-admin-section" class="content-section">
                     <h1 style="text-align:center;margin-bottom:24px;">Add Admin</h1>
-                    <div class="table-container" style="max-width:420px;margin:auto;">
-                        <form id="addAdminForm" method="post" action="add_admin.php"
-                            style="background:#fff;padding:32px 28px;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
-                            <div class="form-group" style="margin-bottom:16px;">
+                    <div class="table-container" style="max-width:520px;margin:auto;">
+                        <form id="addAdminForm" method="dialog" onsubmit="return false;"
+                            style="background:#fff;padding:24px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.06);">
+                            <div class="form-group" style="margin-bottom:12px;">
                                 <label for="adminUsername" style="display:block;font-weight:600;margin-bottom:6px;">Username</label>
-                                <input type="text" name="username" id="adminUsername" required
+                                <input type="text" id="adminUsername" required
                                     class="form-control" placeholder="Enter username"
-                                    style="width:100%;padding:10px 14px;border:1px solid #ccc;border-radius:8px;">
+                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
                             </div>
-                            <div class="form-group" style="margin-bottom:16px;">
+                            <div class="form-group" style="margin-bottom:12px;">
                                 <label for="adminEmail" style="display:block;font-weight:600;margin-bottom:6px;">Email</label>
-                                <input type="email" name="admin_email" id="adminEmail" required
+                                <input type="email" id="adminEmail" required
                                     class="form-control" placeholder="Enter email"
-                                    style="width:100%;padding:10px 14px;border:1px solid #ccc;border-radius:8px;">
+                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
                             </div>
-                            <div class="form-group" style="margin-bottom:16px;">
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label for="adminRole" style="display:block;font-weight:600;margin-bottom:6px;">Role</label>
+                                <select id="adminRole" class="form-control" style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
+                                    <option value="admin" selected>Admin</option>
+                                    <option value="super_admin">Super Admin</option>
+                                </select>
+                                <div class="form-text" style="color:#6b7280;font-size:12px;margin-top:6px;">Only a super admin can create another super admin.</div>
+                            </div>
+                            <div class="form-group" style="margin-bottom:12px;">
                                 <label for="adminPassword" style="display:block;font-weight:600;margin-bottom:6px;">Password</label>
-                                <input type="password" name="password" id="adminPassword" required
-                                    class="form-control" placeholder="Enter password"
-                                    style="width:100%;padding:10px 14px;border:1px solid #ccc;border-radius:8px;">
+                                <input type="password" id="adminPassword" required
+                                    class="form-control" placeholder="Create a password"
+                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
                             </div>
-                            <button type="submit" class="btn-primary"
-                                style="width:100%;background-color:#059669;color:#fff;padding:12px;border:none;border-radius:10px;font-weight:600;cursor:pointer;">
-                                Add Admin
-                            </button>
-                            <div id="addAdminResult" style="margin-top:12px;color:#059669;font-weight:600;"></div>
+                            <div class="form-group" style="margin-bottom:12px;">
+                                <label for="adminPassword2" style="display:block;font-weight:600;margin-bottom:6px;">Confirm Password</label>
+                                <input type="password" id="adminPassword2" required
+                                    class="form-control" placeholder="Confirm password"
+                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
+                            </div>
+
+                            <div class="form-group" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+                                <button id="addAdminSendOtpBtn" type="button" class="btn-primary" style="flex:1;min-width:160px;">Send OTP</button>
+                                <button id="addAdminVerifyBtn" type="button" class="btn-secondary" style="flex:1;min-width:160px;" disabled>Verify & Create</button>
+                            </div>
+
+                            <div id="addAdminOtpBlock" style="display:none;margin-top:14px;">
+                                <label for="addAdminOtp" style="display:block;font-weight:600;margin-bottom:6px;">Enter OTP</label>
+                                <input type="text" id="addAdminOtp" maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                                    class="form-control" placeholder="6-digit code"
+                                    style="width:100%;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;">
+                                <div class="form-text" id="addAdminOtpHelp" style="margin-top:6px;color:#6b7280;">A code was sent to the email above. It expires in 5 minutes.</div>
+                            </div>
+
+                            <div id="addAdminMsg" style="margin-top:12px;font-weight:600;color:#374151;"></div>
                         </form>
                     </div>
                 </div>

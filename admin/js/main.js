@@ -41,6 +41,97 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Add-Admin OTP flow handlers
+  (function initAddAdminOtp() {
+    const sendBtn = document.getElementById('addAdminSendOtpBtn');
+    const verifyBtn = document.getElementById('addAdminVerifyBtn');
+    const msgEl = document.getElementById('addAdminMsg');
+    const otpBlock = document.getElementById('addAdminOtpBlock');
+
+    if (!sendBtn || !verifyBtn) return;
+
+    function setMsg(text, ok = true) {
+      if (!msgEl) return;
+      msgEl.textContent = text || '';
+      msgEl.style.color = ok ? '#059669' : '#b91c1c';
+    }
+
+    async function handleSendOtp() {
+      setMsg('');
+      const username = (document.getElementById('adminUsername')?.value || '').trim();
+      const email    = (document.getElementById('adminEmail')?.value || '').trim();
+      const role     = (document.getElementById('adminRole')?.value || 'admin');
+      const password = (document.getElementById('adminPassword')?.value || '');
+      const confirm  = (document.getElementById('adminPassword2')?.value || '');
+
+      if (!username || !email || !password || !confirm) {
+        setMsg('Please complete all fields first.', false);
+        return;
+      }
+      if (password !== confirm) {
+        setMsg('Passwords do not match.', false);
+        return;
+      }
+
+      sendBtn.disabled = true; sendBtn.textContent = 'Sending...';
+      try {
+        const res = await fetch('AJAX/send_admin_otp.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, role, password, confirm })
+        });
+        const json = await res.json();
+        if (json.success) {
+          setMsg('OTP sent. Please check the email for the code.');
+          otpBlock.style.display = 'block';
+          verifyBtn.disabled = false;
+        } else {
+          setMsg(json.message || 'Failed to send OTP.', false);
+        }
+      } catch (e) {
+        setMsg('Network error while sending OTP.', false);
+      } finally {
+        sendBtn.disabled = false; sendBtn.textContent = 'Send OTP';
+      }
+    }
+
+    async function handleVerifyCreate() {
+      setMsg('');
+      const otp = (document.getElementById('addAdminOtp')?.value || '').trim();
+      if (!otp || otp.length !== 6) {
+        setMsg('Enter the 6-digit code.', false);
+        return;
+      }
+      verifyBtn.disabled = true; verifyBtn.textContent = 'Verifying...';
+      try {
+        const res = await fetch('AJAX/verify_admin_otp.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp })
+        });
+        const json = await res.json();
+        if (json.success) {
+          setMsg('Admin created successfully.');
+          // Reset form
+          ['adminUsername','adminEmail','adminPassword','adminPassword2','addAdminOtp'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+          });
+          verifyBtn.disabled = true;
+          otpBlock.style.display = 'none';
+        } else {
+          setMsg(json.message || 'Verification failed.', false);
+        }
+      } catch (e) {
+        setMsg('Network error while verifying.', false);
+      } finally {
+        verifyBtn.disabled = false; verifyBtn.textContent = 'Verify & Create';
+      }
+    }
+
+    sendBtn.addEventListener('click', handleSendOtp);
+    verifyBtn.addEventListener('click', handleVerifyCreate);
+  })();
+
 
   // Sidebar Navigation
   // Delegated handler for See receipt buttons
