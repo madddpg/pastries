@@ -2299,7 +2299,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
         
         <!-- Edit Profile Modal -->
         <div id="editProfileModal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;background:rgba(0,0,0,.4);">
-            <div style="background:#fff;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.2);width:95%;max-width:460px;padding:0;overflow:hidden;">
+            <div style="position:relative;z-index:1;background:#fff;border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.2);width:95%;max-width:460px;padding:0;overflow:hidden;">
                 <div style="padding:16px 18px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;">
                     <h3 style="margin:0;font-size:18px;color:#111827;">Edit Profile</h3>
                     <button type="button" id="editProfileClose" aria-label="Close" style="background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer;">&times;</button>
@@ -2328,7 +2328,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                     </div>
                 </form>
             </div>
-            <div id="editProfileBackdrop" data-close="ep-backdrop" style="position:absolute;inset:0;"></div>
+            <div id="editProfileBackdrop" data-close="ep-backdrop" style="position:absolute;inset:0;z-index:0;"></div>
         </div>
 
         <script>
