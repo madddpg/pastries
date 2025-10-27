@@ -32,7 +32,7 @@ try {
                     COALESCE(t.reference_number, t.transac_id) AS reference_number,
                     t.total_amount,
                     t.status,
-                    t.created_at,
+                    DATE_FORMAT(CONVERT_TZ(t.created_at, @@session.time_zone, '+00:00'), '%Y-%m-%d %H:%i:%s') AS created_at,
                     u.user_FN AS customer_name
                 FROM `transaction` t
                 LEFT JOIN users u ON t.user_id = u.user_id
