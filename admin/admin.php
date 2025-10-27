@@ -2620,7 +2620,7 @@ $live_q = isset($_GET['q']) ? trim($_GET['q']) : '';
                 <td style="padding:6px;">${itemsHtml}</td>
                 <td style="padding:6px;">${money(o.total_amount)}</td>
                 <td style="padding:6px;text-transform:capitalize;">${o.status}</td>
-                <td style="padding:6px;">${new Date(o.created_at).toLocaleString()}</td>`;
+                <td style="padding:6px;">${esc(o.created_at)}</td>`;
                     tbody.appendChild(tr);
                 });
             }
