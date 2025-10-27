@@ -1415,9 +1415,9 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 </div>
                 <div class="form-group">
                     <label for="pickupTime">Pickup Time</label>
-                    <input type="time" id="pickupTime" required min="15:00" max="20:30">
+                    <input type="time" id="pickupTime" required min="14:00" max="21:30">
                     <p id="pickupTimeNote" style="margin-top:6px;font-size:0.95em;color:#b45309;">
-                        <strong>Note:</strong> Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.
+                        <strong>Note:</strong> Shop is open for pickup only from 2:00 p.m. to 9:30 p.m.
                     </p>
                 </div>
                 <div class="form-group">
@@ -1542,7 +1542,7 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                 pickupTimeInput.addEventListener("input", function() {
                     const val = this.value;
                     if (!val) {
-                        note.textContent = "Note: Shop is open for pickup only from 3:00 p.m. to 8:30 p.m.";
+                        note.textContent = "Note: Shop is open for pickup only from 2:00 p.m. to 9:30 p.m.";
                         note.style.color = "#b45309";
                         this.setCustomValidity("");
                         return;
@@ -1551,11 +1551,11 @@ function computeCategoryHeader(array $allProducts, int $categoryId, int $default
                     const [hour, minute] = val.split(":").map(Number);
                     const totalMins = hour * 60 + minute;
 
-                    const openMins = 15 * 60; // 3:00 PM
-                    const closeMins = 20 * 60 + 30; // 8:30 PM
+                    const openMins = 14 * 60; // 2:00 PM
+                    const closeMins = 21 * 60 + 30; // 9:30 PM
 
                     if (totalMins < openMins || totalMins > closeMins) {
-                        note.textContent = "Please select a time between 3:00 p.m. and 8:30 p.m.";
+                        note.textContent = "Please select a time between 2:00 p.m. and 9:30 p.m.";
                         note.style.color = "#dc2626";
                         this.setCustomValidity("Invalid time selected.");
                     } else {

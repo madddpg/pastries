@@ -32,6 +32,30 @@ if ($pickup_name === '' || $pickup_location === '' || $pickup_time === '' || emp
     exit;
 }
 
+// Enforce pickup time window server-side: 2:00 p.m (14:00) to 9:30 p.m (21:30)
+// Accept input as HH:MM (from <input type="time">) and sanitize defensively
+$timeSanitized = preg_replace('/[^0-9:]/', '', $pickup_time);
+if (!preg_match('/^\d{2}:\d{2}$/', $timeSanitized)) {
+    if (ob_get_level()) { @ob_end_clean(); }
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid pickup time format. Please select a time between 2:00 p.m and 9:30 p.m.'
+    ]);
+    exit;
+}
+list($hh, $mm) = explode(':', $timeSanitized);
+$mins = ((int)$hh) * 60 + ((int)$mm);
+$openMins = 14 * 60;        // 14:00
+$closeMins = 21 * 60 + 30;  // 21:30
+if ($mins < $openMins || $mins > $closeMins) {
+    if (ob_get_level()) { @ob_end_clean(); }
+    echo json_encode([
+        'success' => false,
+        'message' => 'Pickup time must be between 2:00 p.m and 9:30 p.m.'
+    ]);
+    exit;
+}
+
 // For GCash payments, require an image file to be uploaded
 if ($payment_method === 'gcash') {
     $uploadErr = isset($_FILES['gcash_receipt']['error']) ? (int)$_FILES['gcash_receipt']['error'] : UPLOAD_ERR_NO_FILE;

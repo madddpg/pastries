@@ -651,7 +651,7 @@ function startCheckout() {
       <div class="form-group" style="margin-bottom:12px;">
         <label style="font-weight:600;">Pickup Time</label>
         <input type="time" id="pickupTime" required style="width:100%;padding:10px;border-radius:8px;border:1.5px solid #e5e7eb;">
-        <p id="pickupTimeNote" style="margin-top:6px;font-size:0.95em;color:#b45309;">Note: We are open only 3:00 p.m to 9:00 p.m. Thank you!</p>
+  <p id="pickupTimeNote" style="margin-top:6px;font-size:0.95em;color:#b45309;">Note: We are open only 2:00 p.m to 9:30 p.m. Thank you!</p>
       </div>
       <div class="form-group" style="margin-bottom:18px;">
         <label style="font-weight:600;">Special Instructions (Optional)</label>
@@ -684,13 +684,13 @@ function startCheckout() {
     const note = document.getElementById("pickupTimeNote");
 
     if (pickupTimeInput && note) {
-      pickupTimeInput.min = "15:00";
-      pickupTimeInput.max = "20:30";
+      pickupTimeInput.min = "14:00";
+      pickupTimeInput.max = "21:30";
 
       pickupTimeInput.addEventListener("input", function () {
         const val = this.value;
         if (!val) {
-          note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+          note.textContent = "Note: We are open only 2:00 p.m to 9:30 p.m. Thank you!";
           note.style.color = "#b45309";
           this.setCustomValidity("");
           return;
@@ -699,12 +699,12 @@ function startCheckout() {
         const [h, m] = val.split(":").map(Number);
         const mins = h * 60 + m;
 
-        if (mins < 900 || mins > 1230) {
-          note.textContent = "Please select a time between 3:00 p.m and 8:30 p.m.";
+        if (mins < 840 || mins > 1290) {
+          note.textContent = "Please select a time between 2:00 p.m and 9:30 p.m.";
           note.style.color = "#dc2626";
-          this.setCustomValidity("Pickup time must be between 3:00 p.m and 8:30 p.m.");
+          this.setCustomValidity("Pickup time must be between 2:00 p.m and 9:30 p.m.");
         } else {
-          note.textContent = "Note: We are open only 3:00 p.m to 8:30 p.m. Thank you!";
+          note.textContent = "Note: We are open only 2:00 p.m to 9:30 p.m. Thank you!";
           note.style.color = "#b45309";
           this.setCustomValidity("");
         }
