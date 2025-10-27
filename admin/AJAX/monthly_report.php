@@ -56,14 +56,14 @@ try {
 
         // Totals (branch if type filter present)
     if ($type !== '') {
-        $totSql = "SELECT COUNT(DISTINCT t.transac_id) orders,
+                $totSql = "SELECT COUNT(DISTINCT t.transac_id) orders,
                             COALESCE(SUM(ti.quantity * ti.price),0) revenue,
                             COUNT(DISTINCT t.user_id) customers
                      FROM transaction t
                      JOIN transaction_items ti ON ti.transaction_id = t.transac_id
                      JOIN products p ON ti.product_id = p.product_id
                      $locJoin
-                     WHERE DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) BETWEEN ? AND ?
+                                     WHERE DATE(t.created_at) BETWEEN ? AND ?
                      AND t.status NOT IN ('pending','cancelled')
                      AND LOWER(p.data_type) = ? $locFilterSql";
                 $totParams = $baseParams; // currently [$start,$end,(maybe location)]
@@ -80,7 +80,7 @@ try {
                 $totSql = "SELECT COUNT(*) orders, COALESCE(SUM(t.total_amount),0) revenue, COUNT(DISTINCT t.user_id) customers
                                      FROM transaction t
                                      $locJoin
-                                     WHERE DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) BETWEEN ? AND ?
+                                     WHERE DATE(t.created_at) BETWEEN ? AND ?
                                          AND t.status NOT IN ('pending','cancelled') $locFilterSql";
                 $stTotals = $con->prepare($totSql);
                 $stTotals->execute($baseParams);
@@ -96,7 +96,7 @@ try {
                                 JOIN transaction t ON ti.transaction_id = t.transac_id
                                 JOIN products p ON ti.product_id = p.product_id
                                 $locJoin
-                                WHERE DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) BETWEEN ? AND ?
+                                WHERE DATE(t.created_at) BETWEEN ? AND ?
                                     AND t.status NOT IN ('pending','cancelled')";
         $prodParams = [$start,$end];
         if ($type !== '') { $prodSql .= " AND LOWER(p.data_type) = ?"; $prodParams[] = $type; }
@@ -117,7 +117,7 @@ try {
     // Add percentage share to each product
     // Daily breakdown (orders + revenue + items) with conditional logic for type / location
     if ($type !== '') {
-                $dailySql = "SELECT DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) d,
+                        $dailySql = "SELECT DATE(t.created_at) d,
                             COUNT(DISTINCT t.transac_id) orders,
                             COALESCE(SUM(ti.quantity * ti.price),0) revenue,
                             COALESCE(SUM(ti.quantity),0) items
@@ -125,16 +125,16 @@ try {
                      JOIN transaction_items ti ON ti.transaction_id = t.transac_id
                      JOIN products p ON ti.product_id = p.product_id
                      $locJoin
-                                         WHERE DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) BETWEEN ? AND ?
+                                                 WHERE DATE(t.created_at) BETWEEN ? AND ?
                        AND t.status NOT IN ('pending','cancelled')
                        AND LOWER(p.data_type) = ?";
         $dailyParams = [$start,$end,$type];
         if ($location !== '') { $dailySql .= " AND pd.pickup_location = ?"; $dailyParams[] = $location; }
-    $dailySql .= " GROUP BY DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) ORDER BY d ASC";
+    $dailySql .= " GROUP BY DATE(t.created_at) ORDER BY d ASC";
         $stDaily = $con->prepare($dailySql);
         $stDaily->execute($dailyParams);
     } else {
-                $dailySql = "SELECT DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) d,
+                        $dailySql = "SELECT DATE(t.created_at) d,
                             COUNT(*) orders,
                             COALESCE(SUM(t.total_amount),0) revenue,
                             COALESCE(SUM(itm_qty.total_qty),0) items
@@ -145,11 +145,11 @@ try {
                          GROUP BY ti.transaction_id
                      ) itm_qty ON itm_qty.transaction_id = t.transac_id
                      $locJoin
-                                         WHERE DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) BETWEEN ? AND ?
+                                                 WHERE DATE(t.created_at) BETWEEN ? AND ?
                        AND t.status NOT IN ('pending','cancelled')";
         $dailyParams = [$start,$end];
         if ($location !== '') { $dailySql .= " AND pd.pickup_location = ?"; $dailyParams[] = $location; }
-    $dailySql .= " GROUP BY DATE(CONVERT_TZ(t.created_at, '+00:00', '+08:00')) ORDER BY d ASC";
+    $dailySql .= " GROUP BY DATE(t.created_at) ORDER BY d ASC";
         $stDaily = $con->prepare($dailySql);
         $stDaily->execute($dailyParams);
     }
