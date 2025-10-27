@@ -2911,6 +2911,9 @@ label[for="acceptTerms"] { white-space: nowrap; }
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  /* Allow the overlay itself to scroll on small viewports */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .payment-modal.open {
   display: flex;
@@ -2937,6 +2940,13 @@ label[for="acceptTerms"] { white-space: nowrap; }
   border-radius: 14px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.12);
   pointer-events: auto;
+  /* If content is taller than the viewport, enable inner scroll */
+  max-height: calc(100vh - 40px);
+  /* Support modern mobile viewport units with fallbacks */
+  max-height: calc(100svh - 40px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* close button */
@@ -2962,6 +2972,8 @@ label[for="acceptTerms"] { white-space: nowrap; }
 
 /* small screens */
 @media (max-width: 600px) {
+  /* On mobile, anchor dialog to top and allow vertical scrolling to reach bottom inputs */
+  .payment-modal { align-items: flex-start; }
   .payment-modal-dialog { margin: 12px; width: calc(100% - 24px); max-width: 420px; padding: 18px; }
 }
 
