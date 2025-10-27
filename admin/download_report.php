@@ -74,8 +74,9 @@ if ($columnsParam !== '') {
 // Build WHERE
 $where = [];
 $params = [];
-if ($from) { $where[] = 'DATE(t.created_at) >= ?'; $params[] = $from; }
-if ($to)   { $where[] = 'DATE(t.created_at) <= ?'; $params[] = $to; }
+// Use the same date basis as DB view (UTC) so CSV matches phpMyAdmin/day breakdowns
+if ($from) { $where[] = "DATE(CONVERT_TZ(t.created_at, @@session.time_zone, '+00:00')) >= ?"; $params[] = $from; }
+if ($to)   { $where[] = "DATE(CONVERT_TZ(t.created_at, @@session.time_zone, '+00:00')) <= ?"; $params[] = $to; }
 // Enforce only picked up / cancelled in CSV; if a specific status is passed and maps to one of them, narrow to it.
 if ($status !== '' && isset($statusMap[$status])) {
     $where[] = 'LOWER(t.status) = ?';
@@ -93,7 +94,7 @@ $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 $sql = "SELECT
             t.transac_id,
             COALESCE(t.reference_number, t.transac_id) AS reference_number,
-            DAY(t.created_at) AS created_at,
+            DATE_FORMAT(CONVERT_TZ(t.created_at, @@session.time_zone, '+00:00'), '%Y-%m-%d %H:%i:%s') AS created_at,
             t.status,
             COALESCE(t.payment_method, 'cash') AS payment_method,
             u.user_FN,
@@ -114,13 +115,13 @@ $sql = "SELECT
         LEFT JOIN products pr  ON ti.products_pk IS NOT NULL AND pr.products_pk  = ti.products_pk
         LEFT JOIN products pr2 ON ti.products_pk IS NULL   AND pr2.product_id    = ti.product_id
         $whereSql
-        ORDER BY t.created_at DESC, t.transac_id ASC, ti.size ASC";
+        ORDER BY CONVERT_TZ(t.created_at, @@session.time_zone, '+00:00') DESC, t.transac_id ASC, ti.size ASC";
 
 $stmt = $con->prepare($sql);
 $stmt->execute($params);
 
 // Prepare HTTP headers
-$filename = 'orders_report_' . date('Y/m/d') . '.csv';
+$filename = 'orders_report_' . date('Y-m-d') . '.csv';
 header('Content-Type: text/csv; charset=UTF-8');
 header('Content-Disposition: attachment; filename=' . $filename);
 header('Pragma: no-cache');
