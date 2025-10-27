@@ -1,5 +1,9 @@
 <?php
 
+// Normalize PHP runtime timezone to Asia/Manila for all scripts that include this file
+// Ensures PHP date()/time() and any server-generated timestamps align with PH time
+date_default_timezone_set('Asia/Manila');
+
 
 class Database
 {
@@ -19,6 +23,8 @@ class Database
             $this->password
         );
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Force all MySQL CURRENT_TIMESTAMP/NOW() and returned DATETIME values to Asia/Manila
+        try { $pdo->exec("SET time_zone = '+08:00'"); } catch (Throwable $_) { /* ignore if not supported */ }
         // Ensure supporting tables/schemas exist or are updated
     try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
     try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
@@ -56,6 +62,8 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ]
         );
+        // Align session timezone to Philippines for consistency across inserts/selects
+        try { $pdo->exec("SET time_zone = '+08:00'"); } catch (Throwable $_) { /* ignore */ }
         try { $this->ensureSizePriceHistorySchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensurePastryVariantsSchema($pdo); } catch (Throwable $e) { /* ignore */ }
         try { $this->ensureUsersBlockSchema($pdo); } catch (Throwable $e) { /* ignore */ }
